@@ -453,7 +453,11 @@ void LauncherApp::draw_panel(ImVec2 p0, ImVec2 p1) {
         ImGui::TextWrapped("Game files installed, but the game hasn't been built yet. Choose Build Game.");
         ImGui::PopStyleColor();
     } else if (ok) {
-        if (kit_present_) {
+        if (kit_present_ && kit_.toolchain_url.empty()) {
+            ImGui::TextWrapped("Install Game copies the game's files out of your disc (about 1.3 GB), then builds the game "
+                               "on this PC with the %s compiler installed on this system. Nothing is downloaded.",
+                               kit_.toolchain_name.empty() ? "C++" : kit_.toolchain_name.c_str());
+        } else if (kit_present_) {
             ImGui::TextWrapped("Install Game copies the game's files out of your disc (about 1.3 GB), then builds the game "
                                "on this PC. The first time it downloads the free %s compiler (about %d MB) from its "
                                "official release. Nothing from the game is ever downloaded.",

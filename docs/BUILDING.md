@@ -20,11 +20,22 @@ The output is statically linked and needs only standard Windows DLLs (msvcrt, Op
 player's PC, so everything runs on Windows 7 SP1 / 8.1 / 10 / 11 without the UCRT update; check a build with
 `llvm-readobj --coff-imports` (no `api-ms-win-crt-*` DLLs).
 
-## Linux (tools + tests only, no GUI)
+## Linux
+Everything builds natively (launcher, port, tools, tests). SDL2 is fetched and linked statically (2.32.10 on Linux,
+since 2.30.9 no longer builds against current PipeWire headers); it loads X11/Wayland/PipeWire/PulseAudio at run time.
 ```sh
-cmake -B build -G Ninja -DSSNE_BUILD_LAUNCHER=OFF -DSSNE_BUILD_PORT=OFF
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ninja -C build && (cd build && ctest --output-on-failure)
 ```
+Tools and tests only: add `-DSSNE_BUILD_LAUNCHER=OFF -DSSNE_BUILD_PORT=OFF`.
+
+### Linux release (launcher + build kit)
+```sh
+tools/make_linux_release.sh <out_dir>
+```
+Same layout as the Windows release, but `build-kit/kit.ini` (from `data/kit/kit-linux.ini.in`) names the system's own
+C++ compiler instead of a download: `compiler = clang++` (or `g++`) is looked up in `PATH`. The script uses clang++
+if installed, else g++; set `CXX`/`CC` to choose. The launcher's Install Game then works exactly as on Windows.
 
 ## Recompiling the game
 1. Install your disc with the launcher, or run `gctool extract game.iso game_data`.

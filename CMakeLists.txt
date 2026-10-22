@@ -64,8 +64,14 @@ if(SSNE_BUILD_LAUNCHER OR SSNE_BUILD_PORT)
   set(SDL_SHARED OFF CACHE BOOL "" FORCE)
   set(SDL_STATIC ON CACHE BOOL "" FORCE)
   set(SDL_TEST OFF CACHE BOOL "" FORCE)
+  # Linux: 2.30.9 no longer builds against current PipeWire headers; 2.32.10 does. Windows keeps the pinned release.
+  if(WIN32)
+    set(SSNE_SDL2_TAG release-2.30.9)
+  else()
+    set(SSNE_SDL2_TAG release-2.32.10)
+  endif()
   FetchContent_Declare(SDL2 GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-                            GIT_TAG release-2.30.9 GIT_SHALLOW TRUE)
+                            GIT_TAG ${SSNE_SDL2_TAG} GIT_SHALLOW TRUE)
   FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
                              GIT_TAG v1.91.5 GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(SDL2 imgui)

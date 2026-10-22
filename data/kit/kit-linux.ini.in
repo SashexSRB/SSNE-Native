@@ -1,0 +1,25 @@
+# Silly ReEncounter build kit (Linux): tells the launcher how to build SillyReEncounter-Game on this PC from
+# the player's own disc. "kit:" means this folder. Written by tools/make_linux_release.sh from kit-linux.ini.in.
+
+# Engine version: when it changes, the launcher offers to rebuild a game built with an older kit.
+version = @VERSION@
+
+# Translator (PowerPC main.dol -> C++) and the function-name map for USA Rev 1.
+recomp = kit:ssne-recomp
+symbols = kit:G3BE9G_r1.sym
+# Other releases (by disc ID): Europe / PAL (English, French, German)
+symbols.G3BP9G = kit:G3BP9G_r0.sym
+
+# Compiler: the system's own C++ compiler (nothing is downloaded). A bare name is looked up in PATH; an absolute
+# path also works. The prebuilt libraries in lib/ were built with @CXX_DESC@, and clang++ and g++ both link
+# with them (same libstdc++ ABI). clang++ compiles the generated code faster and with less memory than g++.
+toolchain_name = @CXX_NAME@
+compiler = @CXX@
+compiler_flags =
+
+# Generated code
+cxxflags = -std=gnu++20 -O2 -DNDEBUG -w -g0 -fPIE -Ikit:include
+
+# Final link: {objs} = the compiled game code; the rest is the prebuilt PC port (no game code). SDL loads X11,
+# Wayland, PipeWire/PulseAudio/ALSA and the gamepad libraries at run time, so only libGL is linked directly.
+link = -pie -O2 kit:lib/port/main.o kit:lib/port/settings.o kit:lib/port/settings_menu.o kit:lib/port/png_write.o {objs} kit:lib/libssne-runtime.a kit:lib/libimgui.a kit:lib/libSDL2main.a kit:lib/libgc.a kit:lib/libSDL2.a -lGL -lm -ldl -pthread

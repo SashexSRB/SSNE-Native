@@ -1,5 +1,6 @@
 // ssne-recomp: translates main.dol (from your own disc) into C++ source for the PC port.
 //   ssne-recomp <main.dol | game.iso> <out_dir> [--map symbols.map] [--no-comments] [--no-data-scan]
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <iterator>

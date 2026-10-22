@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -41,6 +42,27 @@ std::string expand(std::string v, const std::string& kit) {
 bool exists(const std::string& p) {
     std::error_code ec;
     return fs::exists(P(p), ec);
+}
+// A bare program name ("clang++") is looked up in PATH, as a shell would. Returns the name unchanged if not found.
+std::string find_in_path(const std::string& name) {
+#ifdef _WIN32
+    const char sep = ';';
+#else
+    const char sep = ':';
+#endif
+    const char* env = std::getenv("PATH");
+    std::string path = env ? env : "";
+    for (size_t a = 0; a <= path.size();) {
+        size_t b = path.find(sep, a);
+        if (b == std::string::npos) b = path.size();
+        if (b > a) {
+            fs::path c = P(path.substr(a, b - a)) / P(name);
+            std::error_code ec;
+            if (fs::is_regular_file(c, ec)) return S(c);
+        }
+        a = b + 1;
+    }
+    return name;
 }
 } // namespace
 
@@ -96,11 +118,16 @@ bool load_build_kit(const std::string& kit_dir, BuildKit& kit, std::string& erro
         else if (k == "cxxflags") { kit.cxxflags.clear(); for (auto& t : split(v)) kit.cxxflags.push_back(expand(t, kit_dir)); }
         else if (k == "link") { kit.link.clear(); for (auto& t : split(v)) kit.link.push_back(expand(t, kit_dir)); }
     }
-    if (kit.recomp.empty() || kit.toolchain_dir.empty() || compiler_rel.empty() || kit.link.empty()) {
+    // toolchain_dir is only needed for a downloaded compiler; a kit may instead name the system's own compiler.
+    if (kit.recomp.empty() || compiler_rel.empty() || kit.link.empty() ||
+        (kit.toolchain_dir.empty() && !kit.toolchain_url.empty())) {
         error = "build kit settings are incomplete (kit.ini)";
         return false;
     }
-    kit.compiler = P(compiler_rel).is_absolute() ? compiler_rel : S(P(kit.toolchain_dir) / P(compiler_rel));
+    if (P(compiler_rel).is_absolute()) kit.compiler = compiler_rel;
+    else if (compiler_rel.find_first_of("/\\") == std::string::npos && kit.toolchain_url.empty())
+        kit.compiler = find_in_path(compiler_rel);  // e.g. "compiler = clang++": the one installed on this system
+    else kit.compiler = S(P(kit.toolchain_dir) / P(compiler_rel));
     return true;
 }
 
@@ -139,7 +166,14 @@ bool GameBuilder::run(const std::vector<std::string>& argv, const std::string& c
 bool GameBuilder::get_toolchain(const BuildKit& kit, const Report& report, std::atomic<bool>& cancel,
                                 std::string& error) {
     if (kit.compiler_present()) { log("compiler: " + kit.compiler); return true; }
-    if (kit.toolchain_url.empty()) { error = "compiler not found: " + kit.compiler; return false; }
+    if (kit.toolchain_url.empty()) {
+        error = "compiler not found: " + kit.compiler;
+#ifndef _WIN32
+        error += ". Install " + (kit.toolchain_name.empty() ? std::string("a C++ compiler") : kit.toolchain_name) +
+                 " with your package manager, or change \"compiler\" in " + S(P(kit.dir) / "kit.ini");
+#endif
+        return false;
+    }
     std::error_code ec;
     fs::path dl_dir = P(kit.dir) / "downloads";
     fs::create_directories(dl_dir, ec);
