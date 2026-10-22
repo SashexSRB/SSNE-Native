@@ -1,0 +1,10 @@
+# Known-good dumps of Serious Sam: Next Encounter (GameCube).
+# Format: GAMEID|sha1-of-full-plain-ISO|label
+# Lines starting with '#' are ignored. Get hashes from Redump (http://redump.org) — the SHA-1 of the
+# full 1,459,978,240-byte ISO. A disc with a Serious Sam boot header that isn't listed here is still
+# accepted as "Recognized (unverified dump)".
+#
+# Confirmed disc IDs:
+#   G3BE9G  USA, disc revision 1  (build "FINAL.107", Jan 22 2004)   -- SHA-1 to be added from Redump
+#   G3BP9G  Europe, disc revision 0 (build "FINAL.113", Feb 19 2004; English/French/German) -- supported, SHA-1 to be added
+G3BE9G|0e79448360c80a2105bdf13e4953dfb721ce5931|USA Rev 1 (project reference dump; Redump match not yet confirmed)

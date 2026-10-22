@@ -1,0 +1,72 @@
+Silly ReEncounter - changes since the first public release
+=========================================================
+
+After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
+engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
+
+NEW FEATURES
+  Save states
+    - Save anywhere with F5 and come back to that exact moment with F9. Five slots (Shift+F5 picks the next one);
+      F12 > Save states shows each slot with a picture and the date, with Save / Load buttons.
+    - Loading a state also restores the memory card as it was at that moment (the card from before loading is
+      kept as a .bak file next to it). States work from the main menu on, not on the boot screens.
+  PAL / Europe version
+    - Serious Sam: Next Encounter for Europe (G3BP9G; English, French, German) is supported alongside the USA
+      release, with everything listed here. Each region has its own memory card file.
+  Graphics
+    - Anti-aliasing (F12 > Graphics): FXAA, MSAA 2x / 4x / 8x, or supersampling.
+    - Anisotropic filtering 2x - 16x: floors and walls stay sharp at steep angles.
+  Controllers
+    - Rumble on Xbox, PlayStation, Switch Pro and most other gamepads, with a strength slider and a Test button.
+    - New default gamepad layout (Xbox style): A jump, X use, B back, RT fire, LB / RB switch weapons,
+      Y = the GameCube's Z, Start pause. "GameCube layout" in F12 > Gamepad restores the original positions.
+    - The game's on-screen button hints ("A Select", "Press A to skip", in-game tips) show Xbox or PlayStation
+      buttons to match your controller and your bindings (F12 > Gamepad > On-screen buttons).
+    - Mouse wheel can be bound to any control; by default it switches weapons.
+  Convenience
+    - Skip intros (on by default): the game starts at the main menu in about 10 seconds instead of ~50.
+    - Pause in the background (on by default): Alt+Tab or minimizing pauses and silences the game.
+    - "Exit game" button in the F12 menu.
+    - Short on-screen messages for save states, screenshots and volume changes.
+    - Graphics presets (F12 > Graphics): Low / Medium / High / Ultra in one click.
+    - Separate volume for music & videos and for sound effects (F12 > Audio).
+    - Monitor choice for fullscreen; the window remembers its size, position and maximized state.
+    - Screenshots: Print Screen (or Shift+F12) saves a PNG of the game image to the Screenshots folder.
+    - Info bar: full, frame rate only, or hidden (Shift+F1 cycles).
+
+FIXES
+  - Jumping: Space never jumped. The game jumps with the GameCube's (analog) L trigger and the old default put
+    Space on A. Space now jumps and still selects in menus and skips cutscenes. Existing settings that were never
+    changed are updated automatically.
+  - Stick flicker: holding either stick (or A+S on the keyboard) down-left made Sam stop or jitter. The game
+    rescaled the stick values in place, and at PC frame rates did it more than once per controller read, which
+    flipped down-left to up-right. Each frame now sees the raw input, as on the GameCube.
+  - Exiting (Alt+F4 or the window's X): the window is closed before anything else and the game is forced to
+    end if shutting down stalls (reports of the desktop staying dimmed after quitting).
+  - Automatic resolution now also lowers the resolution when the game runs below 20 fps (it never did there).
+  - Clearer key labels in F12 (A is select / use / skip, L is jump, X / Y switch weapons).
+
+PERFORMANCE (mainly for weaker PCs)
+  - Automatic internal resolution (new default): starts at the resolution that fits the window and lowers or
+    raises it from the measured GPU time. Old settings with the previous fixed 3x move to automatic.
+  - Much less GPU work per frame: depth writes only where needed (early depth test works again), fewer state
+    changes and uniform uploads, EFB copies converted in one pass instead of two.
+  - Shader cache (shadercache folder): no more stutter the first time an effect appears, after the first session.
+  - Lower CPU use: faster vertex decoding, no busy-waiting main loop, frame buffers reused.
+  - Sync game to display (on by default): with vsync and a 60 Hz screen the game ticks with the display, so no
+    frame is shown twice (removes a periodic micro-stutter).
+
+COMPATIBILITY
+  - Windows 7 SP1 and 8.1 (64-bit) are supported, as well as 10 and 11. Everything now uses the C runtime that
+    every Windows version includes; the launcher downloads the matching compiler once (about 146 MB).
+  - Windows 7: the compiler download asks for TLS 1.2 (install the KB3140245 update if it still fails, or
+    download the file named in the error with a browser and put it in build-kit\downloads).
+  - The launcher offers "Update Game" automatically whenever a release changes the engine.
+
+CHANGED KEYS
+  F5 ............ save state (was volume up)        F9 ........... load state (was frame capture)
+  Shift+F5 ...... next save state slot              F4 / Shift+F4  volume down / up
+  Shift+F9 ...... capture a frame for bug reports    Print Screen / Shift+F12  screenshot
+  Shift+F1 ...... info bar: full / frame rate only / hidden
+  Keyboard: Space = jump (L), F = A (use / select), right mouse = jump, mouse wheel = switch weapons.
+  Gamepad: Xbox layout by default (see above).

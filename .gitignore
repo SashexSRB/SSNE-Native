@@ -1,0 +1,9 @@
+build*/
+recompiled/
+game_data/
+*.iso
+*.gcm
+*.rvz
+*.ciso
+*.dol
+launcher.ini
