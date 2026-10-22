@@ -1,5 +1,6 @@
 // Vertex loader + transform unit (XF): attribute decode, matrices, lighting, texgen.
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -327,6 +328,114 @@ inline Reader attr_at(const AttrDesc& d, const uint8_t* p, uint32_t& off) {
     return r;
 }
 
+// Host pointer to an attribute's bytes (command stream, or array data in plain RAM, as `indexed` decides), or
+// nullptr when the data must be read through the MMIO-checking accessors (then `slow` is set up for that).
+inline const uint8_t* attr_ptr(const AttrDesc& d, const uint8_t* p, uint32_t& off, Reader& slow) {
+    if (d.type == 1) { const uint8_t* q = p + off; off += d.direct; return q; }
+    uint32_t index = d.type == 2 ? uint32_t(p[off]) : uint32_t(p[off]) << 8 | p[off + 1];
+    off += d.type == 2 ? 1 : 2;
+    uint32_t addr = (g.cp[0xA0 + d.array] & 0x03FFFFFF) + index * (g.cp[0xB0 + d.array] & 0xFF);
+    if (addr < ssne::kRamSize - 64 && (addr >> 24) != 0xCC) return ssne::g_ram + addr;
+    slow = indexed(d.array, index);
+    return nullptr;
+}
+
+// Reader::comp / Reader::color on a host pointer (same arithmetic).
+inline float comp_at(const uint8_t* q, uint32_t fmt, uint32_t i, float scale) {
+    switch (fmt) {
+    case 0: return q[i] * scale;
+    case 1: return int8_t(q[i]) * scale;
+    case 2: { uint16_t v; memcpy(&v, q + i * 2, 2); return SSNE_BSWAP16(v) * scale; }
+    case 3: { uint16_t v; memcpy(&v, q + i * 2, 2); return int16_t(SSNE_BSWAP16(v)) * scale; }
+    default: { uint32_t v; memcpy(&v, q + i * 4, 4); v = SSNE_BSWAP32(v); float f; memcpy(&f, &v, 4); return f; }
+    }
+}
+
+// Lighting set up once per draw (light_channel re-derives all of this per vertex). One entry per channel and part
+// (0 = color rgb, 1 = alpha); the per-vertex math below repeats light_channel's expressions in the same order, so
+// the results are bit-identical (SSNE_CHECK_VERTICES compares against it).
+struct LightPart {
+    bool lit = false, mat_vc = false, amb_vc = false;
+    float mat[4], amb[4];
+    uint32_t mask = 0, diffuse_fn = 0;
+    bool atten = false, spot = false;
+};
+struct LightConst { float lpos[3], ldir[3], col[4], a0, a1, a2, k0, k1, k2; };
+// Per-vertex light geometry, shared by every part that uses the light.
+struct LightGeo { float L[3], dist2, dist, ndl; };
+
+void setup_light_part(int chan, int part, LightPart& lp) {
+    uint32_t ctrl = g.xf_reg[(part ? 0x10 : 0x0E) + chan];
+    uint32_t matreg = g.xf_reg[0x0C + chan], ambreg = g.xf_reg[0x0A + chan];
+    for (int k = 0; k < 4; k++) {
+        lp.mat[k] = float((matreg >> (24 - 8 * k)) & 0xFF);
+        lp.amb[k] = float((ambreg >> (24 - 8 * k)) & 0xFF);
+    }
+    lp.mat_vc = ctrl & 1;
+    lp.amb_vc = ctrl & 0x40;
+    lp.lit = ctrl & 2;
+    lp.mask = ((ctrl >> 2) & 0xF) | (((ctrl >> 11) & 0xF) << 4);
+    lp.diffuse_fn = (ctrl >> 7) & 3;
+    lp.atten = (ctrl >> 9) & 1;
+    lp.spot = (ctrl >> 10) & 1;
+}
+
+void setup_light_const(int l, LightConst& c) {
+    uint32_t base = 0x600 + l * 0x10;
+    uint32_t lc = g.xf_mem[base + 3];
+    for (int k = 0; k < 3; k++) { c.lpos[k] = xf_f(base + 10 + k); c.ldir[k] = xf_f(base + 13 + k); }
+    for (int k = 0; k < 4; k++) c.col[k] = float((lc >> (24 - 8 * k)) & 0xFF);
+    c.a0 = xf_f(base + 4); c.a1 = xf_f(base + 5); c.a2 = xf_f(base + 6);
+    c.k0 = xf_f(base + 7); c.k1 = xf_f(base + 8); c.k2 = xf_f(base + 9);
+}
+
+inline void light_geo(const LightConst& c, const float view_pos[3], const float nrm[3], LightGeo& o) {
+    float L[3] = {c.lpos[0] - view_pos[0], c.lpos[1] - view_pos[1], c.lpos[2] - view_pos[2]};
+    float dist2 = L[0] * L[0] + L[1] * L[1] + L[2] * L[2];
+    float dist = std::sqrt(dist2);
+    if (dist > 0) for (float& x : L) x /= dist;
+    o.L[0] = L[0]; o.L[1] = L[1]; o.L[2] = L[2];
+    o.dist2 = dist2; o.dist = dist;
+    o.ndl = nrm[0] * L[0] + nrm[1] * L[1] + nrm[2] * L[2];
+}
+
+// One part of light_channel for one vertex: writes out[k0..k1) (rgb: 0..3, alpha: 3..4).
+inline void light_part(const LightPart& lp, const LightConst* lc, const LightGeo* geo, const float nrm[3],
+                       const float* vcol, bool has_vcol, int k0, int k1, float out[4]) {
+    float mat[4], amb[4];
+    for (int k = k0; k < k1; k++) {
+        mat[k] = lp.mat_vc ? (has_vcol ? vcol[k] : 255.f) : lp.mat[k];
+        amb[k] = lp.amb_vc ? (has_vcol ? vcol[k] : 255.f) : lp.amb[k];
+    }
+    if (!lp.lit) { for (int k = k0; k < k1; k++) out[k] = mat[k]; return; }
+    float lit[4];
+    for (int k = k0; k < k1; k++) lit[k] = amb[k];
+    for (uint32_t m = lp.mask; m; m &= m - 1) {
+        int l = std::countr_zero(m);
+        const LightConst& c = lc[l];
+        const LightGeo& o = geo[l];
+        float ndl = o.ndl;
+        float diff = lp.diffuse_fn == 0 ? 1.f : lp.diffuse_fn == 1 ? ndl : std::max(0.f, ndl);
+        float att = 1.f;
+        if (lp.atten) {
+            if (lp.spot) {
+                float cosang = std::max(0.f, -(o.L[0] * c.ldir[0] + o.L[1] * c.ldir[1] + o.L[2] * c.ldir[2]));
+                float num = std::max(0.f, c.a0 + c.a1 * cosang + c.a2 * cosang * cosang);
+                float den = c.k0 + c.k1 * o.dist + c.k2 * o.dist2;
+                att = den > 0 ? num / den : num;
+            } else {
+                float h = nrm[0] * c.ldir[0] + nrm[1] * c.ldir[1] + nrm[2] * c.ldir[2];
+                float cc = ndl > 0 ? std::max(0.f, h) : 0.f;
+                float num = std::max(0.f, c.a0 + c.a1 * cc + c.a2 * cc * cc);
+                float den = c.k0 + c.k1 * cc + c.k2 * cc * cc;
+                att = den > 0 ? num / den : num;
+            }
+        }
+        for (int k = k0; k < k1; k++) lit[k] += c.col[k] * diff * att;
+    }
+    for (int k = k0; k < k1; k++) out[k] = mat[k] * clamp01(lit[k] / 255.f);
+}
+
 } // namespace
 
 void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vector<Vtx>& out) {
@@ -386,8 +495,19 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
         x.dual_norm = (pt >> 8) & 1;
         x.post_base = 0x500 + (pt & 0x3F) * 4;
     }
-    bool need_nrm_mtx = true;
-    (void)need_nrm_mtx;
+    // Lighting: channel 0 is always evaluated, channel 1 when enabled (as before). The transformed normal is only
+    // needed when some evaluated part is lit by at least one light; light geometry once per light per vertex.
+    uint32_t lchans = nchan > 1 ? 2 : 1;
+    LightPart lparts[2][2];
+    uint32_t used_lights = 0;
+    for (uint32_t c = 0; c < lchans; c++)
+        for (int part = 0; part < 2; part++) {
+            setup_light_part(int(c), part, lparts[c][part]);
+            if (lparts[c][part].lit) used_lights |= lparts[c][part].mask;
+        }
+    LightConst lconst[8];
+    for (uint32_t m = used_lights; m; m &= m - 1) setup_light_const(std::countr_zero(m), lconst[std::countr_zero(m)]);
+    const bool need_vn = used_lights != 0;
 
     for (uint32_t v = 0; v < count; v++) {
         const uint8_t* p = data + size_t(v) * vsize;
@@ -399,31 +519,38 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
         if (tex_mi_mask)
             for (int t = 0; t < 8; t++) if ((tex_mi_mask >> t) & 1) tex_idx[t] = p[off++] & 0x3F;
 
+        Reader slow;
         float pos[4] = {0, 0, 0, 1};
         if (pos_d.type) {
-            Reader r = attr_at(pos_d, p, off);
-            for (uint32_t k = 0; k < pos_d.n; k++) pos[k] = r.comp(pos_d.fmt, k, pos_d.scale);
+            if (const uint8_t* q = attr_ptr(pos_d, p, off, slow))
+                for (uint32_t k = 0; k < pos_d.n; k++) pos[k] = comp_at(q, pos_d.fmt, k, pos_d.scale);
+            else
+                for (uint32_t k = 0; k < pos_d.n; k++) pos[k] = slow.comp(pos_d.fmt, k, pos_d.scale);
         }
         float nrm[3] = {0, 0, 1};
         if (nrm_d.type) {
-            Reader r = attr_at(nrm_d, p, off);
-            for (int k = 0; k < 3; k++) nrm[k] = r.comp(nrm_d.fmt, uint32_t(k), nrm_d.scale);
+            if (const uint8_t* q = attr_ptr(nrm_d, p, off, slow))
+                for (int k = 0; k < 3; k++) nrm[k] = comp_at(q, nrm_d.fmt, uint32_t(k), nrm_d.scale);
+            else
+                for (int k = 0; k < 3; k++) nrm[k] = slow.comp(nrm_d.fmt, uint32_t(k), nrm_d.scale);
             off += nrm_skip;
         }
         float vcol[2][4] = {};
         bool has_vcol[2] = {false, false};
         for (int c = 0; c < 2; c++) {
             if (!col_d[c].type) continue;
-            Reader r = attr_at(col_d[c], p, off);
-            r.color(col_d[c].fmt, vcol[c]);
+            if (const uint8_t* q = attr_ptr(col_d[c], p, off, slow)) { Reader r; r.p = q; r.color(col_d[c].fmt, vcol[c]); }
+            else slow.color(col_d[c].fmt, vcol[c]);
             has_vcol[c] = true;
         }
         float tc[8][2] = {};
         for (int t = 0; t < 8; t++) {
             const AttrDesc& d = tex_d[t];
             if (!d.type) continue;
-            Reader r = attr_at(d, p, off);
-            for (uint32_t k = 0; k < d.n; k++) tc[t][k] = r.comp(d.fmt, k, d.scale);
+            if (const uint8_t* q = attr_ptr(d, p, off, slow))
+                for (uint32_t k = 0; k < d.n; k++) tc[t][k] = comp_at(q, d.fmt, k, d.scale);
+            else
+                for (uint32_t k = 0; k < d.n; k++) tc[t][k] = slow.comp(d.fmt, k, d.scale);
         }
 
         // ---- transform (same arithmetic as decode_vertices_ref)
@@ -431,7 +558,7 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
         float view[3];
         mul34(pos_idx * 4, pos, view);
         float vn[3] = {0, 0, 1};
-        {
+        if (need_vn) {
             uint32_t nb = 0x400 + (pos_idx & 31) * 3;
             for (int r = 0; r < 3; r++)
                 vn[r] = xf_f(nb + r * 3) * nrm[0] + xf_f(nb + r * 3 + 1) * nrm[1] + xf_f(nb + r * 3 + 2) * nrm[2];
@@ -441,9 +568,16 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
         if (ortho) { o.x = p0 * view[0] + p1; o.y = p2 * view[1] + p3; o.z = p4 * view[2] + p5; o.w = 1; }
         else { o.x = p0 * view[0] + p1 * view[2]; o.y = p2 * view[1] + p3 * view[2]; o.z = p4 * view[2] + p5; o.w = -view[2]; }
 
+        LightGeo geo[8];
+        for (uint32_t m = used_lights; m; m &= m - 1) {
+            int l = std::countr_zero(m);
+            light_geo(lconst[l], view, vn, geo[l]);
+        }
         for (uint32_t c = 0; c < 2; c++) {
-            if (c < nchan || c == 0) light_channel(int(c), view, vn, vcol, has_vcol, o.color[c]);
-            else for (int k = 0; k < 4; k++) o.color[c][k] = 0;
+            if (c < lchans) {
+                light_part(lparts[c][0], lconst, geo, vn, vcol[c], has_vcol[c], 0, 3, o.color[c]);
+                light_part(lparts[c][1], lconst, geo, vn, vcol[c], has_vcol[c], 3, 4, o.color[c]);
+            } else for (int k = 0; k < 4; k++) o.color[c][k] = 0;
         }
 
         for (uint32_t t = 0; t < 8; t++) {

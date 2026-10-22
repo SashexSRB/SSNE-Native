@@ -23,6 +23,11 @@ using namespace gx;
 
 std::mutex G;
 std::vector<uint8_t> g_pending;
+// Bytes g_pending must hold before parse() can make progress (0 = unknown, parse on the next write). The game writes
+// a draw command 4 bytes at a time; without this, every write re-parsed the incomplete command just to find it still
+// incomplete. Only the head of g_pending is ever unparsed, and the CP registers that size it (VCD/VAT) only change
+// through parsed commands or a state load, so the requirement stays valid until it is met.
+size_t g_need = 0;
 uint16_t g_pe[0x40];
 std::atomic<uint64_t> s_bytes{0}, s_cmds{0}, s_prims{0}, s_verts{0}, s_dls{0}, s_copies{0}, s_done{0}, s_tokens{0};
 std::atomic<uint32_t> s_last_token{0}, s_unknown{0};
@@ -72,7 +77,13 @@ size_t parse(const uint8_t* p, size_t n, int depth);
 void call_display_list(uint32_t addr, uint32_t size, int depth) {
     if (depth > 4 || size > 0x400000) return;
     std::vector<uint8_t> dl(size);
-    for (uint32_t i = 0; i < size; i++) dl[i] = mem_read8(addr + i);
+    // Same bytes as mem_read8 one by one: a list in plain RAM (no MMIO / locked cache, no wrap) is copied at once.
+    uint64_t end = uint64_t(addr) + size;
+    if (size && end <= 0x100000000ull && (addr >> 24) == ((end - 1) >> 24) && !ssne::is_mmio(addr) &&
+        (addr >> 28) != 0xE && (addr & (ssne::kRamSize - 1)) + uint64_t(size) <= ssne::kRamSize)
+        memcpy(dl.data(), ssne::host_ptr(addr), size);
+    else
+        for (uint32_t i = 0; i < size; i++) dl[i] = mem_read8(addr + i);
     s_dls++;
     parse(dl.data(), dl.size(), depth + 1);
 }
@@ -131,14 +142,27 @@ size_t parse(const uint8_t* p, size_t n, int depth) {
     return i;
 }
 
+// Size parse() needs to make progress on an unparsed head command `p[0..n)` (see g_need); 0 = parse anyway.
+size_t head_need(const uint8_t* p, size_t n) {
+    if (!n) return 0;
+    uint8_t op = p[0];
+    if (op == 0x10) return n < 5 ? 5 : 5 + 4 * size_t((rd32(p + 1) >> 16) + 1);
+    if ((op & 0x80) && op <= 0xBF) return n < 3 ? 3 : 3 + size_t(uint32_t(p[1]) << 8 | p[2]) * vertex_size(op & 7);
+    return 0;
+}
+
 } // namespace
 
 void gx_fifo_write(uint32_t value, int size) {
     std::lock_guard<std::mutex> lk(G);
-    for (int k = size - 1; k >= 0; k--) g_pending.push_back(uint8_t(value >> (8 * k)));
+    size_t old = g_pending.size();
+    g_pending.resize(old + size_t(size));
+    for (int k = 0; k < size; k++) g_pending[old + size_t(k)] = uint8_t(value >> (8 * (size - 1 - k)));
     s_bytes += size;
+    if (g_pending.size() < g_need) return;  // the head command is still incomplete
     size_t used = parse(g_pending.data(), g_pending.size(), 0);
     if (used) g_pending.erase(g_pending.begin(), g_pending.begin() + long(used));
+    g_need = head_need(g_pending.data(), g_pending.size());
 }
 
 uint16_t gx_pe_read16(uint32_t off) { std::lock_guard<std::mutex> lk(G); return g_pe[(off & 0x7F) >> 1]; }
@@ -182,6 +206,7 @@ bool gx_state_load(StateReader& r) {
     r.bytes(g.bp, sizeof(g.bp)); g.bp_mask = r.u32();
     if (!r.block(g.tmem, sizeof(g.tmem))) return false;
     r.vec(g_pending);
+    g_need = 0;  // re-derive from the loaded FIFO contents and registers on the next write
     r.bytes(g_pe, sizeof(g_pe));
     int16_t regs[4][4], konst[4][4];
     r.bytes(regs, sizeof(regs)); r.bytes(konst, sizeof(konst));

@@ -276,6 +276,17 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   layout once per primitive batch and reads array data through host pointers; `SSNE_CHECK_VERTICES=1` compares it
   with the reference decoder (0 mismatches over ~80 M vertices of intro + gameplay). The recompiled game code itself
   is a small share of the frame.
+* **Game thread, Linux pass** (i7-1360P, Mesa Iris, gameplay at 2x 16:9 from a save state, SIGPROF sampling): ~1,800
+  draws of ~12 vertices per frame, so per-draw work matters as much as per-vertex work. Vertex decode + lighting was
+  ~45% of the game thread, FIFO parsing ~8%, paired-single (de)quantization's `ldexp` ~3%, the game's own code ~14%.
+  Changes, all with identical output: the FIFO skips re-parsing until the pending head command can be complete (it
+  re-parsed the incomplete draw on every 4-byte write); display lists in plain RAM are copied with one memcpy; the
+  fast vertex decoder sets up lighting once per draw, computes each light's geometry once per vertex for all parts,
+  only transforms the normal when a lit part needs it, and reads attributes through host pointers; GQR scales use a
+  power-of-two table. `SSNE_CHECK_VERTICES=1`: 0 mismatches over 132 M vertices (boot to gameplay + gameplay). Net
+  effect is modest: game thread 8.5 -> 8.1 ms/frame. `-march=native` (with `-ffp-contract=off`, required: the
+  translator emits fmadd as `a * c + b`, and contraction would change the game's float results) measured no gain.
+  What remains is spread thin (vertex array reads, the game's code, per-draw TEV snapshots in the GPU recorder).
 * **Software renderer**: ~180 ns per written pixel, split between the rasterizer/TEV loop and bilinear sampling
   (memory bound: branch-free sampling and wrap fast paths measured no gain). It stays the fallback; the top bar now
   says when it is running and why (the log records which OpenGL version the driver offered).

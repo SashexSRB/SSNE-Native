@@ -12,9 +12,17 @@ uint8_t g_locked_cache[kLockedCacheSize];
 
 } // namespace ssne
 
+// 2^e for the GQR scale range (a 6-bit signed field, so e = -32..32): the same exact values std::ldexp(1.0, e) gives,
+// without a libm call on every paired-single load/store.
+static const struct Pow2 {
+    double v[65];
+    Pow2() { for (int e = -32; e <= 32; e++) v[e + 32] = std::ldexp(1.0, e); }
+} s_pow2;
+static inline double pow2(int e) { return e >= -32 && e <= 32 ? s_pow2.v[e + 32] : std::ldexp(1.0, e); }
+
 // Paired-single (de)quantization, GQR types: 0=f32 4=u8 5=u16 6=s8 7=s16.
 double ssne_dequantize(uint32_t ea, uint32_t type, int scale, int* bytes) {
-    double m = std::ldexp(1.0, -scale);
+    double m = pow2(-scale);
     switch (type) {
     case 4: *bytes = 1; return mem_read8(ea) * m;
     case 5: *bytes = 2; return mem_read16(ea) * m;
@@ -25,7 +33,7 @@ double ssne_dequantize(uint32_t ea, uint32_t type, int scale, int* bytes) {
 }
 
 void ssne_quantize(uint32_t ea, double v, uint32_t type, int scale, int* bytes) {
-    double s = v * std::ldexp(1.0, scale);
+    double s = v * pow2(scale);
     auto clamp = [](double x, double lo, double hi) { return x < lo ? lo : (x > hi ? hi : x); };
     switch (type) {
     case 4: *bytes = 1; mem_write8(ea, uint8_t(clamp(s, 0, 255))); return;
