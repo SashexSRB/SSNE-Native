@@ -236,6 +236,37 @@ void gpu_record_efb_copy(uint32_t cmd) {
         e.half = half;
         e.out_w = half ? w / 2 : w;
         e.out_h = half ? h / 2 : h;
+        // A copy into the rows of an earlier copy's texture: cutscenes render the letterboxed band only and copy it
+        // 72 rows into the full-frame scene texture, which the game then samples whole from its start. On the console
+        // the copy overwrites those rows in place; here it becomes a new copy of the enclosing texture that keeps the
+        // earlier copy's other rows (the renderer composites the two). Otherwise the lookup at the texture's start
+        // would keep finding the last full-frame copy, and cutscenes showed that frozen frame.
+        if (int bpp = copy_bpp(fmt)) {
+            int tile_w = bpp == 32 || bpp == 16 ? 4 : 8, tile_h = bpp == 4 ? 8 : 4;
+            uint32_t row_bytes = uint32_t(tile_h * ((e.out_w + tile_w - 1) / tile_w * tile_w) * bpp / 8);
+            for (auto& [addr, b] : g_copies) {
+                if (addr >= dst || b.fmt != fmt || b.intensity != e.intensity || b.out_w != e.out_w) continue;
+                uint32_t off = dst - addr;
+                if (off % row_bytes) continue;
+                int row = int(off / row_bytes) * tile_h;
+                if (row + e.out_h > b.out_h) continue;
+                if (mem_read32(addr) != kMarker0 || mem_read32(addr + 4) != kMarker1 ||
+                    mem_read32(addr + 8) != uint32_t(b.id >> 32) || mem_read32(addr + 12) != uint32_t(b.id)) continue;
+                c.base_copy_id = b.id;
+                c.base_w = b.out_w;
+                c.base_h = b.out_h;
+                c.dst_row = row;
+                e.addr = addr;
+                e.out_w = b.out_w;
+                e.out_h = b.out_h;
+                break;
+            }
+        }
+        if (c.base_copy_id) {
+            c.out_w = half ? w / 2 : w;  // the copied band (the composite's size is base_w x base_h)
+            c.out_h = half ? h / 2 : h;
+            dst = e.addr;
+        }
         g_copies[dst] = std::move(e);
         mem_write32(dst, kMarker0);
         mem_write32(dst + 4, kMarker1);
@@ -247,8 +278,10 @@ void gpu_record_efb_copy(uint32_t cmd) {
         c.copy_fmt = uint8_t(fmt);
         c.intensity = (cmd >> 15) & 1;
         c.copy_fmt_known = true;
-        c.out_w = g_copies[dst].out_w;
-        c.out_h = g_copies[dst].out_h;
+        if (!c.base_copy_id) {
+            c.out_w = g_copies[dst].out_w;
+            c.out_h = g_copies[dst].out_h;
+        }
         f.cmds.push_back(c);
         invalidate_textures();
     }

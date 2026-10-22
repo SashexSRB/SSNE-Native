@@ -36,6 +36,10 @@ struct GpuCmd {
     uint8_t copy_fmt;       // copy format (0-15, texture-copy numbering) and intensity flag
     bool intensity;
     bool copy_fmt_known;    // false only for frames loaded from old captures
+    // COPY_TEX into part of an earlier copy's texture (base_copy_id != 0): the result is a base_w x base_h copy that
+    // keeps the base copy's texels and has this copy (out_w x out_h) in rows dst_row.., as the console's memory would
+    uint64_t base_copy_id;
+    int base_w, base_h, dst_row;
 };
 
 struct GpuFrame {

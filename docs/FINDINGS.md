@@ -107,6 +107,23 @@ Rendering facts learned from the game:
   frames; `SSNE_GPU_DUMP_FRAME=n` dumps the GPU EFB at every copy/clear of frame n with a draw log, to compare with
   the software renderer's `SSNE_GX_TRACE_FRAME` dumps.
 
+## In-engine cutscenes showed a frozen gameplay frame (fixed)
+* Report: in-engine cutscenes start (letterbox, "Press A to skip") but the camera doesn't move; FMVs are fine.
+  The game was right: its cutscene camera (a separate object, e.g. 81611DDC in Senator Cicero's Villa, passed to the
+  scene camera function 8014C090 instead of the player camera) holds keyframed shots and dollies, verified with RAM
+  snapshots. The picture was not: every cutscene frame showed the last gameplay frame.
+* Each frame the game copies the rendered scene (RGB565, 640x448, to 002EDB60, plus a half-size GB8 copy to 00379B60)
+  and redraws it full-screen. Cutscenes render only the letterboxed band and copy rows 72-367 into the *same*
+  textures, 72 rows in (00304360 = 002EDB60 + 18 tile rows x 5120 bytes; 0037F560 for the half-size one), then sample
+  them whole from their start. The GPU renderer keyed copies by their exact destination, so the lookup at 002EDB60
+  kept returning the last full-frame (gameplay) copy.
+* Fix: a copy whose destination lies inside an earlier tracked copy (same format, width and intensity, a whole number
+  of tile rows in, fitting inside it, the earlier copy's marker still intact) is recorded as a new copy of the
+  enclosing texture (`GpuCmd::base_copy_id`, `dst_row`); the renderer starts from the earlier copy's texels and writes
+  the band into its rows, as the console's texture memory would. Normal copies take the unchanged path. Capture
+  format 2 stores the new fields (format 1 still loads). Checked headless from a save state taken in the cutscene,
+  with and without MSAA.
+
 ## Widescreen
 * HUD anchoring (fixed after build 15): the game draws 2D text one glyph per draw, so anchoring each draw to
   the nearest screen edge by position scattered letters of pause-menu and message text. 2D draws are now scaled

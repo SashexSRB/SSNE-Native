@@ -16,7 +16,7 @@
 namespace ssne::gx {
 
 namespace {
-constexpr uint32_t kVersion = 1;
+constexpr uint32_t kVersion = 2;  // 2: copies into part of an earlier copy (base_copy_id ...)
 
 template <class T> void put(FILE* f, const T& v) { fwrite(&v, sizeof(T), 1, f); }
 template <class T> bool get(FILE* f, T& v) { return fread(&v, sizeof(T), 1, f) == 1; }
@@ -90,6 +90,7 @@ void gpu_capture_frame(const GpuFrame& fr) {
 #else
         put(f, uint8_t(1));
 #endif
+        put(f, c.base_copy_id); put(f, c.base_w); put(f, c.base_h); put(f, c.dst_row);
     }
     put(f, uint32_t(fr.vtx.size()));
     fwrite(fr.vtx.data(), 1, fr.vtx.size(), f);
@@ -103,7 +104,7 @@ std::unique_ptr<GpuFrame> gpu_load_captured_frame(const std::string& path, std::
     auto fail = [&](const char* why) { err = path + ": " + why; fclose(f); return std::unique_ptr<GpuFrame>(); };
     char magic[8];
     uint32_t ver;
-    if (fread(magic, 1, 8, f) != 8 || memcmp(magic, "SSNEGPUF", 8) || !get(f, ver) || ver != kVersion) return fail("bad header");
+    if (fread(magic, 1, 8, f) != 8 || memcmp(magic, "SSNEGPUF", 8) || !get(f, ver) || ver < 1 || ver > kVersion) return fail("bad header");
     auto fr = std::make_unique<GpuFrame>();
     get(f, fr->wide);
     uint32_t nt;
@@ -151,6 +152,7 @@ std::unique_ptr<GpuFrame> gpu_load_captured_frame(const std::string& path, std::
 #ifdef SSNE_GPU_CMD_HAS_ZSNAP
         c.zsnap = zsnap != 0;
 #endif
+        if (ver >= 2) { get(f, c.base_copy_id); get(f, c.base_w); get(f, c.base_h); get(f, c.dst_row); }
     }
     uint32_t nv;
     get(f, nv);

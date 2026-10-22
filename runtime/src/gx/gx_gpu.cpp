@@ -1275,15 +1275,36 @@ void run_clear(const GpuCmd& cmd) {
 GLint g_copy_u_src = -1;
 
 void run_copy_tex(const GpuCmd& cmd) {
-    int w = std::max(1, SX(std::max(1, cmd.out_w))), h = std::max(1, SY(std::max(1, cmd.out_h)));
+    // A copy into part of an earlier copy (see GpuCmd::base_copy_id): start from the earlier copy's texels and write
+    // this copy's rows (dst_row..) into them.
+    const bool comp = cmd.base_copy_id != 0;
+    int w = std::max(1, SX(std::max(1, comp ? cmd.base_w : cmd.out_w)));
+    int h = std::max(1, SY(std::max(1, comp ? cmd.base_h : cmd.out_h)));
+    int yoff = comp ? SY(cmd.dst_row) : 0, bh = comp ? std::min(h - yoff, std::max(1, SY(std::max(1, cmd.out_h)))) : h;
     RT t = rt_acquire(w, h);
     PooledTex entry{t, g_frame_no};
-    GLint rect[4] = {SX(cmd.x), SY(cmd.y), cmd.half ? 1 : 0, 0};  // source origin in internal pixels
+    // Source origin in internal pixels; the shader reads it at gl_FragCoord (x2 for half-size copies), which starts at
+    // yoff when writing into the composite's rows.
+    GLint rect[4] = {SX(cmd.x), SY(cmd.y) - (cmd.half ? 2 * yoff : yoff), cmd.half ? 1 : 0, 0};
     int nat = cmd.copy_fmt_known ? natural_tex_fmt(cmd.copy_fmt) : -1;
     // Full-size copies (texel exact) also get their natural-format conversion in the same pass. Half-size copies are
     // box filtered: their stored value is rounded by the framebuffer, so they keep the separate pass on the result.
-    bool mrt = g_copy_mrt_prog && !cmd.half && nat >= 0 && !(cmd.copy_fmt == 6 && nat == 6);
+    // Composites keep only the raw copy (reads reinterpret it as needed).
+    bool mrt = g_copy_mrt_prog && !comp && !cmd.half && nat >= 0 && !(cmd.copy_fmt == 6 && nat == 6);
     pass_state();
+    if (comp) {
+        auto base = g_copies.find(cmd.base_copy_id);
+        if (base != g_copies.end()) {
+            const RT& b = base->second.rt;
+            BindFramebuffer(READ_FRAMEBUFFER, b.fbo);
+            BindFramebuffer(DRAW_FRAMEBUFFER, t.fbo);
+            BlitFramebuffer(0, 0, b.w, b.h, 0, 0, w, h, COLOR_BUFFER_BIT, NEAREST);
+        } else {
+            BindFramebuffer(FRAMEBUFFER, t.fbo);
+            ClearColor(0, 0, 0, 0);
+            Clear(COLOR_BUFFER_BIT);
+        }
+    }
     if (mrt) {
         RT conv = rt_acquire(w, h);
         // Blend factors left over from a dual-source (SRC1) blend make a 2-target draw invalid on some drivers
@@ -1301,14 +1322,15 @@ void run_copy_tex(const GpuCmd& cmd) {
         entry.conv_fmt = nat;
     } else {
         BindFramebuffer(FRAMEBUFFER, t.fbo);
-        Viewport(0, 0, w, h);
+        Viewport(0, yoff, w, bh);
         sc_program(g_copy_prog);
         Uniform4iv(g_copy_u_rect, 1, rect);
     }
     if (g_msaa > 1) {
         GLuint fbo_now = mrt ? g_mrt_fbo : t.fbo;
-        int sw = cmd.half ? 2 * w + 2 : w, sh = cmd.half ? 2 * h + 2 : h;
-        efb_color_for_read(rect[0], rect[1], std::min(rect[0] + sw, SX(EFB_W)), std::min(rect[1] + sh, SY(EFB_H)));
+        int sx = SX(cmd.x), sy = SY(cmd.y);  // source rectangle (rect[1] is shifted for composites)
+        int sw = cmd.half ? 2 * w + 2 : w, sh = cmd.half ? 2 * bh + 2 : bh;
+        efb_color_for_read(sx, sy, std::min(sx + sw, SX(EFB_W)), std::min(sy + sh, SY(EFB_H)));
         BindFramebuffer(FRAMEBUFFER, fbo_now);
     }
     sc_texture(0, g_msaa > 1 ? g_resolve_tex : g_efb_color);
