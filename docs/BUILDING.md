@@ -11,14 +11,22 @@ Binaries land in `build\bin\`.
 
 ## Windows binaries from Linux (llvm-mingw)
 ```sh
-cmake -B build-win -G Ninja -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake -DLLVM_MINGW=/opt/llvm-mingw
+cmake -B build-win -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake \
+      -DLLVM_MINGW=/opt/llvm-mingw \
+      -DSSNE_BUILD_TESTS=OFF
 ninja -C build-win
 ```
 The output is statically linked and needs only standard Windows DLLs (msvcrt, OpenGL32). Releases use the
 **MSVCRT** llvm-mingw variant (`llvm-mingw-20241119-msvcrt-*`), the same one `data/kit/kit.ini` downloads on the
 player's PC, so everything runs on Windows 7 SP1 / 8.1 / 10 / 11 without the UCRT update; check a build with
 `llvm-readobj --coff-imports` (no `api-ms-win-crt-*` DLLs).
+
+### Windows release (launcher + build kit)
+```sh
+tools/make_public_release.sh <out_dir> /opt/llvm-mingw
+```
 
 ## Linux
 Everything builds natively (launcher, port, tools, tests). SDL2 is fetched and linked statically (2.32.10 on Linux,
