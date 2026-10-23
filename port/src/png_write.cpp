@@ -3,6 +3,7 @@
 // pulling in a PNG library.
 #include "png_write.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

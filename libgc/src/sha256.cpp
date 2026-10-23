@@ -1,5 +1,6 @@
 #include "gc/sha256.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>

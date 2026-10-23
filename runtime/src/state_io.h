@@ -1,5 +1,6 @@
 // Save states: byte streams written / read by each runtime module (savestate.cpp drives them).
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <string>

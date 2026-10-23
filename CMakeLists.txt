@@ -6,7 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(SSNE_BUILD_LAUNCHER "Build the SDL2/ImGui launcher" ON)
 option(SSNE_BUILD_PORT     "Build the PC port executable"   ON)
-option(SSNE_BUILD_TESTS    "Build tests"                    ON)
+# Tests run the freshly built translator during the build, which can't work when cross-compiling (e.g. Windows
+# binaries from Linux), so they default to off then.
+if(CMAKE_CROSSCOMPILING)
+  option(SSNE_BUILD_TESTS  "Build tests"                    OFF)
+else()
+  option(SSNE_BUILD_TESTS  "Build tests"                    ON)
+endif()
 # Directory produced by `ssne-recomp` (see docs/BUILDING.md). If empty, the port builds without
 # game code and only shows a status screen.
 set(SSNE_RECOMPILED_DIR "" CACHE PATH "Directory holding recompiled game code (funcs_*.cpp)")

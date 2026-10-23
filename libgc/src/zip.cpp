@@ -1,5 +1,6 @@
 #include "gc/zip.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>

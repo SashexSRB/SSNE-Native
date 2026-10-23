@@ -2,6 +2,7 @@
 
 #include <imgui_internal.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <cmath>
