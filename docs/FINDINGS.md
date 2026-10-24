@@ -124,6 +124,24 @@ Rendering facts learned from the game:
   format 2 stores the new fields (format 1 still loads). Checked headless from a save state taken in the cutscene,
   with and without MSAA.
 
+## Jeep stopped driving above 60 fps (fixed)
+* Report (Via Aurelia, keyboard + mouse, 144 fps limit): after driving and shooting for a while the jeep no longer
+  steers or accelerates; the player has to get out. It also jolts while moving above 60 fps.
+* A recorder build (state every 5 s, input log per frame) showed the port's input was right (W = full stick up,
+  mouse = C-stick, R = fire) up to the pause. From the last recorded state the jeep drives at 60, 72, 90 and 120 fps
+  and stays put at 144 and 240 fps with the throttle held: the jeep's physics (CcSeriousJeep / CcWheeledVehicle,
+  `Jeep.cfg` "DYNE" parameters) break with short time steps, and once stopped it can't get going again.
+* Vehicles: CcSeriousJeep::Enter 80179C98 -> CcWheeledVehicle::Enter 8017290C -> CcBaseVehicle::Enter 8016EAD4
+  (r3 = vehicle, r4 = player); Exit 80179D84 / 80172A40 / 8016EB6C. The combine harvester (Feudal China) is
+  CcSeriousCombine (Enter 80176148, Exit 801761DC, `Combine.cfg`), also a CcWheeledVehicle. The player's generic
+  enter (800B54D8, r3 = player, r4 = vehicle) calls the vehicle's Enter through its vtable and on success stores the
+  vehicle at player+0x6C4 (0 on foot), so the field covers every vehicle. The player's per-frame update 800BEEC8 (r3 = player) runs on foot and while driving, not in the pause
+  menu; the look update 800BFCA4 (mouse aim) does not run while driving.
+* Fix: a hook on 800BEEC8 reads player+0x6C4 each frame; while the player is in a vehicle, frame limits above 60
+  and unlimited use the game's own 60 fps pacing (on foot is unchanged). Works after loading a state taken in the
+  jeep. `player_control_active()` now also counts driving, so Space presses L in the jeep instead of A (which is
+  "Exit" there), and button prompts use the gameplay map. Same address on PAL (unchanged below 800E270C).
+
 ## Widescreen
 * HUD anchoring (fixed after build 15): the game draws 2D text one glyph per draw, so anchoring each draw to
   the nearest screen edge by position scattered letters of pause-menu and message text. 2D draws are now scaled
@@ -155,6 +173,8 @@ Rendering facts learned from the game:
 * Frame limit: the Flip wait is skipped when the limit is not 60, and frames are paced on the host clock at each
   display copy. Headless test (`--norender 97 --fps N`, walking forward 4 s): 60, 141 and ~1350 fps all end at the
   same spot, so movement scales with real time.
+* Exception: while the player is in a vehicle the game runs at 60 fps whatever the limit (see "Jeep stopped
+  driving above 60 fps").
 * Debug: `SSNE_TRACE_CALLS=addr,...` counts calls per second and prints guest backtraces (pass-through hooks).
 
 ## Indirect texturing

@@ -30,6 +30,7 @@ void log_message(const std::string& line);
 // Widescreen: horizontal field-of-view factor applied to the game's perspective projections
 // (1 = 4:3, 4/3 = 16:9, 7/4 = 21:9). Takes effect on the next projection the game computes.
 // Frame rate limit: 60 = the game's own VI-synced pacing (default), N > 60 = host-paced cap, 0 = unlimited.
+// While the player is in a vehicle the game runs at 60 fps whatever the limit (its physics need that step).
 void set_frame_limit(int fps);
 int frame_limit();
 void frame_limiter_wait();  // called by GX at each display copy
@@ -38,8 +39,8 @@ void frame_limiter_wait();  // called by GX at each display copy
 void mouse_aim_add(double yaw, double pitch);
 bool mouse_aim_available();
 bool mouse_aim_active();
-// True while the player controls Sam (the game ran its per-frame look update in the last 200 ms): false in
-// menus, cutscenes, loading and the pause screen.
+// True while the player controls Sam (the game ran its per-frame look update in the last 200 ms) or drives a
+// vehicle: false in menus, cutscenes, loading and the pause screen.
 bool player_control_active();
 // Pause: the game thread stops at its next display copy until unpaused (port settings menu).
 void set_paused(bool paused);

@@ -176,12 +176,13 @@ struct GameAddresses {
     uint32_t pad_clamp;      // PADClamp (called after PADRead in the VI retrace callback)
     uint32_t pad_process;    // the game's controller processing (rescales the sticks in place)
     uint32_t flip;           // CcEngine::Flip (save states are taken at its start)
+    uint32_t player_update;  // the player's per-frame update (r3 = player), on foot and in vehicles
 };
 const GameAddresses kVersions[] = {
     {"G3BE9G", 0x800BFCA4, 0x8011855C, 0x801BF964, 0x80181590, 0x801BA874, 0x801BA5EC, 0x8014CDF0,
-     {0x8014C690, 0x8014C6B8, 0x8014C6D8, 0x8014C6FC}, 0x801C0BAC, 0x8014F83C, 0x801183F0},  // USA Rev 1 (FINAL.107)
+     {0x8014C690, 0x8014C6B8, 0x8014C6D8, 0x8014C6FC}, 0x801C0BAC, 0x8014F83C, 0x801183F0, 0x800BEEC8},  // USA Rev 1 (FINAL.107)
     {"G3BP9G", 0x800BFCA4, 0x80118514, 0x801BF904, 0x80181530, 0x801BA814, 0x801BA58C, 0x8014CDA8,
-     {0x8014C648, 0x8014C670, 0x8014C690, 0x8014C6B4}, 0x801C0B4C, 0x8014F7F4, 0x801183A8},  // Europe (FINAL.113)
+     {0x8014C648, 0x8014C670, 0x8014C690, 0x8014C6B4}, 0x801C0B4C, 0x8014F7F4, 0x801183A8, 0x800BEEC8},  // Europe (FINAL.113)
 };
 const GameAddresses* g_ver = &kVersions[0];
 void select_version() {
@@ -376,19 +377,56 @@ void install_call_tracer() {
 }
 } // namespace
 
+// ---- vehicles. The player's per-frame update (800BEEC8, r3 = player) runs on foot and while driving; the
+// player's vehicle (CcBaseVehicle::Enter / Exit) is at +0x6C4, 0 on foot. The jeep's physics only work at the
+// original time step: above ~120 fps it jolts, and once stopped it no longer drives or steers (it still does at
+// 60 fps from the same state). So frames are paced at 60 fps while the player is in a vehicle.
+namespace {
+const uint32_t kPlayerUpdateSig[6] = {0x9421FF18u, 0x7C0802A6u, 0xDB6100C0u, 0xDB8100C8u, 0xDBA100D0u, 0xDBC100D8u};
+PPCFunc g_orig_player_update = nullptr;
+std::atomic<int64_t> g_vehicle_last_ms{-100000};
+
+void hle_player_update(PPCContext& ctx) {
+    uint32_t player = ctx.r[3];
+    PPCFunc* slot = ssne_hook_slot(g_ver->player_update);
+    *slot = nullptr;
+    g_orig_player_update(ctx);
+    *slot = &hle_player_update;
+    if (player < 0x80000000u || player >= 0x81800000u) return;
+    uint32_t vehicle = mem_read32(player + 0x6C4);
+    if (vehicle >= 0x80000000u && vehicle < 0x81800000u) g_vehicle_last_ms = now_ms();
+}
+
+void install_vehicle_detector() {
+    const SSNEFuncEntry* f = ssne_find_func(g_ver->player_update);
+    bool ok = f;
+    for (int k = 0; k < 6 && ok; k++) ok = mem_read32(g_ver->player_update + uint32_t(k) * 4) == kPlayerUpdateSig[k];
+    if (!ok) { fprintf(stdout, "[ssne] vehicles: player update not found (different game build?)\n"); return; }
+    g_orig_player_update = f->func;
+    ssne_install_hook(g_ver->player_update, hle_player_update);
+}
+
+bool in_vehicle() { return now_ms() - g_vehicle_last_ms.load() < 200; }
+} // namespace
+
 // ---- frame rate limit. The game measures real frame time (median of the last 5 frames, 8015544C) and
 // CcEngine::Flip waits for the next VI retrace when no retrace happened since the previous flip, capping it at
 // 59.94 fps. With a different limit that wait is skipped and frames are paced on the host clock instead
-// (frame_limiter_wait, called at each display copy).
+// (frame_limiter_wait, called at each display copy). In a vehicle, limits above 60 (and unlimited) use the
+// game's own 60 fps pacing.
 namespace {
 std::atomic<int> g_frame_limit{60};
+int effective_frame_limit() {
+    int lim = g_frame_limit.load();
+    return (lim <= 0 || lim > 60) && in_vehicle() ? 60 : lim;
+}
 PPCFunc g_orig_vi_wait = nullptr;
 // CcEngine::Flip's call to VIWaitForRetrace returns here (USA 80118560)
 uint32_t flip_wait_return() { return g_ver->flip_bl + 4; }
 bool g_flip_wait_ok = false;
 
 void hle_VIWaitForRetrace(PPCContext& ctx) {
-    if (g_flip_wait_ok && ctx.lr == flip_wait_return() && g_frame_limit.load() != 60) return;
+    if (g_flip_wait_ok && ctx.lr == flip_wait_return() && effective_frame_limit() != 60) return;
     PPCFunc* slot = ssne_hook_slot(g_ver->vi_wait);
     *slot = nullptr;
     g_orig_vi_wait(ctx);
@@ -559,7 +597,7 @@ void mouse_aim_add(double yaw, double pitch) {
 }
 bool mouse_aim_available() { return g_orig_look != nullptr; }
 bool mouse_aim_active() { return g_orig_look && now_ms() - g_aim_last_ms.load() < 200; }
-bool player_control_active() { return mouse_aim_active(); }
+bool player_control_active() { return mouse_aim_active() || in_vehicle(); }
 
 void set_frame_limit(int fps) { g_frame_limit = fps < 0 ? 0 : fps; }
 int frame_limit() { return g_frame_limit.load(); }
@@ -570,7 +608,7 @@ bool paused() { return g_paused.load(); }
 
 void frame_limiter_wait() {
     while (g_paused.load()) std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    int lim = g_frame_limit.load();
+    int lim = effective_frame_limit();
     if (lim == 60 || lim <= 0 || !g_flip_wait_ok) return;
     using clk = std::chrono::steady_clock;
     static clk::time_point next = clk::now();
@@ -605,6 +643,7 @@ void install_sdk_hooks() {
     fprintf(stdout, "[ssne] installed %d native SDK replacements\n", n);
     if (!no_game_hooks) {
         install_frame_limiter();
+        install_vehicle_detector();
         install_mouse_aim();
         install_pad_fix();
         install_savestates();
