@@ -4,6 +4,16 @@ Silly ReEncounter - changes since the first public release
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE (github.com/SashexSRB/SSNE-Native)
+  - Linux version: native launcher and game, built on your PC with the system's compiler (see README-Linux.txt).
+  - Fix: the jeep (Via Aurelia and other levels) stopped steering and accelerating after a while, and jolted
+    while driving, when the frame limit was above 60 fps. Its physics only work at the original frame rate, so
+    the game now runs at 60 fps while you drive any vehicle (jeep, combine harvester); on foot your limit still
+    applies.
+  - Fix: Space (jump) pressed A in vehicles, which is "Exit"; it now stays jump there.
+  - Fix: in-engine cutscenes (GPU renderer) showed a frozen gameplay frame instead of the cutscene.
+  - Slightly lower CPU use on the game thread (graphics command and vertex processing).
+
 NEW FEATURES
   Save states
     - Save anywhere with F5 and come back to that exact moment with F9. Five slots (Shift+F5 picks the next one);
