@@ -9,6 +9,12 @@
 namespace ssne {
 
 void gx_fifo_write(uint32_t value, int size);   // CPU write to the WG pipe (1/2/4 bytes)
+// The command stream is processed on a separate GX thread (like the console's GPU, it runs in parallel with the
+// game's code); SSNE_GX_SYNC=1 or gx_set_threaded(false) before the first write processes it on the writing thread.
+void gx_set_threaded(bool on);
+// Waits until the GX thread has processed everything written so far (save states; game-thread state that the
+// command processing reads, such as the frame's widescreen factor, changing). No-op when not threaded.
+void gx_sync();
 uint16_t gx_pe_read16(uint32_t off);             // 0xCC001000 block
 void gx_pe_write16(uint32_t off, uint16_t v);
 uint16_t gx_cp_read16(uint32_t off);             // 0xCC000000 block

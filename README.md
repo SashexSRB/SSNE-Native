@@ -107,6 +107,9 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 - **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus and cutscenes stay 4:3 with bars on the sides,
   because the game places 3D models into 2D menu layouts.
 - **Pause in the background** (on by default): switching to another window pauses and silences the game.
+- **Graphics thread:** the game's graphics commands are processed on their own CPU thread, in parallel with the
+  game (like the console's GPU). If something looks wrong that didn't before, set `gx_thread = 0` in `settings.ini`
+  and restart, and please report it.
 - **Linux:** Print Screen is usually taken by the desktop; use Shift+F12. If Select Disc doesn't open a file
   dialog, install `zenity` or `kdialog`, or drag the disc image onto the window.
 - **Build problems:** the launcher shows the error, and the full logs are in `build-kit/work/logs/`.

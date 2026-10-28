@@ -15,6 +15,7 @@
 #include <fstream>
 #include <mutex>
 
+#include "ssne/gx.h"
 #include "ssne/recomp_hooks.h"
 #include "ssne/runtime.h"
 #include "state_io.h"
@@ -232,6 +233,7 @@ void savestate_safe_point(PPCContext& ctx) {
         std::lock_guard<std::mutex> lk(g_mx);
         g_req = false;
     }
+    gx_sync();  // the GX thread writes RAM too (EFB copies): let it finish before RAM is saved or replaced
     if (save) do_save(ctx, path);
     else do_load(ctx, path);
 }

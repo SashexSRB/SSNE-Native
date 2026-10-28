@@ -372,6 +372,22 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   (so `decode_vertices_fast`, 19% of the profile, found no data), and clang 19 / 14 set the top 4 bits of the 64-bit
   function hash differently from clang 23 (the low 60 bits, the control flow, are equal). Retargeting by demangled
   signature + low hash bits against the release compiler's own names matches ~98% of the counts for both.
+* **GX thread** (Dolphin's "dual core"): the game's writes to the write-gather pipe go into a 4 MB ring buffer
+  (one byte store per byte and one atomic store per write, no lock; before, every 4-byte write took a mutex) and a
+  separate thread parses them: vertex processing, the renderers' recording, EFB copies and the PE draw-done / token
+  interrupts all run there, in parallel with the game's code, as GPU and CPU do on the console. Profile before the
+  change: ~70% of the game thread was command processing, ~28% the game's code; the game waits for draw done about
+  twice per frame, so the gain is the overlap: uncapped 1x gameplay 344 -> 410-490 fps (same binary, SSNE_GX_SYNC=1
+  for the old path). Synchronization: the game sees the PE registers as the processing has reached them (no catching
+  up, like the hardware; they got their own lock so a read never waits for a parse); `gx_sync()` waits until
+  everything written has been processed, for save states (before RAM is saved or replaced: the processing writes RAM
+  too, EFB copy markers) and when the frame's widescreen factor changes (read when recording the display copy).
+  Sleeping uses mutex + condition variable, not C++20 atomic waits (libc++ on Windows can use Windows 8 functions).
+  Checked with SSNE_CHECK_STATE / SSNE_CHECK_VERTICES (boot, menus, intro, Arena, jeep), frame dumps of logos, FMVs,
+  menus, the level 1 in-engine cutscene (camera cuts intact), gameplay at 4:3 and 16:9, the software renderer, and
+  save / load states in the windowed game. `gx_thread = 0` in settings.ini (or SSNE_GX_SYNC=1) restores the old
+  single-thread processing. Whole perf branch (snapshot reuse, lighting, PGO, GX thread): 1x uncapped gameplay
+  272 -> ~490 fps on the i7-1360P.
 * **Software renderer**: ~180 ns per written pixel, split between the rasterizer/TEV loop and bilinear sampling
   (memory bound: branch-free sampling and wrap fast paths measured no gain). It stays the fallback; the top bar now
   says when it is running and why (the log records which OpenGL version the driver offered).

@@ -92,7 +92,7 @@ Settings::Settings() {
 }
 
 void Settings::reset_graphics() {
-    renderer = "gpu"; scale = 0; aspect = 1; antialiasing = "off"; anisotropy = 1; fps_limit = 60; fov = 63; vsync = true; sync_display = true; fullscreen = false; top_bar = 2;
+    renderer = "gpu"; scale = 0; aspect = 1; antialiasing = "off"; anisotropy = 1; fps_limit = 60; fov = 63; vsync = true; sync_display = true; gx_thread = true; fullscreen = false; top_bar = 2;
 }
 
 void Settings::reset_audio() { volume = 100; music_volume = 100; sfx_volume = 100; muted = false; audio_hq = true; }
@@ -271,6 +271,7 @@ bool load_settings(Settings& s, const std::string& path) {
     get("fov", s.fov);
     get("vsync", s.vsync);
     get("sync_to_display", s.sync_display);
+    get("gx_thread", s.gx_thread);
     {
         bool old = true;  // before version 5: show_top_bar = 0/1
         auto it = kv.find("show_top_bar");
@@ -430,6 +431,7 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "fov = " << s.fov << "    # gameplay vertical field of view in degrees, 63 = original\n";
     o << "vsync = " << (s.vsync ? 1 : 0) << "\n";
     o << "sync_to_display = " << (s.sync_display ? 1 : 0) << "    # 60 fps on a 60 Hz display: game ticks with the display\n";
+    o << "gx_thread = " << (s.gx_thread ? 1 : 0) << "    # graphics commands on their own CPU thread (faster); 0 = on the game's thread (takes effect at start)\n";
     o << "top_bar = " << s.top_bar << "    # info bar at the top: 0 hidden, 1 frame rate only, 2 full (Shift+F1)\n";
     o << "display = " << s.display << "    # monitor for fullscreen (0 = first, -1 = where the window is)\n";
     o << "window_x = " << s.win_x << "\nwindow_y = " << s.win_y << "\nwindow_w = " << s.win_w << "\nwindow_h = " << s.win_h << "\n";

@@ -15,6 +15,7 @@
 #include <iterator>
 #include <string>
 
+#include "ssne/gx.h"
 #include "gc/dol.h"
 #include "ssne/hw.h"
 #include "ssne/input.h"
@@ -205,6 +206,9 @@ int64_t now_ms() {
 float effective_widescreen(uint32_t caller) {
     if (caller == g_ver->weapon_lr) g_last_gameplay_ms = now_ms();
     float f = (now_ms() - g_last_gameplay_ms.load() < 400) ? g_widescreen.load() : 1.0f;
+    // The GX thread reads the factor when it records the frame's display copy: let it finish the frames rendered
+    // with the old factor first (the factor changes only between gameplay and the front end).
+    if (f != g_frame_factor.load()) gx_sync();
     g_frame_factor = f;
     return f;
 }
