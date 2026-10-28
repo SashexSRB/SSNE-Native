@@ -382,6 +382,12 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   up, like the hardware; they got their own lock so a read never waits for a parse); `gx_sync()` waits until
   everything written has been processed, for save states (before RAM is saved or replaced: the processing writes RAM
   too, EFB copy markers) and when the frame's widescreen factor changes (read when recording the display copy).
+  Draw done is waited for on the writing thread too (the producer recognizes GXSetDrawDone's BP 0x45 write: the byte
+  0x61, then 0x45xxxxxx; all 2,975 of a test run matched): the game's GPU watchdog (CcEngine, 8011731C on its
+  retrace callback) counts retraces spent in GXDrawDone (801173F8 sets the flag around it), prints "System looks hung
+  but gpu is idle" after 30 and resets the GPU (801171B4) after 600. Sleeping in GXDrawDone lets the retrace callback
+  run (the first GX thread build printed the message while loading with an uncapped frame rate and 8x MSAA); waiting
+  in host code doesn't, as with the synchronous processing. Same speed gain.
   Sleeping uses mutex + condition variable, not C++20 atomic waits (libc++ on Windows can use Windows 8 functions).
   Checked with SSNE_CHECK_STATE / SSNE_CHECK_VERTICES (boot, menus, intro, Arena, jeep), frame dumps of logos, FMVs,
   menus, the level 1 in-engine cutscene (camera cuts intact), gameplay at 4:3 and 16:9, the software renderer, and

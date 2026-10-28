@@ -294,6 +294,15 @@ void gx_fifo_write(uint32_t value, int size) {
         std::lock_guard<std::mutex> lk(WM);
         g_wake_cv.notify_one();
     }
+    // Draw done (GXSetDrawDone writes BP 0x45 as the byte 0x61, then 0x45xxxxxx): the game waits for it next
+    // (GXDrawDone, about twice per frame). Wait here, in host code, as the synchronous processing did. Waiting in the
+    // game's GXDrawDone instead lets its retrace callback run, and the game's GPU watchdog counts retraces spent there:
+    // after 30 it reports "System looks hung", after 600 it resets the GPU (with uncapped frame rates, retraces come
+    // fast). Something else that happens to look like this only costs an extra wait.
+    static bool after_bp_opcode = false;
+    bool draw_done = after_bp_opcode && size == 4 && (value >> 24) == 0x45;
+    after_bp_opcode = size == 1 && (value & 0xFF) == 0x61;
+    if (draw_done) gx_sync();
 }
 
 // No catching up with the GX thread here: like the console's PE registers, these show the events the command
