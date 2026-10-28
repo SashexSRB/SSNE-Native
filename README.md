@@ -26,9 +26,11 @@ which made all of this possible. It adds a Linux version, fixes and PC-style con
 
 ## How to play
 
-1. **Get the launcher package** for your system. It contains the launcher and the build kit, but no game code.
-   How to make it is described in [docs/BUILDING.md](docs/BUILDING.md) ("Linux release" / "Windows release").
-   Put it in a folder you can write to: the game data, saves and settings are kept next to it.
+1. **Download the launcher package** for your system from
+   [Releases](https://github.com/SashexSRB/SSNE-Native/releases) (`...-Linux-x86_64.tar.gz` or
+   `...-Windows-x64.zip`) and unpack it into a folder you can write to: the game data, saves and settings are
+   kept next to it. The package contains the launcher and the build kit, but no game code. To build it yourself,
+   see [docs/BUILDING.md](docs/BUILDING.md).
 2. **Start the launcher**: `SillyReEncounter` (Linux) or `SillyReEncounter.exe` (Windows).
 3. **Select Disc**: pick your disc image, or drag it onto the launcher window. The launcher checks that it is the
    right game:

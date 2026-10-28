@@ -4,7 +4,7 @@ Silly ReEncounter - changes since the first public release
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
-SSNE-NATIVE (github.com/SashexSRB/SSNE-Native)
+SSNE-NATIVE 1.0 (github.com/SashexSRB/SSNE-Native)
   - Linux version: native launcher and game, built on your PC with the system's compiler (see README-Linux.txt).
   - Fix: the jeep (Via Aurelia and other levels) stopped steering and accelerating after a while, and jolted
     while driving, when the frame limit was above 60 fps. Its physics only work at the original frame rate, so
