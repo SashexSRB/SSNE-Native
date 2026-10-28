@@ -213,10 +213,11 @@ void draw_background(ImDrawList* dl, ImVec2 p0, ImVec2 p1, float t) {
 ImVec2 chunky_text(ImDrawList* dl, ImVec2 pos, float size, const char* text, Look look, float t, float small) {
     ImFont* f = fonts.display;
     const float fs = f->FontSize;
-    ImU32 c_top = kYellow, c_bot = kOrange, c_out = kOutline;
-    if (look == Look::Selected) { c_top = IM_COL32(255, 255, 190, 255); c_bot = IM_COL32(255, 160, 10, 255); }
+    ImU32 c_top = kYellow, c_bot = kOrange, c_out = kOutline, c_edge = kEdge;
+    if (look == Look::Selected) { c_top = IM_COL32(255, 240, 90, 255); c_bot = IM_COL32(247, 160, 20, 255); }
     if (look == Look::Disabled) {
-        c_top = IM_COL32(150, 160, 215, 255); c_bot = IM_COL32(80, 90, 160, 255); c_out = IM_COL32(14, 16, 60, 255);
+        c_top = IM_COL32(150, 160, 215, 255); c_bot = IM_COL32(80, 90, 160, 255);
+        c_out = IM_COL32(14, 16, 60, 255); c_edge = IM_COL32(6, 6, 30, 255);
     }
     const float outline = std::max(2.0f, size * 0.065f);
     float x = pos.x;
@@ -245,7 +246,11 @@ ImVec2 chunky_text(ImDrawList* dl, ImVec2 pos, float size, const char* text, Loo
             // Shadow
             int v0 = dl->VtxBuffer.Size;
             dl->AddText(f, gs, gp + ImVec2(size * 0.05f, size * 0.08f), kShadow, s);
-            // Outline ring
+            // Outline rings: the thin dark edge, then the thick red outline inside it
+            for (int d = 0; d < 16; d++) {
+                float a = d * IM_PI / 8;
+                dl->AddText(f, gs, gp + ImVec2(std::cos(a), std::sin(a)) * (outline + std::max(1.0f, size * 0.025f)), c_edge, s);
+            }
             for (int d = 0; d < 16; d++) {
                 float a = d * IM_PI / 8;
                 dl->AddText(f, gs, gp + ImVec2(std::cos(a), std::sin(a)) * outline, c_out, s);
@@ -256,7 +261,7 @@ ImVec2 chunky_text(ImDrawList* dl, ImVec2 pos, float size, const char* text, Loo
             float gy0 = y + g->Y0 * k, gy1 = y + g->Y1 * k;
             for (int v = vf; v < dl->VtxBuffer.Size; v++) {
                 float tt = (dl->VtxBuffer[v].pos.y - gy0) / std::max(1.0f, gy1 - gy0);
-                dl->VtxBuffer[v].col = lerp_col(c_top, c_bot, tt * 1.1f - 0.05f);
+                dl->VtxBuffer[v].col = lerp_col(c_top, c_bot, (tt - 0.62f) / 0.38f);  // flat, orange at the bottom
             }
             rotate_verts(dl, v0, center, ang);
         }
