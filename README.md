@@ -58,7 +58,7 @@ Everything made from your disc (`game_data`, `SillyReEncounter-Game`) is only fo
 
 | Key | Action | Key | Action |
 |---|---|---|---|
-| W A S D / arrows | move | Mouse | aim (click the window to capture the mouse) |
+| W A S D / arrows | move (in vehicles: W / S drive, A / D steer) | Mouse | aim, steer vehicles (click the window to capture the mouse) |
 | Left mouse / Ctrl | fire | Space | jump |
 | E | use, enter / exit vehicles | R | reload, switch ammo type |
 | Mouse wheel, F / Q | next / previous weapon | Right mouse | next weapon; **hold** for the weapon wheel |
@@ -116,7 +116,7 @@ On top of Silly ReEncounter 1.01 (details in [data/release/CHANGELOG.txt](data/r
 - **In-engine cutscenes** show the cutscene instead of a frozen gameplay frame.
 - **The jeep** keeps driving at high frame rate limits (vehicles run at 60 fps); Space no longer exits it.
 - **Menu animations** no longer speed up above 60 fps.
-- **PC-style controls**: classic shooter keys, mouse in menus, weapon wheel with the mouse, number keys for
+- **PC-style controls**: classic shooter keys, WASD driving, mouse in menus, weapon wheel with the mouse, number keys for
   weapons, keyboard & mouse button hints, three bindings per control.
 - Slightly lower CPU use on the game thread.
 

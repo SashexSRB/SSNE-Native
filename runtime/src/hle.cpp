@@ -670,6 +670,7 @@ void mouse_aim_add(double yaw, double pitch) {
 bool mouse_aim_available() { return g_orig_look != nullptr; }
 bool mouse_aim_active() { return g_orig_look && now_ms() - g_aim_last_ms.load() < 200; }
 bool player_control_active() { return mouse_aim_active() || in_vehicle(); }
+bool player_in_vehicle() { return in_vehicle(); }
 void weapon_select_group(int group) { g_weapon_req_ms = now_ms(); g_weapon_req = group; }
 
 void set_frame_limit(int fps) { g_frame_limit = fps < 0 ? 0 : fps; }

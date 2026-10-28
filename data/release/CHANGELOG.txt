@@ -20,6 +20,7 @@ SSNE-NATIVE (github.com/SashexSRB/SSNE-Native)
   - Mouse in menus, the pause screen and cutscenes: the wheel moves the selection, left click selects, right click
     goes back. Esc opens and closes the pause menu.
   - Holding fire or jump when a cutscene starts no longer skips it (the button has to be pressed again).
+  - Driving with WASD: in vehicles A / D steer (the mouse still steers too); before, only the mouse steered.
   - Weapon wheel with the mouse: hold the right mouse button (or whichever key / button you bound to X), move
     the mouse towards a weapon and release to take it. A quick click still switches to the next weapon.
   - The click that captures the mouse no longer also selects in menus or fires.

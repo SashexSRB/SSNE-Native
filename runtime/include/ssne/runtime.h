@@ -42,6 +42,8 @@ bool mouse_aim_active();
 // True while the player controls Sam (the game ran its per-frame look update in the last 200 ms) or drives a
 // vehicle: false in menus, cutscenes, loading and the pause screen.
 bool player_control_active();
+// The player is driving a vehicle (jeep, combine harvester).
+bool player_in_vehicle();
 // Number-key weapon groups 0-8 (keys 1-9): picks the group's first available weapon (the next one if a weapon of the
 // group is already in hand) and switches to it the game's own way (hle.cpp). Ignored unless on foot.
 void weapon_select_group(int group);

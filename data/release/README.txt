@@ -68,7 +68,8 @@ PERFORMANCE
     rebuild the game on your PC (a few minutes, nothing is downloaded).
 
 DEFAULT CONTROLS (keyboard & mouse; change them in F12 > Keyboard & Mouse, up to three per control)
-  W A S D / arrows ... move            Mouse ............ aim (click the game window to capture the mouse)
+  W A S D / arrows ... move (vehicles: W / S drive, A / D steer)
+  Mouse .............. aim, steer vehicles (click the game window to capture the mouse)
   Left mouse / Ctrl .. fire (R)        Space ............ jump (the GameCube's L trigger)
   E .................. use, enter / exit vehicles (A)    R .. reload / switch ammo type (B)
   Mouse wheel ........ next / previous weapon (X / Y)    Right mouse .. next weapon; hold: weapon wheel (X):

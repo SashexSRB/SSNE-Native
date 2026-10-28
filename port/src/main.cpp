@@ -538,7 +538,8 @@ void update_input(float dt) {
         cy += (g_set.pad_invert_y ? -ry : ry) * g_set.look_sens;
     }
     ly += act[port::ACT_MOVE_UP] - act[port::ACT_MOVE_DOWN];
-    lx += act[port::ACT_MOVE_RIGHT] - act[port::ACT_MOVE_LEFT];
+    // Vehicles steer with the C-stick (the main stick's X does nothing there): the strafe keys steer while driving.
+    (ssne::player_in_vehicle() ? cx : lx) += act[port::ACT_MOVE_RIGHT] - act[port::ACT_MOVE_LEFT];
     cy += act[port::ACT_LOOK_UP] - act[port::ACT_LOOK_DOWN];
     cx += act[port::ACT_LOOK_RIGHT] - act[port::ACT_LOOK_LEFT];
     struct { int a; uint16_t m; } map[] = {
