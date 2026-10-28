@@ -242,6 +242,7 @@ void draw_game_view() {
 SDL_GameController* g_pad = nullptr;
 float g_mouse_dx = 0, g_mouse_dy = 0;
 bool g_mouse_captured = false;
+Uint32 g_capture_click = 0;  // the mouse button whose click captured the mouse: only captures (update_input)
 
 uint8_t axis_to_u8(float v) { return uint8_t(std::clamp(128.f + v * 127.f, 0.f, 255.f)); }
 
@@ -424,6 +425,8 @@ void update_input(float dt) {
                           SDL_GameControllerGetButton(g_pad, SDL_GameControllerButton(pj.code));
     if (control != was_control) { held_mouse = mb; held_jump = jump_key; held_esc = esc; held_pad_jump = pad_jump; }
     was_control = control;
+    held_mouse |= g_capture_click;
+    g_capture_click = 0;
     held_mouse &= mb;
     held_jump &= jump_key;
     held_esc &= esc;
@@ -444,6 +447,36 @@ void update_input(float dt) {
         if (clicks & SDL_BUTTON(SDL_BUTTON_RIGHT)) act[port::ACT_B] = 1;
         if (wheel_on[1]) ly += 1;
         if (wheel_on[0]) ly -= 1;
+    }
+    // Weapon wheel: holding X opens the game's weapon wheel after WeaponWheelDelay (0.25 s, base.cfg), which by
+    // default pauses the game, and the wheel picks the weapon in the main stick's direction. A key / mouse hold of X
+    // that starts in gameplay keeps X pressed until it is released (the pause would otherwise end player control and
+    // hand the mouse buttons to the menus), and after the delay the mouse steers a virtual main stick instead of the
+    // view: move towards a weapon, release the button to take it. Only on foot: in vehicles X does other things and
+    // the main stick drives.
+    static bool wheel_hold = false, x_was_down = false;
+    static float wheel_t = 0, wheel_vx = 0, wheel_vy = 0;
+    bool x_down = false, x_fresh = false;  // fresh: not a button that only captured the mouse / was held over
+    for (const port::Bind& b : g_set.kb[port::ACT_X]) {
+        if (b.type == port::Bind::KEY && kb_ok && b.code > 0 && b.code < SDL_NUM_SCANCODES && k[b.code]) x_down = x_fresh = true;
+        if (b.type == port::Bind::MOUSE && (mb & SDL_BUTTON(b.code))) {
+            x_down = true;
+            if (!(held_mouse & SDL_BUTTON(b.code))) x_fresh = true;
+        }
+    }
+    if (!x_down) wheel_hold = false;
+    else if (!x_was_down && x_fresh && ssne::mouse_aim_active()) { wheel_hold = true; wheel_t = 0; wheel_vx = wheel_vy = 0; }
+    x_was_down = x_down;
+    if (wheel_hold) { act[port::ACT_X] = 1; wheel_t += dt; }
+    const bool wheel_mouse = wheel_hold && wheel_t >= 0.25f && g_mouse_captured;
+    if (wheel_mouse) {
+        constexpr float kRadius = 100.f;  // mouse counts to full tilt; also how far back a change of mind takes
+        wheel_vx += g_mouse_dx;
+        wheel_vy -= g_mouse_dy;
+        float len = std::hypot(wheel_vx, wheel_vy);
+        if (len > kRadius) { wheel_vx *= kRadius / len; wheel_vy *= kRadius / len; len = kRadius; }
+        if (len > kRadius * 0.35f) { lx += wheel_vx / len; ly += wheel_vy / len; }
+        g_mouse_dx = g_mouse_dy = 0;
     }
     if (g_pad) {
         for (int a = port::kFirstButtonAction; a < port::ACT_COUNT; a++) {
@@ -1106,6 +1139,7 @@ int main(int argc, char** argv) {
                 if (!g_mouse_captured && !port::menu_open() && g_set.mouse_look && !ImGui::GetIO().WantCaptureMouse &&
                     have_game_image()) {
                     g_mouse_captured = true;
+                    g_capture_click = SDL_BUTTON(e.button.button);
                     SDL_SetRelativeMouseMode(SDL_TRUE);
                 }
                 break;

@@ -71,7 +71,8 @@ DEFAULT CONTROLS (keyboard & mouse; change them in F12 > Keyboard & Mouse)
   W A S D / arrows ... move            Mouse ............ aim (click the game window to capture the mouse)
   Left mouse / Ctrl .. fire (R)        Space ............ jump (the GameCube's L trigger)
   E .................. use, enter / exit vehicles (A)    R .. reload / switch ammo type (B)
-  Mouse wheel ........ next / previous weapon (X / Y)    Right mouse .. next weapon; hold: weapon wheel (X)
+  Mouse wheel ........ next / previous weapon (X / Y)    Right mouse .. next weapon; hold: weapon wheel (X):
+                       move the mouse towards a weapon and release the button to take it
   Tab ................ NETRICSA (Z)    Esc / Enter ...... pause (Start)
   Menus, the pause screen and cutscenes: the mouse wheel moves the selection, left click / Space selects and skips
   cutscenes, right click / Esc goes back (Esc also closes the pause menu).
