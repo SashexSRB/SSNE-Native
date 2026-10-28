@@ -4,6 +4,13 @@ Silly ReEncounter - changes since the first public release
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.1.2
+  - Fix (HUD at the screen edges): when a hint flew in, the health display could jump to the middle of the screen
+    and text shadows could be left behind; text now always stays centered, and only the HUD's corner pieces (health,
+    ammo, the NETRICSA envelope) and the weapon bar move out to the edges.
+  - Fix (HUD at the screen edges): weapon icons of the weapon wheel (hold Q) could be drawn outside their slots; the
+    wheel stays centered as a whole.
+
 SSNE-NATIVE 1.1.1
   - Fix: with the HUD at the screen edges (widescreen), on-screen text such as hints, pickup messages and the
     combo counter could be split apart where it crossed from the middle of the screen to a side. Text and the
