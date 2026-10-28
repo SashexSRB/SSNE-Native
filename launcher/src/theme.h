@@ -7,7 +7,7 @@
 namespace theme {
 
 struct Fonts {
-    ImFont* display = nullptr;  // Erica One, baked large; drawn scaled
+    ImFont* display = nullptr;  // Boink LET if installed, else Erica One; baked large, drawn scaled
     ImFont* body = nullptr;     // Outfit Regular
     ImFont* bold = nullptr;     // Outfit Bold
     ImFont* small = nullptr;    // Outfit Regular, smaller

@@ -5,8 +5,16 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <system_error>
+#include <vector>
 
 #include "font_EricaOne_Regular.h"
 #include "font_Outfit_Bold.h"
@@ -30,6 +38,64 @@ float hash01(int i) {
     return float(x & 0xFFFFFF) / float(0x1000000);
 }
 
+// Boink LET, the lettering of the game's front end, when the player has it installed (a commercial font: it isn't
+// shipped). Looked for by file name in the system's and the user's font folders, then (Linux) by family through
+// fontconfig. Only TrueType / OpenType files are taken (what the font loader reads).
+std::vector<unsigned char> g_boink;
+bool font_file(const std::filesystem::path& p) {
+    std::string e = p.extension().string();
+    for (char& c : e) c = char(std::tolower(static_cast<unsigned char>(c)));
+    return e == ".ttf" || e == ".otf";
+}
+bool load_font_file(const std::filesystem::path& p) {
+    std::ifstream f(p, std::ios::binary);
+    std::vector<unsigned char> d((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    if (d.size() < 1024) return false;
+    uint32_t tag = uint32_t(d[0]) << 24 | uint32_t(d[1]) << 16 | uint32_t(d[2]) << 8 | d[3];
+    if (tag != 0x00010000u && tag != 0x74727565u /* true */ && tag != 0x4F54544Fu /* OTTO */) return false;
+    g_boink = std::move(d);
+    return true;
+}
+bool find_boink() {
+    std::vector<std::filesystem::path> dirs;
+    auto env = [](const char* n) { const char* v = getenv(n); return std::string(v ? v : ""); };
+#ifdef _WIN32
+    if (!env("WINDIR").empty()) dirs.push_back(std::filesystem::path(env("WINDIR")) / "Fonts");
+    if (!env("LOCALAPPDATA").empty()) dirs.push_back(std::filesystem::path(env("LOCALAPPDATA")) / "Microsoft" / "Windows" / "Fonts");
+#else
+    if (!env("XDG_DATA_HOME").empty()) dirs.push_back(std::filesystem::path(env("XDG_DATA_HOME")) / "fonts");
+    if (!env("HOME").empty()) {
+        dirs.push_back(std::filesystem::path(env("HOME")) / ".local" / "share" / "fonts");
+        dirs.push_back(std::filesystem::path(env("HOME")) / ".fonts");
+    }
+    dirs.push_back("/usr/local/share/fonts");
+    dirs.push_back("/usr/share/fonts");
+#endif
+    for (const auto& dir : dirs) {
+        std::error_code ec;
+        for (std::filesystem::recursive_directory_iterator it(dir, std::filesystem::directory_options::skip_permission_denied, ec), end;
+             !ec && it != end; it.increment(ec)) {
+            std::string name = it->path().filename().string();
+            for (char& c : name) c = char(std::tolower(static_cast<unsigned char>(c)));
+            if (name.find("boink") != std::string::npos && font_file(it->path()) && load_font_file(it->path())) return true;
+        }
+    }
+#ifndef _WIN32
+    if (FILE* p = popen("fc-list ':family=Boink LET' file 2>/dev/null", "r")) {
+        char line[1024];
+        std::string path;
+        while (path.empty() && fgets(line, sizeof(line), p)) {
+            std::string s = line;
+            size_t c = s.find(':');  // "path: "
+            if (c != std::string::npos) path = s.substr(0, c);
+        }
+        pclose(p);
+        if (!path.empty() && font_file(path) && load_font_file(path)) return true;
+    }
+#endif
+    return false;
+}
+
 void rotate_verts(ImDrawList* dl, int v0, ImVec2 c, float ang) {
     float cs = std::cos(ang), sn = std::sin(ang);
     for (int v = v0; v < dl->VtxBuffer.Size; v++) {
@@ -50,7 +116,8 @@ void load_fonts(float scale) {
     fonts.body = add(font_Outfit_Regular, sizeof(font_Outfit_Regular), 18);  // first = default font
     fonts.bold = add(font_Outfit_Bold, sizeof(font_Outfit_Bold), 18);
     fonts.small = add(font_Outfit_Regular, sizeof(font_Outfit_Regular), 15);
-    fonts.display = add(font_EricaOne_Regular, sizeof(font_EricaOne_Regular), 80);
+    if (find_boink()) fonts.display = add(g_boink.data(), g_boink.size(), 80);
+    else fonts.display = add(font_EricaOne_Regular, sizeof(font_EricaOne_Regular), 80);
 }
 
 void apply_style() {
