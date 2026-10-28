@@ -128,12 +128,15 @@ bool tab_graphics(Settings& s, const MenuInfo& info) {
     static const char* kAspect[] = {"4:3 (original)", "16:9", "21:9"};
     ImGui::SetNextItemWidth(260);
     ch |= ImGui::Combo("Aspect ratio  (F8)", &s.aspect, kAspect, 3);
-    help("Widescreen widens the view during gameplay; menus and cutscenes stay 4:3.");
+    help("Widescreen widens the view during gameplay; menus (also pause, NETRICSA and briefings) and cutscenes stay 4:3.");
     if (s.aspect > 0) {
         ch |= ImGui::Checkbox("HUD at the screen edges", &s.hud_edges);
         help("Widescreen gameplay: health, ammo and the weapon bar sit at the edges of the screen, like in a widescreen\n"
              "game. Off: the HUD keeps the GameCube's 4:3 layout in the middle of the screen.");
     }
+    ch |= ImGui::Checkbox("Fill the sides of 4:3 screens", &s.side_fill);
+    help("Menus and cutscenes are 4:3: on a wider window, show a blurred, darkened copy of the picture at the sides\n"
+         "instead of black bars (GPU renderer).");
     {
         static const float kWide[3] = {1.0f, 4.0f / 3.0f, 7.0f / 4.0f};
         float hfov = 2.f * std::atan(std::tan(0.5f * float(s.fov) * 0.017453292f) * 1.4286f * kWide[std::clamp(s.aspect, 0, 2)]) / 0.017453292f;

@@ -22,6 +22,9 @@ SSNE-NATIVE 1.1
     a multiple of 640x448 that has to be scaled to the screen.
   - Widescreen HUD: health, ammo and the weapon bar sit at the edges of the screen instead of in the middle 4:3 area
     (F12 > Graphics > HUD at the screen edges).
+  - Widescreen: the pause menu, NETRICSA and mission briefings stay 4:3 like the other menus (NETRICSA's weapon
+    model was out of place in widescreen), and 4:3 screens show a blurred copy of the picture at the sides instead
+    of black bars (F12 > Graphics > Fill the sides of 4:3 screens).
   - Fix: the number key 5 picks the rocket launcher first, then the grenade launcher (it was the other way round).
   - Fix: with an uncapped frame rate, loading could make the game report "System looks hung" in its log.
 

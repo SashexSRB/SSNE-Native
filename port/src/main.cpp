@@ -236,8 +236,8 @@ void update_auto_scale(SDL_Window* win) {
 }
 
 void draw_game_view() {
-    GLuint tex = g_tex;
-    if (g_gpu) tex = ssne::gpu_renderer_output().texture;
+    GLuint tex = g_tex, fill = 0;
+    if (g_gpu) { auto o = ssne::gpu_renderer_output(); tex = o.texture; fill = o.fill; }
     if (!tex) return;
     const ImGuiViewport* vp = ImGui::GetMainViewport();
     // The GameCube image is 4:3 regardless of the EFB height (640x448/480 -> 4:3 on a TV); widescreen gameplay
@@ -250,6 +250,10 @@ void draw_game_view() {
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     dl->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
     dl->AddCallback([](const ImDrawList*, const ImDrawCmd*) { glDisable(GL_BLEND); }, nullptr);  // the game image is opaque
+    if (fill && w < W - 1.f) {  // 4:3 image on a wider window: its blurred version fills the sides (scaled to cover)
+        float fh = W * 0.75f;
+        dl->AddImage((ImTextureID)(intptr_t)fill, ImVec2(vp->Pos.x, vp->Pos.y + (H - fh) * 0.5f), ImVec2(vp->Pos.x + W, vp->Pos.y + (H + fh) * 0.5f));
+    }
     dl->AddImage((ImTextureID)(intptr_t)tex, p0, ImVec2(p0.x + w, p0.y + h));
     dl->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 }
@@ -933,6 +937,7 @@ void draw_overlay(const std::string& data_dir, float dt) {
 void apply_settings(SDL_Window* win) {
     ssne::set_widescreen(kAspects[std::clamp(g_set.aspect, 0, 2)].factor);
     ssne::set_hud_edges(g_set.hud_edges);
+    ssne::gpu_renderer_set_side_fill(g_set.side_fill);
     {
         const std::string& aa = g_set.antialiasing;
         int msaa = aa == "msaa2" ? 2 : aa == "msaa4" ? 4 : aa == "msaa8" ? 8 : 1;

@@ -52,6 +52,7 @@ struct Settings {
     bool gx_thread = true;         // graphics commands processed on their own thread (read at start)
     bool gpu_vertex = true;        // GPU renderer: texture coordinates and lighting computed on the GPU (read at start)
     bool hud_edges = true;         // widescreen: HUD pieces left / right of the middle at the screen's edges
+    bool side_fill = true;         // 4:3 frames on a wider window: blurred image at the sides instead of black bars
     bool fullscreen = false;
     int top_bar = 2;               // info bar at the top: 0 hidden, 1 frame rate only, 2 full (Shift+F1 cycles)
     int display = -1;              // monitor for fullscreen / the window (-1 = wherever the window is)

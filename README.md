@@ -104,8 +104,9 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
   at the original 60 fps, because their animations and the jeep's physics depend on it.
 - **Slow on your PC?** F12 › Graphics › Presets › Low. Automatic resolution (on by default) already lowers the
   internal resolution when the GPU can't keep up.
-- **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus and cutscenes stay 4:3 with bars on the sides,
-  because the game places 3D models into 2D menu layouts. The HUD moves out to the screen edges (F12 › Graphics).
+- **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus (also pause, NETRICSA and briefings) and cutscenes
+  stay 4:3, because the game places 3D models into 2D menu layouts. A blurred copy of the picture fills the sides
+  (F12 › Graphics › Fill the sides of 4:3 screens). The HUD moves out to the screen edges (F12 › Graphics).
 - **Sharpest image:** F12 › Graphics › Internal resolution › Native renders at exactly your screen or window
   resolution (e.g. 1920x1080 in widescreen gameplay on a 1080p screen); Automatic picks a multiple of 640x448.
 - **Pause in the background** (on by default): switching to another window pauses and silences the game.

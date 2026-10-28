@@ -194,9 +194,18 @@ void select_version() {
         if (!strcmp(v.id, id)) { g_ver = &v; fprintf(stdout, "[ssne] game version %s\n", id); return; }
     fprintf(stdout, "[ssne] unknown game version %s: using USA addresses (hooks verify their code first)\n", id);
 }
-// Only gameplay is widened: the front end and cutscenes place 3D models in 4:3 2D layouts, so they stay 4:3
-// (pillarboxed). Gameplay is detected by the first-person weapon's projection (called from 8014CDF0), which
-// only exists while playing.
+// ---- player control. The player's update (800BEEC8, hooked below) runs once in each frame the player controls Sam,
+// on foot or driving, between the frame's drawing and its flip; it doesn't run in the pause menu, NETRICSA, briefings
+// or cutscenes. So the frame after a flip is a player-control frame if the player update ran before that flip (the
+// first frame of a menu still is: the game opens it in that frame's update).
+// Without both hooks (another game build), gameplay is detected by the weapon alone.
+std::atomic<bool> g_player_seen{false}, g_player_control{false};
+std::atomic<int> g_control_hooks{0};  // player update and flip hooks installed (2: player control is known)
+void end_player_frame() { g_player_control = g_player_seen.exchange(false); }
+
+// Only gameplay is widened: the front end, cutscenes and the in-game menus (pause, NETRICSA, briefings) place 3D
+// models in 4:3 2D layouts, so they stay 4:3 (the display fills the sides). Gameplay is detected by the first-person
+// weapon's projection (called from 8014CDF0), which only exists while playing, in player-control frames.
 std::atomic<int64_t> g_last_gameplay_ms{-1000000};
 std::atomic<float> g_frame_factor{1.0f};  // factor used by the most recent camera projection
 int64_t now_ms() {
@@ -205,9 +214,10 @@ int64_t now_ms() {
 }
 float effective_widescreen(uint32_t caller) {
     if (caller == g_ver->weapon_lr) g_last_gameplay_ms = now_ms();
-    float f = (now_ms() - g_last_gameplay_ms.load() < 400) ? g_widescreen.load() : 1.0f;
+    bool gameplay = now_ms() - g_last_gameplay_ms.load() < 400 && (g_control_hooks.load() < 2 || g_player_control.load());
+    float f = gameplay ? g_widescreen.load() : 1.0f;
     // The GX thread reads the factor when it records the frame's display copy: let it finish the frames rendered
-    // with the old factor first (the factor changes only between gameplay and the front end).
+    // with the old factor first (the factor changes only between gameplay and the menus).
     if (f != g_frame_factor.load()) gx_sync();
     g_frame_factor = f;
     return f;
@@ -455,6 +465,7 @@ void hle_player_update(PPCContext& ctx) {
     g_orig_player_update(ctx);
     *slot = &hle_player_update;
     if (player < 0x80000000u || player >= 0x81800000u) return;
+    g_player_seen = true;
     uint32_t vehicle = mem_read32(player + 0x6C4);
     if (vehicle >= 0x80000000u && vehicle < 0x81800000u) g_vehicle_last_ms = now_ms();
     else if (g_weapon_owned && g_weapon_has_ammo) weapon_keys(ctx, player);
@@ -467,6 +478,7 @@ void install_vehicle_detector() {
     if (!ok) { fprintf(stdout, "[ssne] vehicles: player update not found (different game build?)\n"); return; }
     g_orig_player_update = f->func;
     ssne_install_hook(g_ver->player_update, hle_player_update);
+    g_control_hooks++;
     const SSNEFuncEntry* own = ssne_find_func(kWeaponOwned);
     const SSNEFuncEntry* ammo = ssne_find_func(kWeaponHasAmmo);
     bool wk = own && ammo;
@@ -632,6 +644,7 @@ bool code_matches(uint32_t addr, const uint32_t sig[6]) {
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
 void hle_flip(PPCContext& ctx) {
+    end_player_frame();
     savestate_safe_point(ctx);
     PPCFunc* slot = ssne_hook_slot(g_ver->flip);
     *slot = nullptr;
@@ -645,6 +658,7 @@ void install_savestates() {
     if (!ok) { fprintf(stdout, "[ssne] save states: frame flip not found (different game build?)\n"); return; }
     g_orig_flip = f->func;
     ssne_install_hook(g_ver->flip, hle_flip);
+    g_control_hooks++;
 }
 
 void install_pad_fix() {

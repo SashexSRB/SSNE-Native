@@ -420,6 +420,18 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   stayed inside the 4:3 area (the game keeps a safe-area margin). Now a piece whose center is left / right of the
   middle third keeps its margin from the left / right screen edge; the middle third stays centered (score,
   crosshair, messages, the weapon wheel). Pieces are whole draws, so the parts of one element move together.
+* **In-game menus stay 4:3**: the pause menu, NETRICSA and briefings were widened with gameplay (the weapon is still
+  projected behind them), and the edge placement tore their layouts apart. Centering alone isn't enough either:
+  NETRICSA's rotating weapon model is drawn with the widened scene camera, so it shrinks around the screen middle
+  while its 2D frame is anchored differently, and it ended up far left of its place. Gameplay frames are now
+  recognised by the player's update (800BEEC8), which runs exactly once per frame while Sam is controlled (on foot
+  or driving) and not at all in those menus. It runs after the frame's drawing (draws, player update, flip), so the
+  flip decides the next frame: widened only if the player update ran before it. The first frame of a menu is still
+  widened (the game opens it in that frame's update). Without both hooks the weapon alone decides, as before.
+* **Side fill**: 4:3 frames on a wider window get a blurred, darkened copy of the picture at the sides instead of
+  black bars (`side_fill`, GPU renderer): the output's mip level nearest 64x48, 3x3 blur at 40% brightness, into a
+  64x48 texture that the port stretches over the window (cover fit) behind the image. Mipmap generation on the output
+  also had MAX_LEVEL set after GenerateMipmap, so smooth downscaling's very first frame had no mip levels.
 * **1.1 vs 1.0** (same machine, 16:9, 1x, frame limit off, PGO build): Arena 190 -> 448 fps, Touts at the
   Colosseum 57 -> 143 fps.
   Sleeping uses mutex + condition variable, not C++20 atomic waits (libc++ on Windows can use Windows 8 functions).

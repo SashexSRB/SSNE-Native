@@ -29,8 +29,11 @@ void gpu_renderer_set_anisotropy(int level);  // anisotropic filtering 1 (off), 
 int gpu_renderer_anisotropy();
 int gpu_renderer_scale();
 void gpu_renderer_set_widescreen(float factor);  // EFB rendered this much wider (matches set_widescreen)
-struct GpuOutput { uint32_t texture; int w, h; uint64_t seq; float wide; };  // wide: display at 4:3 * wide  // GL texture; row 0 = top of the image
+// texture: GL texture, row 0 = top of the image; wide: display at 4:3 * wide; fill: the image blurred and darkened,
+// for the sides of a 4:3 image on a wider display (0: none)
+struct GpuOutput { uint32_t texture; int w, h; uint64_t seq; float wide; uint32_t fill; };
 GpuOutput gpu_renderer_output();
+void gpu_renderer_set_side_fill(bool on);  // 4:3 frames: GpuOutput::fill (default on)
 bool gpu_renderer_read_output(std::vector<uint32_t>& rgba, int& w, int& h);  // RGBA8, row 0 = top
 std::string gpu_renderer_info();
 std::string gpu_renderer_profile();  // SSNE_GPU_PROFILE=1: GPU time by command kind

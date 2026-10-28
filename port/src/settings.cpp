@@ -92,7 +92,7 @@ Settings::Settings() {
 }
 
 void Settings::reset_graphics() {
-    renderer = "gpu"; scale = 0; aspect = 1; antialiasing = "off"; anisotropy = 1; fps_limit = 60; fov = 63; vsync = true; sync_display = true; gx_thread = true; gpu_vertex = true; hud_edges = true; fullscreen = false; top_bar = 2;
+    renderer = "gpu"; scale = 0; aspect = 1; antialiasing = "off"; anisotropy = 1; fps_limit = 60; fov = 63; vsync = true; sync_display = true; gx_thread = true; gpu_vertex = true; hud_edges = true; side_fill = true; fullscreen = false; top_bar = 2;
 }
 
 void Settings::reset_audio() { volume = 100; music_volume = 100; sfx_volume = 100; muted = false; audio_hq = true; }
@@ -274,6 +274,7 @@ bool load_settings(Settings& s, const std::string& path) {
     get("gx_thread", s.gx_thread);
     get("gpu_vertex", s.gpu_vertex);
     get("hud_edges", s.hud_edges);
+    get("side_fill", s.side_fill);
     {
         bool old = true;  // before version 5: show_top_bar = 0/1
         auto it = kv.find("show_top_bar");
@@ -428,6 +429,7 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "scale = " << s.scale << "    # internal resolution 1-8, 0 = automatic, -1 = native (your screen / window resolution)\n";
     o << "aspect = " << s.aspect << "    # 0 = 4:3, 1 = 16:9, 2 = 21:9\n";
     o << "hud_edges = " << (s.hud_edges ? 1 : 0) << "    # widescreen: health / ammo / weapons at the screen edges (0 = within the 4:3 area)\n";
+    o << "side_fill = " << (s.side_fill ? 1 : 0) << "    # 4:3 screens (menus) on a wider window: blurred picture at the sides (0 = black bars)\n";
     o << "antialiasing = " << s.antialiasing << "    # off, fxaa, msaa2, msaa4, msaa8, ssaa\n";
     o << "anisotropy = " << s.anisotropy << "    # anisotropic filtering: 1 (off), 2, 4, 8, 16\n";
     o << "fps_limit = " << s.fps_limit << "    # 60 = original, 0 = unlimited (vsync)\n";

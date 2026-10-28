@@ -93,6 +93,11 @@ bool g_fxaa = false, g_smooth = false;
 GLuint g_resolve_fbo = 0, g_resolve_tex = 0;
 GLuint g_fxaa_fbo = 0, g_fxaa_tex = 0, g_fxaa_prog = 0;
 GLint g_fxaa_u_rcp = -1;
+// Side fill: 4:3 frames (the menus) shrunk, blurred and darkened, for the port to show at the sides of the image.
+constexpr int kFillW = 64, kFillH = 48;
+GLuint g_fill_fbo = 0, g_fill_tex = 0, g_fill_prog = 0;
+GLint g_fill_u_lod = -1;
+bool g_side_fill = true, g_fill_valid = false;
 int g_fxaa_w = 0, g_fxaa_h = 0;
 GLuint g_final_tex = 0, g_final_fbo = 0;  // what the port presents (output, or its FXAA version)
 int g_out_w = 0, g_out_h = 0;
@@ -1219,6 +1224,18 @@ const char* kCopyMrtFS =
     "  o2 = reint(raw, u_mode);\n"
     "}\n";
 
+// Side fill: renders the kFillW x kFillH fill texture from a mip level of the output, 3x3 blur, darkened.
+const char* kFillFS =
+    "#version 330 core\n"
+    "uniform sampler2D u_src;\nuniform float u_lod;\nout vec4 o;\n"
+    "void main() {\n"
+    "  vec2 px = 1.0 / vec2(%d.0, %d.0), uv = gl_FragCoord.xy * px;\n"
+    "  vec3 c = vec3(0.0);\n"
+    "  for (int y = -1; y <= 1; y++)\n"
+    "    for (int x = -1; x <= 1; x++) c += textureLod(u_src, uv + vec2(x, y) * px, u_lod).rgb;\n"
+    "  o = vec4(c * (0.4 / 9.0), 1.0);\n"
+    "}\n";
+
 // FXAA (the classic "PC console" variant): blends along edges found from luma contrast, one pass at output size.
 const char* kFxaaFS =
     "#version 330 core\n"
@@ -1614,13 +1631,28 @@ void run_copy_xfb(const GpuCmd& cmd) {
     {   // Mipmaps on the presented image: smooth downscaling when the display is smaller than it (supersampling).
         sc_texture(0, g_final_tex);
         if (g_smooth) {
+            TexParameteri(TEXTURE_2D, TEXTURE_MAX_LEVEL, 16);  // before generating (levels up to the maximum)
             GenerateMipmap(TEXTURE_2D);
-            TexParameteri(TEXTURE_2D, TEXTURE_MAX_LEVEL, 16);
             TexParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR_MIPMAP_LINEAR);
         } else {
             TexParameteri(TEXTURE_2D, TEXTURE_MAX_LEVEL, 0);
             TexParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR);
         }
+    }
+    g_fill_valid = false;
+    if (g_side_fill && g_fill_prog && g_wide <= 1.001f) {  // side fill: a box-filtered mip level, 3x3 blur, darkened
+        if (!g_fill_tex) { g_fill_tex = make_tex(kFillW, kFillH, RGBA8, RGBA, UNSIGNED_BYTE, nullptr, true); g_fill_fbo = fbo_for(g_fill_tex); }
+        if (!g_smooth) { TexParameteri(TEXTURE_2D, TEXTURE_MAX_LEVEL, 16); GenerateMipmap(TEXTURE_2D); }
+        BindFramebuffer(FRAMEBUFFER, g_fill_fbo);
+        Viewport(0, 0, kFillW, kFillH);
+        sc_program(g_fill_prog);
+        Uniform1f(g_fill_u_lod, std::log2(std::max(1.f, float(w) / float(kFillW))));
+        sc_sampler(0, sampler_for(6, true, 0, 0));
+        DrawArrays(TRIANGLES, 0, 3);
+        sc_sampler(0, 0);
+        Viewport(0, 0, SX(EFB_W), SY(EFB_H));
+        if (!g_smooth) TexParameteri(TEXTURE_2D, TEXTURE_MAX_LEVEL, 0);
+        g_fill_valid = true;
     }
     BindFramebuffer(FRAMEBUFFER, g_efb_fbo);
     g_out_wide = g_wide;
@@ -1826,6 +1858,16 @@ bool gpu_renderer_init(void* (*getproc)(const char*), int scale, std::string& er
     g_white = make_tex(1, 1, RGBA8, RGBA, UNSIGNED_BYTE, &white);
     g_copy_prog = link(kFullscreenVS, kCopyFS);
     g_fxaa_prog = link(kFullscreenVS, kFxaaFS);
+    {
+        char fs[1024];
+        snprintf(fs, sizeof(fs), kFillFS, kFillW, kFillH);
+        g_fill_prog = link(kFullscreenVS, fs);
+        if (g_fill_prog) {
+            UseProgram(g_fill_prog);
+            Uniform1i(GetUniformLocation(g_fill_prog, "u_src"), 0);
+            g_fill_u_lod = GetUniformLocation(g_fill_prog, "u_lod");
+        }
+    }
     if (g_fxaa_prog) {
         UseProgram(g_fxaa_prog);
         Uniform1i(GetUniformLocation(g_fxaa_prog, "u_src"), 0);
@@ -1917,7 +1959,10 @@ int gpu_renderer_native() { return g_native_h; }
 
 void gpu_renderer_set_widescreen(float) {}  // per frame now (GpuFrame::wide)
 
-GpuOutput gpu_renderer_output() { return {g_final_tex ? g_final_tex : g_out_tex, g_out_w, g_out_h, g_out_seq, g_out_wide}; }
+GpuOutput gpu_renderer_output() {
+    return {g_final_tex ? g_final_tex : g_out_tex, g_out_w, g_out_h, g_out_seq, g_out_wide, g_fill_valid ? g_fill_tex : 0};
+}
+void gpu_renderer_set_side_fill(bool on) { g_side_fill = on; }
 
 void gpu_renderer_set_antialiasing(int msaa_samples, bool fxaa, bool smooth_downscale) {
     int want = 1;
