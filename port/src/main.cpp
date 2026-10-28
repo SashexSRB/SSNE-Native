@@ -1089,6 +1089,7 @@ int main(int argc, char** argv) {
         }
     }
     ssne::gx_set_threaded(g_set.gx_thread);
+    ssne::gx_set_gpu_vertex(g_set.gpu_vertex);
     log_line(g_set.gx_thread && !getenv("SSNE_GX_SYNC") ? "[gx] graphics commands on their own thread"
                                                         : "[gx] graphics commands on the game's thread (gx_thread = 0)");
     apply_settings(win);

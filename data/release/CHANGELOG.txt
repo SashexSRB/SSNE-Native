@@ -4,6 +4,22 @@ Silly ReEncounter - changes since the first public release
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.1
+  Performance: about two and a half times the frame rate where the CPU is the limit (high frame rate limits,
+  weaker CPUs, levels with a lot of geometry), and less GPU time per frame. Measured with the frame limit off on
+  an i7-1360P laptop (16:9, internal resolution 1x; at higher resolutions the GPU is usually the limit): Arena
+  gameplay 190 -> 448 fps, "Touts at the Colosseum" 57 -> 143 fps.
+  - The game's graphics commands are processed on their own CPU thread, in parallel with the game, like the
+    console's GPU (settings.ini: gx_thread = 0 restores the previous single-thread processing).
+  - Texture coordinates and lighting are computed on the GPU (in the vertex shader) instead of the CPU; the result
+    is the same image (settings.ini: gpu_vertex = 0 computes them on the CPU as before).
+  - Faster vertex processing and draw recording on the CPU.
+  - Full-screen layers lying on a clip plane (sky, the distortion effect, the HUD) keep the GPU's early depth
+    test: 3-10% less GPU time per frame, same image.
+  - The prebuilt engine in the build kit is compiled with profile-guided optimization.
+  - Fix: the number key 5 picks the rocket launcher first, then the grenade launcher (it was the other way round).
+  - Fix: with an uncapped frame rate, loading could make the game report "System looks hung" in its log.
+
 SSNE-NATIVE 1.0 (github.com/SashexSRB/SSNE-Native)
   - Linux version: native launcher and game, built on your PC with the system's compiler (see README-Linux.txt).
   - Fix: the jeep (Via Aurelia and other levels) stopped steering and accelerating after a while, and jolted

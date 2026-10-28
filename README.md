@@ -107,9 +107,10 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 - **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus and cutscenes stay 4:3 with bars on the sides,
   because the game places 3D models into 2D menu layouts.
 - **Pause in the background** (on by default): switching to another window pauses and silences the game.
-- **Graphics thread:** the game's graphics commands are processed on their own CPU thread, in parallel with the
-  game (like the console's GPU). If something looks wrong that didn't before, set `gx_thread = 0` in `settings.ini`
-  and restart, and please report it.
+- **Graphics thread and GPU vertex processing:** the game's graphics commands are processed on their own CPU thread,
+  in parallel with the game (like the console's GPU), and texture coordinates and lighting are computed on the GPU.
+  If something looks wrong that didn't before, set `gx_thread = 0` or `gpu_vertex = 0` in `settings.ini` and restart,
+  and please report it.
 - **Linux:** Print Screen is usually taken by the desktop; use Shift+F12. If Select Disc doesn't open a file
   dialog, install `zenity` or `kdialog`, or drag the disc image onto the window.
 - **Build problems:** the launcher shows the error, and the full logs are in `build-kit/work/logs/`.
@@ -122,6 +123,8 @@ On top of Silly ReEncounter 1.01 (details in [data/release/CHANGELOG.txt](data/r
 - **In-engine cutscenes** show the cutscene instead of a frozen gameplay frame.
 - **The jeep** keeps driving at high frame rate limits (vehicles run at 60 fps); Space no longer exits it.
 - **Menu animations** no longer speed up above 60 fps.
+- **Faster** (1.1): graphics processing on its own thread, texture coordinates and lighting on the GPU, a faster
+  vertex path and a profile-optimized engine: about two and a half times the frame rate where the CPU is the limit.
 - **PC-style controls**: classic shooter keys, WASD driving, mouse in menus, weapon wheel with the mouse, number keys for
   weapons, keyboard & mouse button hints, three bindings per control.
 - Slightly lower CPU use on the game thread.

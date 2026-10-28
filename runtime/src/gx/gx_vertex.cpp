@@ -701,10 +701,8 @@ void widescreen_hud_inplace(uint8_t* v, uint32_t n, uint32_t stride) {
 
 } // namespace
 
-bool gpu_vertex_shading() {
-    static const bool on = !(getenv("SSNE_GPU_TL") && getenv("SSNE_GPU_TL")[0] == '0');
-    return on;
-}
+bool g_gpu_vertex = !(getenv("SSNE_GPU_TL") && getenv("SSNE_GPU_TL")[0] == '0');
+bool gpu_vertex_shading() { return g_gpu_vertex; }
 
 namespace {
 
@@ -938,3 +936,7 @@ void decode_vertices(int vat, const uint8_t* data, uint32_t count, std::vector<V
 }
 
 } // namespace ssne::gx
+
+namespace ssne {
+void gx_set_gpu_vertex(bool on) { gx::g_gpu_vertex = on && !(getenv("SSNE_GPU_TL") && getenv("SSNE_GPU_TL")[0] == '0'); }
+} // namespace ssne

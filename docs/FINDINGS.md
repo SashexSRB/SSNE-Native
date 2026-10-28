@@ -388,6 +388,29 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   but gpu is idle" after 30 and resets the GPU (801171B4) after 600. Sleeping in GXDrawDone lets the retrace callback
   run (the first GX thread build printed the message while loading with an uncapped frame rate and 8x MSAA); waiting
   in host code doesn't, as with the synchronous processing. Same speed gain.
+* **GPU vertex processing** (mode 1, `gpu_vertex` / SSNE_GPU_TL): in geometry-heavy levels ("Touts at the
+  Colosseum") the GX thread was the limit, ~65% of it vertex processing. Vertex formats in gameplay are uniform:
+  indexed f32 position / normal, RGBA8 colors, f32 texcoords, no per-vertex matrix indices on ~95% of vertices,
+  texgens of the matrix type from texcoords with dual transform (post matrices) on, lighting mostly ambient x
+  material with 0-5 lights. The CPU now only reads the attributes and transforms positions (clip space is needed
+  for depth snapping, the flat-plane test and the widescreen HUD); texgen and lighting run in a generated vertex
+  shader (gen_vs_tl) that repeats decode_vertices_fast's expressions in the same order, with the per-batch
+  parameters (only the matrix rows and lights the shader reads, versioned) as part of the batch state and the
+  configuration baked in; light masks are uniforms so light combinations share programs (jeep session: 70
+  programs vs 38 on the CPU path). The CPU writes the GPU's vertex layout directly (no Vtx, no second pass),
+  caches each format's setup until a CP / XF register write, copies RGBA8 / RGB8 colors as bytes and prefetches
+  indexed attributes a few vertices ahead. Points / lines, per-vertex texture matrix indices and emboss from a
+  later texgen stay on the CPU path. SSNE_GPU_TL_COMPARE=dir:first:count records every draw both ways in one run
+  (two recorder contexts) and captures both: 0 differing pixels in Touts, the Arena, the jeep level and the menu
+  (Mesa Iris). Uncapped 1x: Touts 94 -> 138 fps, Arena 300 -> 385 fps.
+* **Recording thread (tried, not kept):** the vertex work handed to a second thread as self-contained jobs (raw
+  vertex bytes, the draw's matrices or the whole palette, format setup), the GX thread keeping parsing, state and
+  texture lookups. The recording thread became the bottleneck doing the same serial vertex work, and the game's
+  two draw-done syncs per frame drain both threads: Touts +3% (noise), Arena -23% (job copies and handing data
+  between cores). Splitting the vertex work itself over several workers would be needed; with ~15-vertex draws and
+  the per-frame syncs that's a large change for an uncertain gain.
+* **1.1 vs 1.0** (same machine, 16:9, 1x, frame limit off, PGO build): Arena 190 -> 448 fps, Touts at the
+  Colosseum 57 -> 143 fps.
   Sleeping uses mutex + condition variable, not C++20 atomic waits (libc++ on Windows can use Windows 8 functions).
   Checked with SSNE_CHECK_STATE / SSNE_CHECK_VERTICES (boot, menus, intro, Arena, jeep), frame dumps of logos, FMVs,
   menus, the level 1 in-engine cutscene (camera cuts intact), gameplay at 4:3 and 16:9, the software renderer, and

@@ -8,6 +8,7 @@
 namespace ssne {
 
 void gx_use_gpu(bool on);    // choose the renderer before boot (default: software)
+void gx_set_gpu_vertex(bool on);  // GPU renderer: texgen + lighting in the vertex shader (default on; before boot)
 bool gx_gpu_active();
 
 // Render thread (GL context current):

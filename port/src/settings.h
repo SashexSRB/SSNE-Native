@@ -49,6 +49,7 @@ struct Settings {
     bool vsync = true;
     bool sync_display = true;      // 60 Hz display + vsync + 60 fps: tick the game with the display (no repeated frames)
     bool gx_thread = true;         // graphics commands processed on their own thread (read at start)
+    bool gpu_vertex = true;        // GPU renderer: texture coordinates and lighting computed on the GPU (read at start)
     bool fullscreen = false;
     int top_bar = 2;               // info bar at the top: 0 hidden, 1 frame rate only, 2 full (Shift+F1 cycles)
     int display = -1;              // monitor for fullscreen / the window (-1 = wherever the window is)
