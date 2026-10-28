@@ -6,7 +6,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "gx_gpu_frame.h"
 #include "gx_internal.h"
+#include "ssne/runtime.h"
 #include "ssne/ppc_context.h"
 
 namespace ssne::gx {
@@ -177,6 +179,7 @@ uint32_t vertex_size(int vat) {
 void load_indexed_xf(int array, uint32_t v) {
     uint32_t index = v >> 16, count = ((v >> 12) & 0xF) + 1, addr = v & 0xFFF;
     uint32_t src = (g.cp[0xA0 + array] & 0x03FFFFFF) + index * (g.cp[0xB0 + array] & 0xFF);
+    g_xf_dirty = true;
     for (uint32_t k = 0; k < count; k++) g.xf_mem[(addr + k) & 0xFFF] = mem_read32(src + 4 * k);
 }
 
@@ -438,10 +441,21 @@ inline void light_part(const LightPart& lp, const LightConst* lc, const LightGeo
     for (int k = k0; k < k1; k++) out[k] = mat[k] * clamp01(lit[k] / 255.f);
 }
 
-} // namespace
+struct TexGen { bool stq, abc1, dual_norm; uint32_t type, src, es, post_base; };
 
-void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vector<Vtx>& out) {
-    out.resize(count);
+// Everything a draw's vertices are decoded with, from the CP / XF registers (decode_vertices_fast, gpu_draw).
+struct DrawSetup {
+    uint32_t lo, hi, a, vsize, mia, mib;
+    float p0, p1, p2, p3, p4, p5;  // projection
+    bool ortho, nbt, dual;
+    uint32_t ntexgen, nchan, lchans, used_lights, tex_mi_mask, nrm_skip;
+    uint32_t def_tex_idx[8];
+    AttrDesc pos_d, nrm_d, col_d[2], tex_d[8];
+    TexGen tgs[8];
+    LightPart lparts[2][2];
+};
+
+void setup_draw(int vat, DrawSetup& S) {
     uint32_t lo = g.cp[0x50], hi = g.cp[0x60];
     uint32_t a = vat_reg(vat, 0);
     uint32_t vsize = vertex_size(vat);
@@ -486,7 +500,6 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
         d.direct = d.n * uint32_t(comp_size(d.fmt)); d.array = 4 + t;
     }
     // texgen setup
-    struct TexGen { bool stq, abc1, dual_norm; uint32_t type, src, es, post_base; };
     TexGen tgs[8];
     bool dual = g.xf_reg[0x12] & 1;
     for (uint32_t t = 0; t < ntexgen; t++) {
@@ -507,6 +520,34 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
             setup_light_part(int(c), part, lparts[c][part]);
             if (lparts[c][part].lit) used_lights |= lparts[c][part].mask;
         }
+    S.lo = lo; S.hi = hi; S.a = a; S.vsize = vsize; S.mia = mia; S.mib = mib;
+    S.p0 = p0; S.p1 = p1; S.p2 = p2; S.p3 = p3; S.p4 = p4; S.p5 = p5;
+    S.ortho = ortho; S.nbt = nbt; S.dual = dual;
+    S.ntexgen = ntexgen; S.nchan = nchan; S.lchans = lchans; S.used_lights = used_lights; S.tex_mi_mask = tex_mi_mask;
+    S.nrm_skip = nrm_skip;
+    memcpy(S.def_tex_idx, def_tex_idx, sizeof(def_tex_idx));
+    S.pos_d = pos_d; S.nrm_d = nrm_d; S.col_d[0] = col_d[0]; S.col_d[1] = col_d[1];
+    for (int t = 0; t < 8; t++) S.tex_d[t] = tex_d[t];
+    for (int t = 0; t < 8; t++) S.tgs[t] = tgs[t];
+    for (int c = 0; c < 2; c++) for (int k = 0; k < 2; k++) S.lparts[c][k] = lparts[c][k];
+}
+
+} // namespace
+
+void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vector<Vtx>& out) {
+    out.resize(count);
+    DrawSetup S;
+    setup_draw(vat, S);
+    const uint32_t lo = S.lo, vsize = S.vsize, mia = S.mia, ntexgen = S.ntexgen, tex_mi_mask = S.tex_mi_mask;
+    const uint32_t nrm_skip = S.nrm_skip, lchans = S.lchans, used_lights = S.used_lights;
+    const float p0 = S.p0, p1 = S.p1, p2 = S.p2, p3 = S.p3, p4 = S.p4, p5 = S.p5;
+    const bool ortho = S.ortho, dual = S.dual;
+    const uint32_t* def_tex_idx = S.def_tex_idx;
+    const AttrDesc &pos_d = S.pos_d, &nrm_d = S.nrm_d;
+    const AttrDesc* col_d = S.col_d;
+    const AttrDesc* tex_d = S.tex_d;
+    const TexGen* tgs = S.tgs;
+    const LightPart (&lparts)[2][2] = S.lparts;
     LightConst lconst[8];
     for (uint32_t m = used_lights; m; m &= m - 1) setup_light_const(std::countr_zero(m), lconst[std::countr_zero(m)]);
     const bool need_vn = used_lights != 0;
@@ -615,6 +656,267 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
             o.tex[t][0] = s; o.tex[t][1] = tt; o.tex[t][2] = q;
         }
     }
+}
+
+// ---- GPU vertex processing (GpuVcfg mode 1): the CPU part. Reads the attributes and transforms positions (as
+// decode_vertices_fast does); texture coordinates and lighting are left to the vertex shader (gx_gpu.cpp gen_vs),
+// which gets the sources it needs per vertex and the matrices, colors and lights as per-batch parameters.
+namespace {
+
+GpuVcfg g_vc_last{};
+GpuXf g_xf_last{};
+uint64_t g_vx_version = 0;  // changes whenever g_vc_last / g_xf_last do (0: none yet)
+
+uint32_t pack_light_part(const LightPart& lp) {
+    return uint32_t(lp.lit) | uint32_t(lp.mat_vc) << 1 | uint32_t(lp.amb_vc) << 2 | (lp.diffuse_fn & 3) << 3 |
+           uint32_t(lp.atten) << 5 | uint32_t(lp.spot) << 6 | (lp.mask & 0xFF) << 8;
+}
+
+// The widescreen HUD adjustment (gx_raster.cpp widescreen_hud) on a draw's written clip positions.
+void widescreen_hud_inplace(uint8_t* v, uint32_t n, uint32_t stride) {
+    float k = widescreen_frame_factor();
+    if (k <= 1.001f || !(g.xf_reg[0x26] & 1)) return;
+    float mn = 1e30f, mx = -1e30f;
+    for (uint32_t i = 0; i < n; i++) {
+        float p[4];
+        memcpy(p, v + size_t(i) * stride, 16);
+        if (p[3] <= 0) return;
+        float x = p[0] / p[3];
+        mn = std::min(mn, x); mx = std::max(mx, x);
+    }
+    if (mx - mn >= 1.9f) return;
+    constexpr float kEdge = 0.97f;
+    float nmn;
+    if (mn <= -kEdge) nmn = -1.f + (mn + 1.f) / k;
+    else if (mx >= kEdge) nmn = 1.f - (1.f - mx) / k - (mx - mn) / k;
+    else nmn = mn / k;
+    for (uint32_t i = 0; i < n; i++) {
+        float p[4];
+        memcpy(p, v + size_t(i) * stride, 16);
+        float x = p[0] / p[3];
+        p[0] = (nmn + (x - mn) / k) * p[3];
+        memcpy(v + size_t(i) * stride, p, 4);
+    }
+}
+
+} // namespace
+
+bool gpu_vertex_shading() {
+    static const bool on = !(getenv("SSNE_GPU_TL") && getenv("SSNE_GPU_TL")[0] == '0');
+    return on;
+}
+
+namespace {
+
+// A vertex format's setup for GPU vertex processing, kept until a CP or XF register write (g_vsetup_dirty).
+struct GpuDrawFmt {
+    bool valid = false, ok = false;  // ok: the shader path covers it
+    DrawSetup S;
+    GpuVcfg vc;
+    // indexed attributes, for prefetching a few vertices ahead: offset in the vertex, index bytes, array
+    int npf = 0;
+    uint8_t pf_off[12], pf_size[12], pf_array[12];
+};
+GpuDrawFmt g_fmts[8];
+
+void build_fmt(int vat, GpuDrawFmt& F) {
+    F.valid = true;
+    F.ok = false;
+    DrawSetup& S = F.S;
+    setup_draw(vat, S);
+    F.npf = 0;
+    {
+        uint32_t off = (S.lo & 1) + uint32_t(std::popcount(S.tex_mi_mask));
+        auto add = [&](const AttrDesc& d, uint32_t direct) {
+            if (d.type == 1) { off += direct; return; }
+            if (d.type >= 2) {
+                F.pf_off[F.npf] = uint8_t(off); F.pf_size[F.npf] = uint8_t(d.type == 2 ? 1 : 2); F.pf_array[F.npf] = uint8_t(d.array);
+                F.npf++;
+                off += d.type == 2 ? 1 : 2;
+            }
+        };
+        if (S.pos_d.type) add(S.pos_d, S.pos_d.direct);
+        if (S.nrm_d.type) { add(S.nrm_d, S.nrm_d.direct); off += S.nrm_skip; }
+        for (int c = 0; c < 2; c++) if (S.col_d[c].type) add(S.col_d[c], S.col_d[c].direct);
+        for (int t = 0; t < 8; t++) if (S.tex_d[t].type) add(S.tex_d[t], S.tex_d[t].direct);
+    }
+    if (S.tex_mi_mask) return;  // per-vertex texture matrix indices: CPU path
+    GpuVcfg& vc = F.vc;
+    memset(&vc, 0, sizeof(vc));
+    vc.mode = 1;
+    vc.ntg = S.ntexgen;
+    vc.dual = S.dual;
+    vc.lchans = S.lchans;
+    uint32_t attrs = 0;
+    if (S.col_d[0].type) attrs |= VA_VCOL0;
+    if (S.col_d[1].type) attrs |= VA_VCOL1;
+    if (S.used_lights) attrs |= VA_GEO;
+    for (uint32_t t = 0; t < S.ntexgen; t++) {
+        const TexGen& x = S.tgs[t];
+        if (x.type == 1 && x.es >= t) return;  // emboss from a later texgen (stale values on the CPU path)
+        if (x.type == 0) {
+            if (x.src == 0) attrs |= VA_RPOS;
+            else if (x.src == 1) attrs |= VA_RNRM;
+            else if (x.src >= 5 && x.src <= 12 && S.tex_d[x.src - 5].type) attrs |= VA_TC << (x.src - 5);
+        }
+        vc.tg[t] = x.type | (x.src & 31) << 3 | uint32_t(x.stq) << 8 | uint32_t(x.abc1) << 9 | uint32_t(x.dual_norm) << 10 |
+                   (x.es & 7) << 11;
+    }
+    for (uint32_t c = 0; c < S.lchans; c++)
+        for (int part = 0; part < 2; part++) vc.lp[c][part] = pack_light_part(S.lparts[c][part]);
+    vc.attrs = attrs;
+    F.ok = true;
+}
+
+} // namespace
+
+bool gpu_draw(uint8_t prim, int vat, const uint8_t* data, uint32_t count) {
+    if (prim == PRIM_LINES || prim == PRIM_LINESTRIP || prim == PRIM_POINTS) return false;  // expanded on the CPU
+    if (g_vsetup_dirty) {
+        for (GpuDrawFmt& f : g_fmts) f.valid = false;
+        g_vsetup_dirty = false;
+    }
+    GpuDrawFmt& F = g_fmts[vat & 7];
+    if (!F.valid) build_fmt(vat & 7, F);
+    if (!F.ok) return false;
+    const DrawSetup& S = F.S;
+    const GpuVcfg& vc = F.vc;
+    const uint32_t attrs = vc.attrs;
+
+    // Per-batch parameters: only the rows / lights the shader reads (other values would split batches for nothing).
+    bool vc_changed = memcmp(&vc, &g_vc_last, sizeof(vc)) != 0;
+    if (g_xf_dirty || vc_changed || !g_vx_version) {
+        GpuXf xf;
+        memset(&xf, 0, sizeof(xf));
+        for (uint32_t t = 0; t < S.ntexgen; t++) {
+            const TexGen& x = S.tgs[t];
+            int rows = x.stq ? 3 : 2;
+            if (x.type == 0)
+                for (int k = 0; k < rows * 4; k++) xf.tm[t][k] = xf_f(S.def_tex_idx[t] * 4 + uint32_t(k));
+            if (S.dual)
+                for (int k = 0; k < rows * 4; k++) xf.pm[t][k] = xf_f(x.post_base + uint32_t(k));
+        }
+        for (uint32_t c = 0; c < S.lchans; c++)
+            for (int k = 0; k < 4; k++) { xf.mat[c][k] = S.lparts[c][0].mat[k]; xf.amb[c][k] = S.lparts[c][0].amb[k]; }
+        for (uint32_t m = S.used_lights; m; m &= m - 1) {
+            int l = std::countr_zero(m);
+            LightConst lc;
+            setup_light_const(l, lc);
+            for (int k = 0; k < 3; k++) { xf.lpos[l][k] = lc.lpos[k]; xf.ldir[l][k] = lc.ldir[k]; }
+            for (int k = 0; k < 4; k++) xf.lcol[l][k] = lc.col[k];
+            float att[6] = {lc.a0, lc.a1, lc.a2, lc.k0, lc.k1, lc.k2};
+            memcpy(xf.latt[l], att, sizeof(att));
+        }
+        g_xf_dirty = false;
+        if (vc_changed || memcmp(&xf, &g_xf_last, sizeof(xf)) != 0) {
+            g_vc_last = vc;
+            g_xf_last = xf;
+            g_vx_version++;
+        }
+    }
+
+    const GpuVtxLayout L = gpu_vtx_layout(attrs);
+    uint8_t* out = gpu_vtx_reserve(size_t(count) * L.stride);
+    const bool need_nrm = attrs & (VA_GEO | VA_RNRM);
+    double zn = (double(xfr_f(0x1F)) - double(xfr_f(0x1C))) / 16777216.0, zf = double(xfr_f(0x1F)) / 16777216.0;
+    double zlo = std::max(std::min(zn, zf) + 1e-5, 1e-5), zhi = std::min(std::max(zn, zf) - 1e-5, 1.0 - 1e-5);
+    double vp2 = double(xfr_f(0x1C)), vp5 = double(xfr_f(0x1F));
+    bool zsnap = false;
+    constexpr uint32_t kAhead = 6;  // indexed attributes are scattered in RAM: fetch them a few vertices early
+    auto prefetch = [&](uint32_t v) {
+        const uint8_t* p = data + size_t(v) * S.vsize;
+        for (int i = 0; i < F.npf; i++) {
+            uint32_t idx = F.pf_size[i] == 1 ? p[F.pf_off[i]] : uint32_t(p[F.pf_off[i]]) << 8 | p[F.pf_off[i] + 1];
+            uint32_t a = F.pf_array[i];
+            uint32_t addr = (g.cp[0xA0 + a] & 0x03FFFFFF) + idx * (g.cp[0xB0 + a] & 0xFF);
+            if (addr < ssne::kRamSize - 64) __builtin_prefetch(ssne::g_ram + addr);
+        }
+    };
+    for (uint32_t v = 0; v < count && v < kAhead; v++) prefetch(v);
+    for (uint32_t v = 0; v < count; v++) {
+        if (v + kAhead < count) prefetch(v + kAhead);
+        const uint8_t* p = data + size_t(v) * S.vsize;
+        uint8_t* o = out + size_t(v) * L.stride;
+        uint32_t off = 0;
+        uint32_t pos_idx = S.mia & 0x3F;
+        if (S.lo & 1) pos_idx = p[off++] & 0x3F;
+        Reader slow;
+        float pos[4] = {0, 0, 0, 1};
+        if (S.pos_d.type) {
+            if (const uint8_t* q = attr_ptr(S.pos_d, p, off, slow))
+                for (uint32_t k = 0; k < S.pos_d.n; k++) pos[k] = comp_at(q, S.pos_d.fmt, k, S.pos_d.scale);
+            else
+                for (uint32_t k = 0; k < S.pos_d.n; k++) pos[k] = slow.comp(S.pos_d.fmt, k, S.pos_d.scale);
+        }
+        float nrm[3] = {0, 0, 1};
+        if (S.nrm_d.type) {
+            const uint8_t* q = attr_ptr(S.nrm_d, p, off, slow);
+            if (need_nrm) {
+                if (q) for (int k = 0; k < 3; k++) nrm[k] = comp_at(q, S.nrm_d.fmt, uint32_t(k), S.nrm_d.scale);
+                else for (int k = 0; k < 3; k++) nrm[k] = slow.comp(S.nrm_d.fmt, uint32_t(k), S.nrm_d.scale);
+            }
+            off += S.nrm_skip;
+        }
+        for (int c = 0; c < 2; c++) {
+            uint8_t rgba[4] = {0, 0, 0, 0};
+            if (S.col_d[c].type) {
+                const uint32_t fmt = S.col_d[c].fmt;
+                const uint8_t* q = attr_ptr(S.col_d[c], p, off, slow);
+                if (q && fmt == 5) memcpy(rgba, q, 4);                                          // RGBA8
+                else if (q && (fmt == 1 || fmt == 2)) { rgba[0] = q[0]; rgba[1] = q[1]; rgba[2] = q[2]; rgba[3] = 255; }  // RGB8 / RGBX8
+                else {
+                    float vcol[4];
+                    if (q) { Reader r; r.p = q; r.color(fmt, vcol); }
+                    else slow.color(fmt, vcol);
+                    for (int k = 0; k < 4; k++) rgba[k] = uint8_t(vcol[k]);  // whole numbers 0..255
+                }
+            }
+            memcpy(o + (c ? L.col1 : L.col0), rgba, 4);
+        }
+        for (int t = 0; t < 8; t++) {
+            const AttrDesc& d = S.tex_d[t];
+            if (!d.type) continue;
+            const uint8_t* q = attr_ptr(d, p, off, slow);
+            if (L.tc[t] < 0) continue;
+            float tc[2] = {0, 0};
+            if (q) for (uint32_t k = 0; k < d.n; k++) tc[k] = comp_at(q, d.fmt, k, d.scale);
+            else for (uint32_t k = 0; k < d.n; k++) tc[k] = slow.comp(d.fmt, k, d.scale);
+            memcpy(o + L.tc[t], tc, 8);
+        }
+
+        // ---- position (same arithmetic as decode_vertices_fast)
+        float view[3];
+        mul34(pos_idx * 4, pos, view);
+        float clip[4];
+        if (S.ortho) { clip[0] = S.p0 * view[0] + S.p1; clip[1] = S.p2 * view[1] + S.p3; clip[2] = S.p4 * view[2] + S.p5; clip[3] = 1; }
+        else {
+            clip[0] = S.p0 * view[0] + S.p1 * view[2]; clip[1] = S.p2 * view[1] + S.p3 * view[2];
+            clip[2] = S.p4 * view[2] + S.p5; clip[3] = -view[2];
+        }
+        memcpy(o, clip, 16);
+        if (attrs & VA_GEO) {
+            float vn[3];
+            uint32_t nb = 0x400 + (pos_idx & 31) * 3;
+            for (int r = 0; r < 3; r++)
+                vn[r] = xf_f(nb + r * 3) * nrm[0] + xf_f(nb + r * 3 + 1) * nrm[1] + xf_f(nb + r * 3 + 2) * nrm[2];
+            float len = std::sqrt(vn[0] * vn[0] + vn[1] * vn[1] + vn[2] * vn[2]);
+            if (len > 0) for (float& c : vn) c /= len;
+            memcpy(o + L.vpos, view, 12);
+            memcpy(o + L.vnrm, vn, 12);
+        }
+        if (attrs & VA_RPOS) memcpy(o + L.rpos, pos, 12);
+        if (attrs & VA_RNRM) memcpy(o + L.rnrm, nrm, 12);
+        if (!zsnap) {
+            if (!(clip[3] > 1e-5f)) zsnap = true;
+            else {
+                double d = (double(clip[2]) / double(clip[3]) * vp2 + vp5) / 16777216.0;
+                if (!(d > zlo && d < zhi)) zsnap = true;
+            }
+        }
+    }
+    widescreen_hud_inplace(out, count, L.stride);
+    gpu_record_vertices(prim, count, g_vc_last, g_xf_last, g_vx_version, zsnap);
+    return true;
 }
 
 void decode_vertices(int vat, const uint8_t* data, uint32_t count, std::vector<Vtx>& out) {

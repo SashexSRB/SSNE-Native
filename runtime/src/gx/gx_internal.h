@@ -24,6 +24,12 @@ extern State g;
 // Set whenever something a draw's TEV / pixel engine snapshot reads may have changed (BP and XF registers, TEV
 // color registers, bound textures). The GPU recorder rebuilds its snapshot only then.
 inline bool g_cfg_dirty = true;
+// Set by every XF memory / register write (matrices, lights, texgen and channel setup): GPU vertex processing
+// rebuilds its per-draw parameters only then.
+inline bool g_xf_dirty = true;
+// Set by CP register and XF register writes: the per-draw vertex setup (attribute formats, texgen and channel
+// configuration) depends on nothing else (matrix and light memory are read per vertex / per batch).
+inline bool g_vsetup_dirty = true;
 
 inline float xf_f(uint32_t addr) { float f; memcpy(&f, &g.xf_mem[addr & 0xFFF], 4); return f; }
 inline float xfr_f(uint32_t reg) { float f; memcpy(&f, &g.xf_reg[reg & 0xFF], 4); return f; }

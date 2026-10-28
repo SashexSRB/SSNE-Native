@@ -48,6 +48,15 @@ using gx::DrawCfg;
 using gx::GpuCmd;
 using gx::GpuFrame;
 using gx::GpuState;
+using gx::GpuVcfg;
+using gx::GpuVtxLayout;
+using gx::GpuXf;
+using gx::gpu_vtx_layout;
+using gx::VA_GEO;
+using gx::VA_RNRM;
+using gx::VA_RPOS;
+using gx::VA_VCOL0;
+using gx::VA_VCOL1;
 using gx::StageCfg;
 using gx::Texture;
 
@@ -97,7 +106,7 @@ struct StateCache {
     GLuint program;
     int active;
     GLuint tex[8], smp[8];
-    int8_t attrib[11];
+    int8_t attrib[16];
 } g_sc;
 
 void sc_invalidate() {
@@ -590,13 +599,21 @@ void evict() {
 struct UniformShadow {
     float vp0[4], vp1[4], efb[2], sts[32], calpha, texsz[16], su[16], fog[4], zr[2];
     GLint reg[16], konst[16], aref[4], indmtx[24], fogc[4];
+    GpuXf xf;  // GPU vertex processing parameters
+    GLint lmask[4];
 };
 struct Program {
     GLuint prog = 0;
     GLint u_vp0, u_vp1, u_efb, u_reg, u_konst, u_aref, u_stscale, u_calpha, u_zrange, u_fog, u_fogcolor;
     GLint u_indmtx, u_texsz, u_su;
+    GLint u_tm, u_pm, u_mat, u_amb, u_lpos, u_ldir, u_lcol, u_latt, u_lmask;  // GPU vertex processing (-1 in mode 0)
     std::shared_ptr<UniformShadow> shadow;  // null until the first upload
 };
+bool changed_xf(GpuXf& cache, const GpuXf& v, bool force) {
+    if (!force && memcmp(&cache, &v, sizeof(cache)) == 0) return false;
+    cache = v;
+    return true;
+}
 template <size_t N, class T> bool changed(T (&cache)[N], const T* v, bool force) {
     if (!force && memcmp(cache, v, sizeof(cache)) == 0) return false;
     memcpy(cache, v, sizeof(cache));
@@ -641,6 +658,110 @@ std::string alpha_in(uint32_t sel, const StageCfg& st) {
 }
 
 const char* kComp[8] = {"false", "(a < r)", "(a == r)", "(a <= r)", "(a > r)", "(a != r)", "(a >= r)", "true"};
+
+// Mode 1 (GPU vertex processing): lighting and texture coordinate generation, mirroring decode_vertices_fast
+// (same expressions in the same order; the per-batch parameters come from GpuXf, the configuration is baked in).
+std::string gen_vs_tl(const GpuVcfg& vc) {
+    const GpuVtxLayout L = gpu_vtx_layout(vc.attrs);
+    std::string s = "#version 330 core\n"
+                    "layout(location=0) in vec4 a_pos;\nlayout(location=1) in vec4 a_col0;\nlayout(location=2) in vec4 a_col1;\n";
+    if (vc.attrs & VA_GEO) s += "layout(location=3) in vec3 a_vpos;\nlayout(location=4) in vec3 a_vnrm;\n";
+    if (vc.attrs & VA_RPOS) s += "layout(location=5) in vec3 a_rpos;\n";
+    if (vc.attrs & VA_RNRM) s += "layout(location=6) in vec3 a_rnrm;\n";
+    for (int i = 0; i < 8; i++)
+        if (L.tc[i] >= 0) s += "layout(location=" + std::to_string(7 + i) + ") in vec2 a_tc" + std::to_string(i) + ";\n";
+    s += "uniform vec4 u_vp0, u_vp1;\nuniform vec2 u_efb;\n"
+         "uniform vec4 u_tm[24], u_pm[24], u_mat[2], u_amb[2], u_lpos[8], u_ldir[8], u_lcol[8], u_latt[16];\n"
+         "uniform int u_lmask[4];\n"
+         "out vec4 v_col0, v_col1;\n";
+    for (uint32_t i = 0; i < vc.ntg; i++) s += "out vec3 v_tex" + std::to_string(i) + ";\n";
+    s += "void main() {\n"
+         "  vec4 p = a_pos;\n"
+         "  float px = p.x * u_vp0.x + u_vp1.x * p.w;\n"
+         "  float py = p.y * u_vp0.y + u_vp1.y * p.w;\n"
+         "  float pz = (p.z * u_vp0.z + u_vp1.z * p.w) * (1.0 / 16777216.0);\n"
+         "  gl_Position = vec4(px * 2.0 / u_efb.x - p.w, py * 2.0 / u_efb.y - p.w, pz * 2.0 - p.w, p.w);\n"
+         "  gl_ClipDistance[0] = p.z + p.w + abs(p.w) * 1e-5;\n  gl_ClipDistance[1] = -p.z + abs(p.w) * 1e-5;\n"
+         "  gl_ClipDistance[2] = p.w - 1e-5;\n"
+         "  vec4 vc0 = a_col0 * 255.0, vc1 = a_col1 * 255.0;\n";
+    s += "  vec4 c0 = vec4(0.0), c1 = vec4(0.0);\n";
+    for (uint32_t c = 0; c < vc.lchans; c++) {
+        std::string cs = std::to_string(c), vcol = (vc.attrs & (c ? VA_VCOL1 : VA_VCOL0)) ? "vc" + cs : "vec4(255.0)";
+        for (int part = 0; part < 2; part++) {
+            uint32_t lp = vc.lp[c][part];
+            std::string sw = part ? ".a" : ".rgb", dst = "c" + cs + sw;
+            std::string mat = (lp & 2) ? vcol + sw : "u_mat[" + cs + "]" + sw;
+            std::string amb = (lp & 4) ? vcol + sw : "u_amb[" + cs + "]" + sw;
+            if (!(lp & 1)) { s += "  " + dst + " = " + mat + ";\n"; continue; }
+            std::string ty = part ? "float" : "vec3";
+            s += "  { " + ty + " lit = " + amb + ";\n";
+            uint32_t fn = lp >> 3 & 3;
+            bool atten = lp >> 5 & 1, spot = lp >> 6 & 1;
+            // Which lights: a uniform (u_lmask[channel * 2 + part]), so light combinations don't each need a program.
+            // Light geometry as in light_geo (recomputed per part: same expressions, same results).
+            std::string mask = "u_lmask[" + std::to_string(c * 2 + uint32_t(part)) + "]";
+            for (int l = (lp >> 8) ? 0 : 8; l < 8; l++) {
+                std::string n = std::to_string(l), a = "u_latt[" + std::to_string(2 * l) + "]", b = "u_latt[" + std::to_string(2 * l + 1) + "]";
+                std::string diff = fn == 0 ? "1.0" : fn == 1 ? "ndl" : "max(0.0, ndl)";
+                s += "    if ((" + mask + " & " + std::to_string(1 << l) + ") != 0) {\n"
+                     "      vec3 L" + n + " = u_lpos[" + n + "].xyz - a_vpos;\n"
+                     "      float d2_" + n + " = L" + n + ".x * L" + n + ".x + L" + n + ".y * L" + n + ".y + L" + n + ".z * L" + n + ".z;\n"
+                     "      float d_" + n + " = sqrt(d2_" + n + ");\n"
+                     "      if (d_" + n + " > 0.0) L" + n + " /= d_" + n + ";\n"
+                     "      float ndl = a_vnrm.x * L" + n + ".x + a_vnrm.y * L" + n + ".y + a_vnrm.z * L" + n + ".z;\n";
+                s += "      float diff = " + diff + ", att = 1.0;\n";
+                if (atten) {
+                    if (spot)
+                        s += "      float ca = max(0.0, -(L" + n + ".x * u_ldir[" + n + "].x + L" + n + ".y * u_ldir[" + n + "].y + L" + n +
+                             ".z * u_ldir[" + n + "].z));\n"
+                             "      float num = max(0.0, " + a + ".x + " + a + ".y * ca + " + a + ".z * ca * ca);\n"
+                             "      float den = " + a + ".w + " + b + ".x * d_" + n + " + " + b + ".y * d2_" + n + ";\n";
+                    else
+                        s += "      float h = a_vnrm.x * u_ldir[" + n + "].x + a_vnrm.y * u_ldir[" + n + "].y + a_vnrm.z * u_ldir[" + n + "].z;\n"
+                             "      float cc = ndl > 0.0 ? max(0.0, h) : 0.0;\n"
+                             "      float num = max(0.0, " + a + ".x + " + a + ".y * cc + " + a + ".z * cc * cc);\n"
+                             "      float den = " + a + ".w + " + b + ".x * cc + " + b + ".y * cc * cc;\n";
+                    s += "      att = den > 0.0 ? num / den : num;\n";
+                }
+                s += "      lit += u_lcol[" + n + "]" + sw + " * diff * att; }\n";
+            }
+            s += "    " + dst + " = " + mat + " * clamp(lit / 255.0, 0.0, 1.0); }\n";
+        }
+    }
+    s += "  v_col0 = clamp(floor(c0 + 0.5), 0.0, 255.0);\n  v_col1 = clamp(floor(c1 + 0.5), 0.0, 255.0);\n";
+    for (uint32_t t = 0; t < vc.ntg; t++) {
+        uint32_t tg = vc.tg[t], type = tg & 7, src = tg >> 3 & 31, es = tg >> 11 & 7;
+        bool stq = tg >> 8 & 1, abc1 = tg >> 9 & 1, dnorm = tg >> 10 & 1;
+        std::string ts = std::to_string(t), r0 = std::to_string(3 * t), r1 = std::to_string(3 * t + 1), r2 = std::to_string(3 * t + 2);
+        s += "  vec3 tg" + ts + ";\n  { float s, t, q;\n";
+        if (type == 0) {
+            s += "    vec4 inp = vec4(0.0, 0.0, 1.0, 1.0);\n";
+            if (src == 0 && (vc.attrs & VA_RPOS)) s += "    inp.xyz = a_rpos;\n";
+            else if (src == 1 && (vc.attrs & VA_RNRM)) s += "    inp.xyz = a_rnrm;\n";
+            else if (src >= 5 && src <= 12) s += L.tc[src - 5] >= 0 ? "    inp.xy = a_tc" + std::to_string(src - 5) + ";\n" : "    inp.xy = vec2(0.0);\n";
+            if (!abc1) s += "    inp.z = 1.0;\n";
+            auto row = [&](const std::string& r) {
+                return "u_tm[" + r + "].x * inp.x + u_tm[" + r + "].y * inp.y + u_tm[" + r + "].z * inp.z + u_tm[" + r + "].w * inp.w";
+            };
+            s += "    s = " + row(r0) + ";\n    t = " + row(r1) + ";\n    q = " + (stq ? row(r2) : std::string("1.0")) + ";\n";
+        } else if (type == 1) {
+            s += "    s = tg" + std::to_string(es) + ".x; t = tg" + std::to_string(es) + ".y; q = tg" + std::to_string(es) + ".z;\n";
+        } else {
+            s += "    s = c0.r / 255.0; t = c0.g / 255.0; q = 1.0;\n";
+        }
+        if (vc.dual) {
+            if (dnorm) s += "    { float len = sqrt(s * s + t * t + q * q); if (len > 0.0) { s /= len; t /= len; q /= len; } }\n";
+            auto row = [&](const std::string& r) {
+                return "u_pm[" + r + "].x * s + u_pm[" + r + "].y * t + u_pm[" + r + "].z * q + u_pm[" + r + "].w";
+            };
+            s += "    { float s2 = " + row(r0) + ", t2 = " + row(r1) + ", q2 = " + (stq ? row(r2) : std::string("1.0")) +
+                 ";\n      s = s2; t = t2; q = q2; }\n";
+        }
+        s += "    tg" + ts + " = vec3(s, t, q); }\n  v_tex" + ts + " = tg" + ts + ";\n";
+    }
+    s += "}\n";
+    return s;
+}
 
 std::string gen_vs(int ntex) {
     std::string s = "#version 330 core\n"
@@ -849,9 +970,16 @@ std::string gen_fs(const DrawCfg& c, int ntex, bool zsnap) {
     return s;
 }
 
-void program_key(std::string& k, const DrawCfg& c, int ntex, bool zsnap) {
+void program_key(std::string& k, const DrawCfg& c, int ntex, bool zsnap, const GpuVcfg& vc) {
     k.clear();
     auto put = [&](uint32_t v) { k.append(reinterpret_cast<const char*>(&v), 4); };
+    put(vc.mode);
+    if (vc.mode == 1) {
+        put(vc.attrs); put(vc.ntg); put(vc.dual); put(vc.lchans);
+        for (uint32_t t = 0; t < vc.ntg; t++) put(vc.tg[t]);
+        for (int ch = 0; ch < 2; ch++)  // light masks are uniforms: only whether a part has lights at all
+            for (int part = 0; part < 2; part++) put((vc.lp[ch][part] & 0xFF) | ((vc.lp[ch][part] >> 8) ? 0x100u : 0u));
+    }
     put(uint32_t(c.stages)); put(uint32_t(ntex));
     for (int i = 0; i < c.stages; i++) {
         const StageCfg& st = c.st[i];
@@ -950,16 +1078,16 @@ void init_shader_cache() {
     g_cache_ok = true;
 }
 
-Program* program_for(const DrawCfg& c, int ntex, bool zsnap) {
+Program* program_for(const DrawCfg& c, int ntex, bool zsnap, const GpuVcfg& vc) {
     static std::string key;  // render thread only; reused so a lookup doesn't allocate
-    program_key(key, c, ntex, zsnap);
+    program_key(key, c, ntex, zsnap, vc);
     auto it = g_programs.find(key);
     if (it != g_programs.end()) return it->second.prog ? &it->second : nullptr;
     Program p;
     const char* prev_phase = g_phase;
     g_phase = "compile shader";
     auto t0 = std::chrono::steady_clock::now();
-    std::string vs = gen_vs(ntex), fs = gen_fs(c, ntex, zsnap);
+    std::string vs = vc.mode == 1 ? gen_vs_tl(vc) : gen_vs(ntex), fs = gen_fs(c, ntex, zsnap);
     uint64_t h = fnv1a(fs.data(), fs.size(), fnv1a(vs.data(), vs.size()));
     p.prog = load_cached_program(h);
     if (p.prog) g_stats.cached_programs++;
@@ -987,6 +1115,15 @@ Program* program_for(const DrawCfg& c, int ntex, bool zsnap) {
         p.u_indmtx = GetUniformLocation(p.prog, "u_indmtx");
         p.u_texsz = GetUniformLocation(p.prog, "u_texsz");
         p.u_su = GetUniformLocation(p.prog, "u_su");
+        p.u_tm = GetUniformLocation(p.prog, "u_tm");
+        p.u_pm = GetUniformLocation(p.prog, "u_pm");
+        p.u_mat = GetUniformLocation(p.prog, "u_mat");
+        p.u_amb = GetUniformLocation(p.prog, "u_amb");
+        p.u_lpos = GetUniformLocation(p.prog, "u_lpos");
+        p.u_ldir = GetUniformLocation(p.prog, "u_ldir");
+        p.u_lcol = GetUniformLocation(p.prog, "u_lcol");
+        p.u_latt = GetUniformLocation(p.prog, "u_latt");
+        p.u_lmask = GetUniformLocation(p.prog, "u_lmask");
     }
     g_phase = prev_phase;
     auto& slot = g_programs[key];
@@ -1201,7 +1338,7 @@ void run_draw(const GpuFrame& f, const GpuCmd& cmd) {
     float zr[2];
     plane_depths(st, zr);
     double flat_z = cmd.zsnap && !always_fragdepth ? flat_plane_depth(f, cmd, st, zr) : -1;
-    Program* p = program_for(c, ntex, (cmd.zsnap && flat_z < 0) || always_fragdepth);
+    Program* p = program_for(c, ntex, (cmd.zsnap && flat_z < 0) || always_fragdepth, st.vcfg);
     if (!p) return;
     // Textures first (reinterpretation passes change GL state).
     GLuint tex[8];
@@ -1291,9 +1428,36 @@ void run_draw(const GpuFrame& f, const GpuCmd& cmd) {
     VertexAttribPointer(0, 4, FLOAT, 0, stride, base);
     VertexAttribPointer(1, 4, UNSIGNED_BYTE, 1, stride, base + 16);
     VertexAttribPointer(2, 4, UNSIGNED_BYTE, 1, stride, base + 20);
-    for (int i = 0; i < 8; i++) {
-        if (i < ntex) { sc_attrib(3 + i, true); VertexAttribPointer(GLuint(3 + i), 3, FLOAT, 0, stride, base + 24 + 12 * i); }
-        else sc_attrib(3 + i, false);
+    if (st.vcfg.mode == 1) {
+        if (changed_xf(sh.xf, st.xf, first)) {
+            const GpuXf& x = st.xf;
+            if (p->u_tm >= 0) Uniform4fv(p->u_tm, 24, &x.tm[0][0]);
+            if (p->u_pm >= 0) Uniform4fv(p->u_pm, 24, &x.pm[0][0]);
+            if (p->u_mat >= 0) Uniform4fv(p->u_mat, 2, &x.mat[0][0]);
+            if (p->u_amb >= 0) Uniform4fv(p->u_amb, 2, &x.amb[0][0]);
+            if (p->u_lpos >= 0) Uniform4fv(p->u_lpos, 8, &x.lpos[0][0]);
+            if (p->u_ldir >= 0) Uniform4fv(p->u_ldir, 8, &x.ldir[0][0]);
+            if (p->u_lcol >= 0) Uniform4fv(p->u_lcol, 8, &x.lcol[0][0]);
+            if (p->u_latt >= 0) Uniform4fv(p->u_latt, 16, &x.latt[0][0]);
+        }
+        GLint lmask[4] = {GLint(st.vcfg.lp[0][0] >> 8), GLint(st.vcfg.lp[0][1] >> 8), GLint(st.vcfg.lp[1][0] >> 8),
+                          GLint(st.vcfg.lp[1][1] >> 8)};
+        if (p->u_lmask >= 0 && changed(sh.lmask, lmask, first)) Uniform1iv(p->u_lmask, 4, lmask);
+        const GpuVtxLayout L = gpu_vtx_layout(st.vcfg.attrs);
+        auto attr = [&](int loc, int off, int comps) {
+            if (off < 0) { sc_attrib(loc, false); return; }
+            sc_attrib(loc, true);
+            VertexAttribPointer(GLuint(loc), comps, FLOAT, 0, stride, base + off);
+        };
+        attr(3, L.vpos, 3); attr(4, L.vnrm, 3); attr(5, L.rpos, 3); attr(6, L.rnrm, 3);
+        for (int i = 0; i < 8; i++) attr(7 + i, L.tc[i], 2);
+        sc_attrib(15, false);
+    } else {
+        for (int i = 0; i < 8; i++) {
+            if (i < ntex) { sc_attrib(3 + i, true); VertexAttribPointer(GLuint(3 + i), 3, FLOAT, 0, stride, base + 24 + 12 * i); }
+            else sc_attrib(3 + i, false);
+        }
+        for (int i = 11; i < 16; i++) sc_attrib(i, false);
     }
     if (flat_z >= 0) DepthRange(flat_z, flat_z);
     DrawElements(TRIANGLES, GLsizei(cmd.idx_count), UNSIGNED_INT,

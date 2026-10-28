@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <string>
 #include <unordered_map>
 
@@ -16,7 +17,7 @@
 namespace ssne::gx {
 
 namespace {
-constexpr uint32_t kVersion = 2;  // 2: copies into part of an earlier copy (base_copy_id ...)
+constexpr uint32_t kVersion = 3;  // 2: copies into part of an earlier copy (base_copy_id ...); 3: GPU vertex processing
 
 template <class T> void put(FILE* f, const T& v) { fwrite(&v, sizeof(T), 1, f); }
 template <class T> bool get(FILE* f, T& v) { return fread(&v, sizeof(T), 1, f) == 1; }
@@ -51,7 +52,13 @@ void gpu_capture_frame(const GpuFrame& fr) {
     if (n < first || n >= first + count) return;
     char name[64];
     snprintf(name, sizeof(name), "/frame_%05ld.bin", n - first);
-    FILE* f = fopen((dir + name).c_str(), "wb");
+    gpu_capture_frame_to(fr, dir + name);
+}
+
+void gpu_capture_frame_to(const GpuFrame& fr, const std::string& path) {
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
+    FILE* f = fopen(path.c_str(), "wb");
     if (!f) return;
     fwrite("SSNEGPUF", 1, 8, f);
     put(f, kVersion);

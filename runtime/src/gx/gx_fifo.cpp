@@ -13,6 +13,7 @@
 #include <immintrin.h>
 #endif
 
+#include "gx_gpu_frame.h"
 #include "gx_internal.h"
 #include "../state_io.h"
 #include "ssne/gx.h"
@@ -78,10 +79,11 @@ inline uint32_t rd32(const uint8_t* p) { return uint32_t(p[0]) << 24 | uint32_t(
 void load_xf(const uint8_t* p) {
     uint32_t h = rd32(p);
     uint32_t count = (h >> 16) + 1, addr = h & 0xFFFF;
+    g_xf_dirty = true;
     for (uint32_t k = 0; k < count; k++, addr++) {
         uint32_t v = rd32(p + 4 + 4 * k);
         if (addr < 0x1000) g.xf_mem[addr] = v;
-        else if (addr < 0x1100 && g.xf_reg[addr - 0x1000] != v) { g.xf_reg[addr - 0x1000] = v; g_cfg_dirty = true; }
+        else if (addr < 0x1100 && g.xf_reg[addr - 0x1000] != v) { g.xf_reg[addr - 0x1000] = v; g_cfg_dirty = true; g_vsetup_dirty = true; }
     }
 }
 
@@ -128,8 +130,20 @@ size_t parse(const uint8_t* p, size_t n, int depth) {
                 if (n - i < need) return i;
                 s_prims++;
                 s_verts += count;
-                decode_vertices(vat, p + i + 3, count, g_vtx);
-                draw(op & 0xF8, g_vtx);
+                static const bool gpu_tl = gpu_vertex_shading();
+                if (gpu_enabled() && gpu_compare_on()) {  // testing: record with both vertex paths
+                    bool dirty = g_cfg_dirty;
+                    gpu_select_ctx(0);
+                    decode_vertices(vat, p + i + 3, count, g_vtx);
+                    draw(op & 0xF8, g_vtx);
+                    g_cfg_dirty = dirty;
+                    gpu_select_ctx(1);
+                    if (!gpu_draw(op & 0xF8, vat, p + i + 3, count)) { decode_vertices(vat, p + i + 3, count, g_vtx); draw(op & 0xF8, g_vtx); }
+                    gpu_select_ctx(0);
+                } else if (!(gpu_tl && gpu_enabled() && gpu_draw(op & 0xF8, vat, p + i + 3, count))) {
+                    decode_vertices(vat, p + i + 3, count, g_vtx);
+                    draw(op & 0xF8, g_vtx);
+                }
                 i += need;
                 s_cmds++;
                 continue;
@@ -139,7 +153,7 @@ size_t parse(const uint8_t* p, size_t n, int depth) {
         }
         if (n - i < need) return i;
         switch (op) {
-        case 0x08: g.cp[p[i + 1]] = rd32(p + i + 2); break;
+        case 0x08: g.cp[p[i + 1]] = rd32(p + i + 2); g_vsetup_dirty = true; break;
         case 0x10: load_xf(p + i + 1); break;
         case 0x20: load_indexed_xf(12, rd32(p + i + 1)); break;
         case 0x28: load_indexed_xf(13, rd32(p + i + 1)); break;
@@ -360,6 +374,8 @@ bool gx_state_load(StateReader& r) {
     tev_regs_access(regs, konst, true);
     texture_cache_clear();
     g_cfg_dirty = true;
+    g_xf_dirty = true;
+    g_vsetup_dirty = true;
     return true;
 }
 
