@@ -22,6 +22,14 @@ bool acceptable(gc::VerifyStatus s) {
 
 LauncherApp::LauncherApp() {
     base_dir_ = platform::exe_dir();
+    {   // The launcher's name until 1.2 (a newer package unpacked over an older one leaves it behind)
+        std::error_code ec;
+#ifdef _WIN32
+        fs::remove(fs::u8path(base_dir_ + "/SillyReEncounter.exe"), ec);
+#else
+        fs::remove(base_dir_ + "/SillyReEncounter", ec);
+#endif
+    }
     config_path_ = base_dir_ + "/launcher.ini";
     data_dir_ = base_dir_ + "/game_data";
     known_ = gc::load_known_dumps(base_dir_ + "/known_dumps.txt");
@@ -160,6 +168,11 @@ void LauncherApp::start_install() {
                               prog_done_ = uint64_t(std::clamp(f, 0.0, 1.0) * 1000);
                           },
                           cancel_, err);
+        if (ok)  // game executables under their earlier names
+            for (auto& old : platform::legacy_port_exe_names()) {
+                std::error_code ec;
+                fs::remove(fs::u8path(base_dir_ + "/" + old), ec);
+            }
         std::lock_guard<std::mutex> lk(mu_);
         message_ = ok ? "The game was built on this PC. Press Play!" : "Building the game failed: " + err;
         message_is_error_ = !ok;
@@ -280,12 +293,12 @@ void LauncherApp::draw_title(ImVec2 p0, ImVec2 p1) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     float w = p1.x - p0.x, h = p1.y - p0.y;
     float size = std::min(h * 0.56f, w * 0.082f);
-    const char* title = "Silly ReEncounter";
+    const char* title = "Serious Sam";
     ImVec2 ts = theme::chunky_text(nullptr, ImVec2(0, 0), size, title, theme::Look::Normal, time_);
     ImVec2 tp(p0.x + (w - ts.x) * 0.5f, p0.y + h * 0.14f);
     theme::chunky_text(dl, tp, size, title, theme::Look::Normal, time_);
 
-    const char* sub = "PC RECOMPILATION";
+    const char* sub = "NEXT ENCOUNTER NATIVE";
     float ss = std::max(13.0f, size * 0.26f), sp = ss * 0.55f;
     float sw = theme::spaced_text(nullptr, theme::fonts.bold, ss, ImVec2(0, 0), 0, sub, sp);
     ImVec2 sub_pos(p0.x + (w - sw) * 0.5f, tp.y + ts.y + h * 0.06f);

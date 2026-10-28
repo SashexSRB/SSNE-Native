@@ -1,4 +1,4 @@
-SILLY REENCOUNTER
+SERIOUS SAM: NEXT ENCOUNTER NATIVE (SSNE-NATIVE)
 Unofficial fan project: play Serious Sam: Next Encounter (Nintendo GameCube, 2004) as a native PC program,
 built on your own PC from your own copy of the game.
 
@@ -13,9 +13,9 @@ HOW IT WORKS
        - downloads the free LLVM-MinGW compiler (about 170 MB, only the first time) from its official GitHub
          release into build-kit\toolchain,
        - translates the game's program (main.dol) from your disc into C++ and compiles it, then links it with the
-         PC port in build-kit\lib. This makes SillyReEncounter-Game.exe. It takes a few minutes.
+         PC port in build-kit\lib. This makes SSNE-Native-Game.exe. It takes a few minutes.
   3. Play.
-  Everything made from your disc stays on your PC. Do not share game_data or SillyReEncounter-Game.exe: they are
+  Everything made from your disc stays on your PC. Do not share game_data or SSNE-Native-Game.exe: they are
   made from the game and are only for you.
 
 REQUIREMENTS
@@ -28,7 +28,7 @@ REQUIREMENTS
   Do not ask for, share or download disc images.
 
 FILES
-  SillyReEncounter.exe   the launcher
+  SSNE-Native.exe        the launcher
   gctool.exe               command-line disc tool: gctool info|verify|extract <image> [...]
   known_dumps.txt          SHA-1 checksums of known good dumps (checksums only)
   build-kit\               what the launcher needs to build the game on your PC:
@@ -122,7 +122,7 @@ HOTKEYS (work any time in the game window; also listed in F12 > Hotkeys)
   Print Screen or Shift+F12  screenshot of the game image (PNG in the Screenshots folder next to the game)
 
 LEGAL
-  Silly ReEncounter is an unofficial, non-commercial fan project. It is not affiliated with, endorsed by or
+  SSNE-Native is an unofficial, non-commercial fan project based on Silly ReEncounter. It is not affiliated with, endorsed by or
   sponsored by Croteam, Devolver Digital, Climax Group, Global Star Software, Take-Two Interactive or Nintendo.
   "Serious Sam" and "Serious Sam: Next Encounter" are trademarks of their respective owners and are used here only
   to identify the game this software works with. Nintendo GameCube is a trademark of Nintendo.

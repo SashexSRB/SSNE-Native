@@ -14,7 +14,7 @@ std::string exe_dir();
 bool launch(const std::string& exe, const std::vector<std::string>& args, const std::string& cwd,
             std::string& error);
 bool file_exists(const std::string& path);
-std::string port_exe_name();          // SillyReEncounter-Game(.exe)
+std::string port_exe_name();          // SSNE-Native-Game(.exe)
 std::vector<std::string> legacy_port_exe_names();  // game exe names from before the renames
 
 

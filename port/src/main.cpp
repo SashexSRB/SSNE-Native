@@ -710,7 +710,7 @@ void take_screenshot(const std::string& base_dir) {
     localtime_r(&t, &lt);
 #endif
     char name[64];
-    std::strftime(name, sizeof(name), "SillyReEncounter_%Y-%m-%d_%H-%M-%S", &lt);
+    std::strftime(name, sizeof(name), "SSNE-Native_%Y-%m-%d_%H-%M-%S", &lt);
     std::string path = base_dir + "Screenshots/" + name;
     static int same_second = 0;
     static std::string last_name;
@@ -889,7 +889,7 @@ void draw_overlay(const std::string& data_dir, float dt) {
         ImGui::SetNextWindowPos(ImVec2(vp->Pos.x + 20, vp->Pos.y + 50), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(760, 420), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowBgAlpha(0.85f);
-        ImGui::Begin("Silly ReEncounter - development build");
+        ImGui::Begin("SSNE-Native - development build");
         {
             std::lock_guard<std::mutex> lk(g_log_mutex);
             ImGui::TextWrapped("%s", g_status.c_str());
@@ -1077,7 +1077,7 @@ int main(int argc, char** argv) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     int wx, wy, ww, wh;
     initial_window_geometry(wx, wy, ww, wh);
-    SDL_Window* win = SDL_CreateWindow("Silly ReEncounter", wx, wy, ww, wh,
+    SDL_Window* win = SDL_CreateWindow("Serious Sam: Next Encounter Native", wx, wy, ww, wh,
                                        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI |
                                            (g_set.win_max ? SDL_WINDOW_MAXIMIZED : 0));
     SDL_GLContext gl = SDL_GL_CreateContext(win);

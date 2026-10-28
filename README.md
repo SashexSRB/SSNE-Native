@@ -6,8 +6,9 @@ runs with a PC port that handles graphics (OpenGL), sound, keyboard, mouse and g
 
 SSNE-Native is a fork of [Silly ReEncounter](https://github.com/takoshero96/Silly-ReEncounter) by takoshero96,
 which made all of this possible. It adds a Linux version, fixes and PC-style controls (see
-[What SSNE-Native adds](#what-ssne-native-adds)). The programs keep their original names (`SillyReEncounter`,
-`SillyReEncounter-Game`).
+[What SSNE-Native adds](#what-ssne-native-adds)). Its full name is **Serious Sam: Next Encounter Native**; the programs are
+`SSNE-Native` (the launcher) and `SSNE-Native-Game` (until 1.2 they kept the original names `SillyReEncounter` and
+`SSNE-Native-Game`).
 
 **This repository contains no game code and no game data.** You need your own copy of the game.
 
@@ -31,7 +32,7 @@ which made all of this possible. It adds a Linux version, fixes and PC-style con
    `...-Windows-x64.zip`) and unpack it into a folder you can write to: the game data, saves and settings are
    kept next to it. The package contains the launcher and the build kit, but no game code. To build it yourself,
    see [docs/BUILDING.md](docs/BUILDING.md).
-2. **Start the launcher**: `SillyReEncounter` (Linux) or `SillyReEncounter.exe` (Windows).
+2. **Start the launcher**: `SSNE-Native` (Linux) or `SSNE-Native.exe` (Windows).
 3. **Select Disc**: pick your disc image, or drag it onto the launcher window. The launcher checks that it is the
    right game:
    - *Verified*: a known good dump.
@@ -40,19 +41,19 @@ which made all of this possible. It adds a Linux version, fixes and PC-style con
    - *Wrong game / Not a valid disc*: rejected.
 4. **Install Game**: copies the game's files out of the disc image into `game_data` (about 1.3 GB), then translates
    the game's program and compiles it on your PC. This takes about a minute with clang, a few minutes otherwise.
-   It creates `SillyReEncounter-Game`.
+   It creates `SSNE-Native-Game`.
 5. **Play**. From then on you can also start the game directly from its folder:
 
    ```bash
-   ./SillyReEncounter-Game --data game_data
+   ./SSNE-Native-Game --data game_data
    ```
 
-   (Windows: `SillyReEncounter-Game.exe --data game_data`.)
+   (Windows: `SSNE-Native-Game.exe --data game_data`.)
 
 After updating to a newer launcher package, choose **Update Game** in the launcher once: the game is rebuilt with
 the new engine (your game data, saves and settings stay).
 
-Everything made from your disc (`game_data`, `SillyReEncounter-Game`) is only for you: don't share it.
+Everything made from your disc (`game_data`, `SSNE-Native-Game`) is only for you: don't share it.
 
 ## Controls
 
@@ -140,11 +141,11 @@ See [docs/BUILDING.md](docs/BUILDING.md).
 
 | Part | Path | What it does |
 |---|---|---|
-| Launcher (`SillyReEncounter`) | `launcher/` | Disc selection and verification, install, builds the game with the build kit, starts it |
+| Launcher (`SSNE-Native`) | `launcher/` | Disc selection and verification, install, builds the game with the build kit, starts it |
 | Disc library | `libgc/` | ISO/GCM and Dolphin formats, file system, DOL, SHA-1, verification |
 | Recompiler (`ssne-recomp`) | `recomp/` | Translates the game's PowerPC `main.dol` to C++ (all 489,232 instructions, 7,919 functions) |
 | Runtime | `runtime/` | CPU state, memory, hardware (GX graphics on OpenGL, AX audio, controllers, memory card), threads |
-| PC port (`SillyReEncounter-Game`) | `port/` | SDL2 window, audio, input, F12 settings menu, F1 statistics |
+| PC port (`SSNE-Native-Game`) | `port/` | SDL2 window, audio, input, F12 settings menu, F1 statistics |
 | Tools | `tools/` | `gctool` (disc images), headless runner, GPU frame replay, release scripts |
 | Tests | `tests/` | Synthetic discs and a recompiled-CPU test (no game data needed) |
 

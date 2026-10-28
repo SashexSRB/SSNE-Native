@@ -1,4 +1,4 @@
-Silly ReEncounter - changes since the first public release
+SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first public release of Silly ReEncounter
 =========================================================
 
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new

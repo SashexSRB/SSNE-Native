@@ -1,4 +1,4 @@
-Silly ReEncounter - third-party notices
+SSNE-Native - third-party notices
 
 The programs in this release (and the prebuilt libraries in build-kit\lib, which end up in the game program
 built on your PC) include the following third-party software. Their full license
@@ -15,7 +15,7 @@ texts are in the licenses folder.
                         The MinGW-w64 project                             see licenses/MinGW-w64-runtime-COPYING.txt
                                                                           and licenses/winpthreads-COPYING.txt
 
-The fonts are embedded unmodified in SillyReEncounter.exe. They are not sold on their own and keep their
+The fonts are embedded unmodified in SSNE-Native.exe. They are not sold on their own and keep their
 Reserved Font Names.
 
 The compiler used to build the game on your PC (LLVM-MinGW) is not included. The launcher downloads it from its

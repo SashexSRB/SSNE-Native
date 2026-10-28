@@ -74,7 +74,7 @@ manual builds: `-DSSNE_PGO_GENERATE=ON` (instrument) and `-DSSNE_PGO_PROFILE=<fi
    The 23 "unimplemented" entries are zero words in padding and are never executed.
    Add `--no-comments` for smaller output (~25 MB instead of ~60 MB).
 3. Reconfigure with `-DSSNE_RECOMPILED_DIR=<abs path>/recompiled` and build. This produces:
-   * `SillyReEncounter-Game` (target `ssne-port`): the game window
+   * `SSNE-Native-Game` (target `ssne-port`): the game window
    * `ssne-headless`: runs the game code without a window (`--data game_data --seconds 10`); `--press A@8,START@30` scripts
      controller input, `--dump-frames DIR` saves frames, `--wav out.wav` records the audio output,
      `--gpu --scale N` renders with the GPU renderer through surfaceless EGL (Linux/Mesa) for testing

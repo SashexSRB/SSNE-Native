@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the Linux Silly ReEncounter release: launcher, gctool, build kit (translator + prebuilt PC port, no game
+# Builds the Linux SSNE-Native release: launcher, gctool, build kit (translator + prebuilt PC port, no game
 # code), licenses and the source tree. Like tools/make_public_release.sh for Windows, game code is never included:
 # the port is configured without SSNE_RECOMPILED_DIR and players build the game on their own PC from their own disc,
 # here with the system's C++ compiler instead of a downloaded one.
@@ -44,9 +44,9 @@ cmake -S "$ROOT" -B "$BUILD" -DSSNE_PGO_PROFILE="$PGO" >/dev/null
 cmake --build "$BUILD" --target ssne-launcher gctool ssne-recomp ssne-port
 
 rm -rf "$OUT"; mkdir -p "$OUT/build-kit/lib/port" "$OUT/build-kit/include" "$OUT/licenses"
-cp "$BUILD/bin/SillyReEncounter" "$BUILD/bin/gctool" "$ROOT/data/known_dumps.txt" "$OUT/"
+cp "$BUILD/bin/SSNE-Native" "$BUILD/bin/gctool" "$ROOT/data/known_dumps.txt" "$OUT/"
 cp "$BUILD/bin/ssne-recomp" "$ROOT/data/symbols/G3BE9G_r1.sym" "$ROOT/data/symbols/G3BP9G_r0.sym" "$OUT/build-kit/"
-strip "$OUT/SillyReEncounter" "$OUT/gctool" "$OUT/build-kit/ssne-recomp"
+strip "$OUT/SSNE-Native" "$OUT/gctool" "$OUT/build-kit/ssne-recomp"
 VERSION=$(sed -n 's/^version *= *//p' "$ROOT/data/kit/kit.ini")
 sed -e "s|@VERSION@|$VERSION|" -e "s|@CXX@|$CXX_BASE|" -e "s|@CXX_NAME@|$CXX_NAME|" -e "s|@CXX_DESC@|$CXX_DESC|" \
     "$ROOT/data/kit/kit-linux.ini.in" > "$OUT/build-kit/kit.ini"
@@ -72,7 +72,7 @@ else
 fi
 # Sanity check: no generated game code anywhere in the release.
 # (generated functions are named f_<address>; none may appear in the shipped binaries)
-for f in "$OUT/SillyReEncounter" "$OUT/gctool" "$OUT/build-kit/ssne-recomp" "$OUT"/build-kit/lib/*.a "$OUT"/build-kit/lib/port/*.o; do
+for f in "$OUT/SSNE-Native" "$OUT/gctool" "$OUT/build-kit/ssne-recomp" "$OUT"/build-kit/lib/*.a "$OUT"/build-kit/lib/port/*.o; do
   if grep -aqE "f_80[0-9A-F]{6}" "$f"; then echo "ERROR: generated game code found in $f"; exit 1; fi
 done
 echo "release written to $OUT (game compiler: $CXX_BASE, $CXX_DESC)"

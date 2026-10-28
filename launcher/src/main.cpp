@@ -1,4 +1,4 @@
-// Silly ReEncounter launcher: asks for the user's GameCube disc, verifies it, installs the game data and
+// SSNE-Native launcher: asks for the user's GameCube disc, verifies it, installs the game data and
 // launches the PC port.
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_Window* win = SDL_CreateWindow("Silly ReEncounter", SDL_WINDOWPOS_CENTERED,
+    SDL_Window* win = SDL_CreateWindow("Serious Sam: Next Encounter Native", SDL_WINDOWPOS_CENTERED,
                                        SDL_WINDOWPOS_CENTERED, 1024, 640,
                                        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!win) { fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError()); return 1; }

@@ -97,17 +97,17 @@ bool file_exists(const std::string& path) {
 
 std::string port_exe_name() {
 #ifdef _WIN32
-    return "SillyReEncounter-Game.exe";
+    return "SSNE-Native-Game.exe";
 #else
-    return "SillyReEncounter-Game";
+    return "SSNE-Native-Game";
 #endif
 }
 
 std::vector<std::string> legacy_port_exe_names() {
 #ifdef _WIN32
-    return {"SeriousReEncounter-Game.exe", "ssne-port.exe"};
+    return {"SillyReEncounter-Game.exe", "SeriousReEncounter-Game.exe", "ssne-port.exe"};
 #else
-    return {"SeriousReEncounter-Game", "ssne-port"};
+    return {"SillyReEncounter-Game", "SeriousReEncounter-Game", "ssne-port"};
 #endif
 }
 
@@ -200,9 +200,9 @@ bool download(const std::string& url, const std::string& path,
     uc.lpszHostName = host; uc.dwHostNameLength = 256;
     uc.lpszUrlPath = urlpath; uc.dwUrlPathLength = 2048;
     if (!WinHttpCrackUrl(wurl.c_str(), 0, 0, &uc)) { error = "bad URL"; return false; }
-    HINTERNET ses = WinHttpOpen(L"SillyReEncounter-Launcher", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+    HINTERNET ses = WinHttpOpen(L"SSNE-Native-Launcher", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                 WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
-    if (!ses) ses = WinHttpOpen(L"SillyReEncounter-Launcher", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+    if (!ses) ses = WinHttpOpen(L"SSNE-Native-Launcher", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                                 WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!ses) { error = "WinHttpOpen failed"; return false; }
     {   // Windows 7 / 8.0: WinHTTP offers only TLS 1.0 by default (GitHub needs 1.2; KB3140245 adds it). Asking for

@@ -1,4 +1,4 @@
-# Silly ReEncounter build kit (Linux): tells the launcher how to build SillyReEncounter-Game on this PC from
+# SSNE-Native build kit (Linux): tells the launcher how to build SSNE-Native-Game on this PC from
 # the player's own disc. "kit:" means this folder. Written by tools/make_linux_release.sh from kit-linux.ini.in.
 
 # Engine version: when it changes, the launcher offers to rebuild a game built with an older kit.

@@ -250,7 +250,7 @@ bool GameBuilder::build(const BuildKit& kit, const std::string& data_dir, const 
     fs::create_directories(logs, ec);
     fs::create_directories(obj, ec);
     log_path = S(logs / "build.log");
-    log("Silly ReEncounter game build");
+    log("SSNE-Native game build");
 
     // 1. Compiler
     report("Preparing the compiler", 0);

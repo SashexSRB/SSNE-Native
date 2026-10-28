@@ -422,7 +422,7 @@ bool load_settings(Settings& s, const std::string& path) {
 
 bool save_settings(const Settings& s, const std::string& path) {
     std::ostringstream o;
-    o << "# Silly ReEncounter settings (edited in-game with F12)\n";
+    o << "# Serious Sam: Next Encounter Native settings (edited in-game with F12)\n";
     o << "settings_version = 8\n";
     o << "[graphics]\n";
     o << "renderer = " << s.renderer << "\n";

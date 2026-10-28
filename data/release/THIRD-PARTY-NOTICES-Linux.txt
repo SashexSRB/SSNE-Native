@@ -1,4 +1,4 @@
-Silly ReEncounter (Linux) - third-party notices
+SSNE-Native (Linux) - third-party notices
 
 The programs in this release (and the prebuilt libraries in build-kit/lib, which end up in the game program
 built on your PC) include the following third-party software. Their full license
@@ -10,7 +10,7 @@ texts are in the licenses folder.
   Outfit (font)         Copyright 2021 The Outfit Project Authors         SIL OFL 1.1           licenses/Outfit-OFL.txt
                         (launcher text; letters of the on-screen controller button icons)
 
-The fonts are embedded unmodified in SillyReEncounter. They are not sold on their own and keep their
+The fonts are embedded unmodified in SSNE-Native. They are not sold on their own and keep their
 Reserved Font Names.
 
 The compiler used to build the game on your PC (clang++ or g++) and the C/C++ runtime libraries are not included;

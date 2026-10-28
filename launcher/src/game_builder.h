@@ -1,4 +1,4 @@
-// Builds SillyReEncounter-Game.exe on the player's PC from their own disc, so no game code is ever
+// Builds SSNE-Native-Game(.exe) on the player's PC from their own disc, so no game code is ever
 // distributed. Steps: get the compiler (downloaded once from its official release), translate the installed
 // main.dol with ssne-recomp, compile the generated C++ in parallel and link it with the prebuilt port/runtime
 // libraries from the build kit. Everything is described by build-kit/kit.ini.

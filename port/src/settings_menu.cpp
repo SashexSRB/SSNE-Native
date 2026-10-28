@@ -503,7 +503,7 @@ bool draw_menu(Settings& s, const MenuInfo& info) {
     bool open = true;
     ImGui::Begin("Settings", &open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                                         ImGuiWindowFlags_NoSavedSettings);
-    ImGui::TextColored(kAccent, "SILLY REENCOUNTER - Settings");
+    ImGui::TextColored(kAccent, "SERIOUS SAM: NEXT ENCOUNTER NATIVE - Settings");
     ImGui::SameLine();
     ImGui::TextColored(kDim, "   F12 / Esc to close. Changes apply and save immediately.");
     ch |= ImGui::Checkbox("Pause in this menu", &s.pause_in_menu);

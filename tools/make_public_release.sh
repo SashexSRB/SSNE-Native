@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds the public Silly ReEncounter release: launcher, gctool, build kit (translator + prebuilt PC port, no
+# Builds the public SSNE-Native release: launcher, gctool, build kit (translator + prebuilt PC port, no
 # game code), licenses and the source tree. Game code is never included: the port is configured without
 # SSNE_RECOMPILED_DIR and players build the game on their own PC from their own disc.
 #
@@ -24,9 +24,9 @@ cmake --build "$BUILD" --target ssne-launcher gctool ssne-recomp ssne-port
 
 STRIP=$LLVM/bin/llvm-strip
 rm -rf "$OUT"; mkdir -p "$OUT/build-kit/lib/port" "$OUT/build-kit/include" "$OUT/licenses"
-cp "$BUILD/bin/SillyReEncounter.exe" "$BUILD/bin/gctool.exe" "$ROOT/data/known_dumps.txt" "$OUT/"
+cp "$BUILD/bin/SSNE-Native.exe" "$BUILD/bin/gctool.exe" "$ROOT/data/known_dumps.txt" "$OUT/"
 cp "$BUILD/bin/ssne-recomp.exe" "$ROOT/data/symbols/G3BE9G_r1.sym" "$ROOT/data/symbols/G3BP9G_r0.sym" "$ROOT/data/kit/kit.ini" "$OUT/build-kit/"
-"$STRIP" "$OUT/SillyReEncounter.exe" "$OUT/gctool.exe" "$OUT/build-kit/ssne-recomp.exe"
+"$STRIP" "$OUT/SSNE-Native.exe" "$OUT/gctool.exe" "$OUT/build-kit/ssne-recomp.exe"
 cp -r "$ROOT/runtime/include/ssne" "$OUT/build-kit/include/"
 for f in main settings settings_menu png_write; do cp "$BUILD/CMakeFiles/ssne-port.dir/port/src/$f.cpp.obj" "$OUT/build-kit/lib/port/$f.obj"; done
 cp "$BUILD/libssne-runtime.a" "$BUILD/libimgui.a" "$BUILD/libgc.a" "$OUT/build-kit/lib/"
