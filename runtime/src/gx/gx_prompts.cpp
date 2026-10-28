@@ -118,6 +118,7 @@ uint32_t prompt_variant(uint32_t sample) {
 uint32_t prompt_apply(Texture& t, uint32_t sample) {
     int layout = find_layout(t);
     if (layout < 0) return 0;
+    t.font = layout <= 1;
     g_atlas_samples.insert(sample);
     if (!g_active.load()) return 0;
     int m = current_map();

@@ -426,10 +426,16 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   middle third keeps its margin from the left / right screen edge; the middle third stays centered (score,
   crosshair, messages, the weapon wheel).
   Deciding per draw split text (1.1): strings are drawn one glyph per draw, so hints, pickup messages and the combo
-  counter crossing x = -1/3 or 1/3 came apart. The GPU recorder now notes each 2D draw (vertex range, NDC extent) and
-  places them when the frame is submitted: consecutive draws that touch or nearly touch (gaps up to 0.08 x / 0.06 y
-  NDC, about a glyph) form one group (a word, a line, a message's lines, an icon with its number), placed as a whole.
-  The software renderer keeps the per-draw centering, without the side placement.
+  counter crossing x = -1/3 or 1/3 came apart. Grouping touching draws (1.1.1) wasn't enough: text is drawn twice
+  (shadow, then text) and hints fly in letter by letter from the bottom of the screen, through the health row, so a
+  passing letter joined the health group and moved it to the middle, and shadows and letters ended up in different
+  groups. Now the GPU recorder notes each 2D draw (vertex range, NDC extent, whether its texture is one of the two font
+  atlases, recognized by gx_prompts.cpp) and places them when the frame is submitted: glyphs are only ever scaled
+  toward the middle; other draws are grouped with the draws right after them that touch or nearly touch (gaps up to
+  0.08 x / 0.06 y NDC), glyphs included (health and ammo numbers follow their icons). A group moves to a side only in
+  the top / bottom bands (|y| > 0.55) or at the far side (|x| > 0.8, the weapon bar): the weapon wheel's slots and
+  icons lie apart around the middle and were placed one by one, so icons left their slots. The software renderer
+  keeps the per-draw centering, without the side placement.
 * **In-game menus stay 4:3**: the pause menu, NETRICSA and briefings were widened with gameplay (the weapon is still
   projected behind them), and the edge placement tore their layouts apart. Centering alone isn't enough either:
   NETRICSA's rotating weapon model is drawn with the widened scene camera, so it shrinks around the screen middle

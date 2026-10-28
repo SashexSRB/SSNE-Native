@@ -77,6 +77,7 @@ struct Texture : std::enable_shared_from_this<Texture> {
     int64_t efb_copy = -1;       // copy id
     uint8_t copy_fmt = 0, tex_fmt = 0;
     bool intensity = false;
+    bool font = false;           // one of the game's two text font atlases (gx_prompts.cpp)
 };
 const Texture* get_texture(int map);                // texture bound to map 0..7 (decoded, cached)
 // Button prompts (gx_prompts.cpp): cache-key variant for a texture with this source fingerprint (0 = none), and

@@ -58,8 +58,9 @@ std::vector<std::unique_ptr<GpuFrame>> g_pool;
 // Draw state snapshot, rebuilt only when g_cfg_dirty says its inputs changed (most draws repeat the previous
 // draw's state, and building + comparing the ~1.4 KB snapshot for each of ~2,000 draws per frame was a large share
 // of the game thread). R->state_index: entry of the current frame's `states` equal to R->state (none: ~0u).
-// A widescreen HUD draw of the frame being recorded: its vertices (clip position first) and NDC extent.
-struct HudPiece { size_t off; uint32_t n, stride; float mn, mx, ymn, ymx, k; };
+// A widescreen HUD draw of the frame being recorded: its vertices (clip position first), NDC extent, and whether it
+// is text (a glyph of a font atlas).
+struct HudPiece { size_t off; uint32_t n, stride; float mn, mx, ymn, ymx, k; bool glyph; };
 struct RecCtx {
     std::unique_ptr<GpuFrame> cur;  // frame being recorded
     std::vector<HudPiece> hud;      // its widescreen HUD draws, placed when it's submitted (place_hud)
@@ -134,13 +135,20 @@ int tex_bpp(uint32_t fmt) {
 }
 
 // Widescreen HUD (see widescreen_hud_left): a recorded 2D draw is noted with its extent and placed when the frame is
-// submitted. The game draws text one glyph per draw, so placing each draw by its own position splits words and lines
-// where they cross from the middle to a side. Consecutive HUD draws that touch or nearly touch (a word, a line, the
-// lines of a message, an icon with its number) form a group, placed as a whole.
+// submitted. Text (hints, pickup messages, the combo counter) is drawn one glyph per draw, twice (shadow, then the
+// text), and animated glyph by glyph: hints fly in letter by letter from the bottom of the screen, through the HUD.
+// Placing glyphs by position splits words, lines and their shadows, and grouping them by proximity drags the HUD
+// along with letters passing by. So text is never moved to a side: every glyph is just scaled toward the middle, as
+// in the 4:3 layout. The rest (icons, bars, frames) is placed in groups: an element and the draws right after it that
+// touch or nearly touch it, glyphs included (the health and ammo numbers follow their icons). Only groups in a corner
+// band (health, ammo, the NETRICSA envelope) or at the far side of the 4:3 area (the weapon bar) move out to the
+// sides: the weapon wheel's slots and icons lie apart from each other around the middle and stay centered with it.
 void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
     float k = widescreen_frame_factor();
     if (k <= 1.001f || !(g.xf_reg[0x26] & 1)) return;
-    HudPiece h{off, n, stride, 1e30f, -1e30f, 1e30f, -1e30f, k};
+    const DrawCfg& c = R->state.cfg;
+    const Texture* t0 = c.stages > 0 && c.st[0].tex_enabled ? c.tex[c.st[0].texmap & 7] : nullptr;
+    HudPiece h{off, n, stride, 1e30f, -1e30f, 1e30f, -1e30f, k, t0 && t0->font};
     const uint8_t* v = f.vtx.data() + off;
     for (uint32_t i = 0; i < n; i++) {
         float p[4];
@@ -159,18 +167,9 @@ void place_hud(RecCtx& r) {
     GpuFrame& f = *r.cur;
     const bool sides = hud_edges();
     constexpr float kGapX = 0.08f, kGapY = 0.06f;  // NDC: about a glyph's width / height at 448 lines
-    for (size_t i = 0; i < r.hud.size();) {
-        const float k = r.hud[i].k;
-        float mn = r.hud[i].mn, mx = r.hud[i].mx, ymn = r.hud[i].ymn, ymx = r.hud[i].ymx;
-        size_t j = i + 1;
-        for (; j < r.hud.size(); j++) {
-            const HudPiece& p = r.hud[j];
-            if (p.k != k || std::max(p.mn - mx, mn - p.mx) > kGapX || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
-            mn = std::min(mn, p.mn); mx = std::max(mx, p.mx);
-            ymn = std::min(ymn, p.ymn); ymx = std::max(ymx, p.ymx);
-        }
-        const float nmn = widescreen_hud_left(mn, mx, k, sides);
-        for (size_t q = i; q < j; q++) {
+    constexpr float kBand = 0.55f, kOuter = 0.8f;  // 4:3 NDC: top / bottom bands, far sides
+    auto place = [&](size_t from, size_t to, float mn, float nmn, float k) {
+        for (size_t q = from; q < to; q++) {
             const HudPiece& p = r.hud[q];
             uint8_t* v = f.vtx.data() + p.off;
             for (uint32_t m = 0; m < p.n; m++, v += p.stride) {
@@ -180,6 +179,25 @@ void place_hud(RecCtx& r) {
                 memcpy(v, c, 4);
             }
         }
+    };
+    for (size_t i = 0; i < r.hud.size();) {
+        const HudPiece& first = r.hud[i];
+        const float k = first.k;
+        if (first.glyph) {  // text: scaled toward the middle
+            place(i, i + 1, 0.f, 0.f, k);
+            i++;
+            continue;
+        }
+        float mn = first.mn, mx = first.mx, ymn = first.ymn, ymx = first.ymx;
+        size_t j = i + 1;
+        for (; j < r.hud.size(); j++) {
+            const HudPiece& p = r.hud[j];
+            if (p.k != k || std::max(p.mn - mx, mn - p.mx) > kGapX || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
+            mn = std::min(mn, p.mn); mx = std::max(mx, p.mx);
+            ymn = std::min(ymn, p.ymn); ymx = std::max(ymx, p.ymx);
+        }
+        bool corner = ymx < -kBand || ymn > kBand || mn < -kOuter || mx > kOuter;
+        place(i, j, mn, widescreen_hud_left(mn, mx, k, sides && corner), k);
         i = j;
     }
     r.hud.clear();
