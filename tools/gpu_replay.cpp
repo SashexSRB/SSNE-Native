@@ -1,6 +1,7 @@
 // gpu_replay: executes GX frames captured with SSNE_GPU_CAPTURE=dir:first:count through the GPU renderer
 // (headless EGL, Linux) and writes the output images. Comparing the images of two builds checks renderer
-// changes independently of the game's timing; --time reports the render time per frame (glFinish'ed).
+// changes independently of the game's timing; --time reports the render time per frame (glFinish'ed; with --repeat,
+// also the median over every repetition after the first).
 //   gpu_replay <capture dir> <out dir> [--scale N] [--skip K] [--time] [--repeat R] [--shader-cache dir]
 #include <dlfcn.h>
 
@@ -9,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -95,16 +97,23 @@ int main(int argc, char** argv) {
                 }
             }
     }
+    // Frames are loaded once (loading a ~40 MB capture between timed frames let the GPU clock down).
+    std::vector<std::unique_ptr<ssne::gx::GpuFrame>> loaded;
+    for (size_t i = 0; i < files.size(); i++) {
+        auto f = ssne::gx::gpu_load_captured_frame(files[i], err);
+        if (!f) { printf("%s\n", err.c_str()); return 1; }
+#ifdef SSNE_GPU_CMD_HAS_ZSNAP
+        for (auto& c : f->cmds) {
+            auto it = c.type == ssne::gx::GpuCmd::COPY_TEX ? copy_fmt.find(c.copy_id) : copy_fmt.end();
+            if (it != copy_fmt.end()) { c.copy_fmt = it->second.first; c.intensity = it->second.second; c.copy_fmt_known = true; }
+        }
+#endif
+        loaded.push_back(std::move(f));
+    }
+    std::vector<double> times;  // per frame, every repetition after the first (warm-up: uploads, shader compiles)
     for (int r = 0; r < repeat; r++)
         for (size_t i = 0; i < files.size(); i++) {
-            auto f = ssne::gx::gpu_load_captured_frame(files[i], err);
-            if (!f) { printf("%s\n", err.c_str()); return 1; }
-#ifdef SSNE_GPU_CMD_HAS_ZSNAP
-            for (auto& c : f->cmds) {
-                auto it = c.type == ssne::gx::GpuCmd::COPY_TEX ? copy_fmt.find(c.copy_id) : copy_fmt.end();
-                if (it != copy_fmt.end()) { c.copy_fmt = it->second.first; c.intensity = it->second.second; c.copy_fmt_known = true; }
-            }
-#endif
+            auto f = std::make_unique<ssne::gx::GpuFrame>(*loaded[i]);
 #ifdef SSNE_GPU_CMD_HAS_ZSNAP
             if (r == 0)
                 for (const auto& c : f->cmds)
@@ -119,6 +128,7 @@ int main(int argc, char** argv) {
             if (unsigned e = get_error()) printf("OpenGL error 0x%04X after frame %zu\n", e, i);
             double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
             if (int(i) >= skip && r == repeat - 1) { total += ms; timed++; }
+            if (int(i) >= skip && (r > 0 || repeat == 1)) times.push_back(ms);
             if (r == repeat - 1 && int(i) >= skip) {
                 std::vector<uint32_t> px;
                 int w, h;
@@ -142,5 +152,12 @@ int main(int argc, char** argv) {
                tris[0] + tris[1]);
     if (getenv("SSNE_GPU_PROFILE")) printf("%s", ssne::gpu_renderer_profile().c_str());
     if (timing && timed) printf("average %.2f ms per frame (%d frames timed)\n", total / timed, timed);
+    if (timing && times.size() > size_t(timed)) {
+        std::sort(times.begin(), times.end());
+        double sum = 0;
+        for (double t : times) sum += t;
+        printf("all repetitions after the first: median %.2f ms, mean %.2f ms per frame (%zu frames)\n", times[times.size() / 2],
+               sum / double(times.size()), times.size());
+    }
     return 0;
 }

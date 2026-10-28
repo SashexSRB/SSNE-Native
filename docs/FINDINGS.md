@@ -311,7 +311,9 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   at 2x; bit-identical output. Mesa rejects a two-target draw while dual-source blend factors are still set (even
   with blending off), so the copy resets the blend factors first.
 * `SSNE_GPU_PROFILE=1` (replay tool / debugging) attributes GPU time to draws, depth-writing draws, clears, copies,
-  reinterpretations and display copies (glFinish around every command); `=2` also lists each command. In 2x gameplay
+  reinterpretations and display copies (GL_TIMESTAMP queries around every command, read back at the end of each
+  frame; it used glFinish around every command, which on Mesa Iris only measures in ~5 ms steps); `=2` also lists each
+  command with its textures and its vertices' depth range next to the clip planes' depths. In 2x gameplay
   on llvmpipe the full-screen passes dominate (the indirect scene redraw and a 4-texture floor near the camera), and
   the port's own CPU work is small: ~3 ms/frame on the game thread (vertex decode first) and <1 ms on the render
   thread outside the GL driver.
@@ -350,6 +352,18 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   arguments, and the compiler turned its 1-3 float loops into `memcpy` calls (~5% of the thread); decoded vertices
   are no longer zeroed before being overwritten; indices are written in place. Libc time on the game thread fell
   from ~10% to ~3%; game thread ~9-20% less CPU per frame (measured on a busy machine).
+* **Draws flat on a clip plane** (Linux, Iris Xe): depth-snapping draws (gl_FragDepth) were about half of the GPU time
+  in 2x gameplay, and the most expensive of them are full-screen quads lying exactly on a plane: the indirect scene
+  redraw on the near plane, sky layers on the far plane, the HUD at depth 0. When every vertex of a snapping batch is
+  within 3e-6 of one plane, the shader would snap every fragment (< 4e-6) to that plane anyway; such batches now use
+  the shader without gl_FragDepth and a depth range collapsed onto the plane (glDepthRange(p, p): every fragment gets
+  exactly p, also in gl_FragCoord.z for fog). 0 differing pixels in replays of menu, Arena (4:3 and 16:9) and jeep
+  captures at 1x / 2x / 3x / 2x MSAA 4x; 3-10% less GPU time per frame (paired A/B in one process, alternating every
+  repetition: wall-clock replay timings on the laptop varied 2x run to run with the GPU clock). The replay tool's
+  `--time --repeat R` now preloads the frames and also reports the median over all repetitions after the first.
+* What's left on the GPU is pixel shading of a few large draws (the 5-stage terrain, sky layers, the indirect redraw)
+  plus ~0.7 ms of copies and clears per 2x frame. No draw has an alpha test that can never fail (which would cost
+  early depth testing for nothing).
 * **Software renderer**: ~180 ns per written pixel, split between the rasterizer/TEV loop and bilinear sampling
   (memory bound: branch-free sampling and wrap fast paths measured no gain). It stays the fallback; the top bar now
   says when it is running and why (the log records which OpenGL version the driver offered).

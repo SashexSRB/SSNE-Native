@@ -61,7 +61,7 @@ enum : GLenum {
     COLOR_ATTACHMENT1 = 0x8CE1,
     TEXTURE_MAX_ANISOTROPY = 0x84FE, MAX_TEXTURE_MAX_ANISOTROPY = 0x84FF,
     TEXTURE_2D_MULTISAMPLE = 0x9100, MAX_SAMPLES = 0x8D57, MULTISAMPLE = 0x809D,
-    TIME_ELAPSED = 0x88BF, QUERY_RESULT = 0x8866, QUERY_RESULT_AVAILABLE = 0x8867,
+    TIME_ELAPSED = 0x88BF, TIMESTAMP = 0x8E28, QUERY_RESULT = 0x8866, QUERY_RESULT_AVAILABLE = 0x8867,
     PROGRAM_BINARY_RETRIEVABLE_HINT = 0x8257, PROGRAM_BINARY_LENGTH = 0x8741, NUM_PROGRAM_BINARY_FORMATS = 0x87FE,
 };
 
@@ -78,6 +78,7 @@ enum : GLenum {
     X(void, ColorMask, (GLboolean r, GLboolean g, GLboolean b, GLboolean a))                                    \
     X(void, DepthMask, (GLboolean flag))                                                                        \
     X(void, DepthFunc, (GLenum func))                                                                           \
+    X(void, DepthRange, (GLdouble n, GLdouble f))                                                               \
     X(void, BlendFuncSeparate, (GLenum sr, GLenum dr, GLenum sa, GLenum da))                                    \
     X(void, BlendEquationSeparate, (GLenum rgb, GLenum alpha))                                                  \
     X(void, LogicOp, (GLenum op))                                                                               \
@@ -147,6 +148,7 @@ enum : GLenum {
     X(void, GenQueries, (GLsizei n, GLuint* q))                                                                 \
     X(void, BeginQuery, (GLenum target, GLuint q))                                                              \
     X(void, EndQuery, (GLenum target))                                                                          \
+    X(void, QueryCounter, (GLuint q, GLenum target))                                                            \
     X(void, GetQueryObjectiv, (GLuint q, GLenum pname, GLint* v))                                               \
     X(void, GetQueryObjectui64v, (GLuint q, GLenum pname, uint64_t* v))                                         \
     X(void, GetProgramBinary, (GLuint p, GLsizei max, GLsizei* len, GLenum* fmt, void* bin))                    \

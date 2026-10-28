@@ -193,11 +193,34 @@ void poll_timer_queries() {
     }
 }
 GpuStats g_stats{};
-// SSNE_GPU_PROFILE=1 (debugging, slow): glFinish around every command to attribute GPU time by command kind.
+// SSNE_GPU_PROFILE=1 (debugging): GPU time by command kind, from GL_TIMESTAMP queries around every command, read back
+// at the end of each frame (which waits for the GPU); =2 also lists every command. glFinish-based timing was useless
+// on drivers whose waits have a coarse granularity (Mesa Iris: ~5 ms steps).
 const bool g_prof = getenv("SSNE_GPU_PROFILE") != nullptr;
 double g_prof_ms[6] = {};  // draw, clear, copy, display copy, reinterpret, draw (depth-writing)
 uint64_t g_prof_n[6] = {};
-double prof_now() { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+struct ProfEvent { int kind; uint32_t cmd; GLuint q0, q1; };
+std::vector<ProfEvent> g_prof_events;
+std::vector<GLuint> g_prof_queries;
+size_t g_prof_used = 0;
+GLuint prof_stamp() {
+    if (!QueryCounter || !GenQueries) return 0;
+    if (g_prof_used == g_prof_queries.size()) {
+        size_t n = std::max<size_t>(256, g_prof_queries.size());
+        g_prof_queries.resize(g_prof_used + n);
+        GenQueries(GLsizei(n), g_prof_queries.data() + g_prof_used);
+    }
+    GLuint q = g_prof_queries[g_prof_used++];
+    QueryCounter(q, TIMESTAMP);
+    return q;
+}
+double prof_ms(const ProfEvent& e) {
+    if (!e.q0 || !e.q1) return 0;
+    uint64_t a = 0, b = 0;
+    GetQueryObjectui64v(e.q0, QUERY_RESULT, &a);
+    GetQueryObjectui64v(e.q1, QUERY_RESULT, &b);
+    return b > a ? double(b - a) * 1e-6 : 0;
+}
 
 // ------------------------------------------------------------------ helpers
 GLuint compile(GLenum type, const std::string& src, std::string& log) {
@@ -499,8 +522,7 @@ GLuint texture_for(const Texture* t) {
         if (t->copy_fmt == 6 && t->tex_fmt == 6) { ct->second.last_used = g_frame_no; return ct->second.rt.tex; }
         // Reinterpret: encode each texel as the copy format, decode it as the texture format.
         g_phase = "reinterpret";
-        double prof_t0 = 0;
-        if (g_prof) { Finish(); prof_t0 = prof_now(); }
+        GLuint prof_q0 = g_prof ? prof_stamp() : 0;
         RT out = rt_acquire(ct->second.rt.w, ct->second.rt.h);
         BindFramebuffer(FRAMEBUFFER, out.fbo);
         Viewport(0, 0, out.w, out.h);
@@ -521,7 +543,7 @@ GLuint texture_for(const Texture* t) {
             BindFramebuffer(FRAMEBUFFER, g_efb_fbo);
         }
         g_stats.reinterpretations++;
-        if (g_prof) { Finish(); g_prof_ms[4] += prof_now() - prof_t0; g_prof_n[4]++; g_prof_ms[0] -= prof_now() - prof_t0; }
+        if (g_prof) g_prof_events.push_back({4, g_phase_cmd.load(), prof_q0, prof_stamp()});
         g_phase = "draw";
         return out.tex;
     }
@@ -1142,6 +1164,33 @@ void apply_state(const GpuState& st) {
     else sc_scissor(SX(x0), SY(y0), SX(x1 + 1) - SX(x0), SY(y1 + 1) - SY(y0));
 }
 
+// Depth of the near (z = -w) and far (z = 0) planes for a viewport, quantized like the 24-bit z buffer (u_zrange).
+void plane_depths(const GpuState& st, float zr[2]) {
+    auto q = [](double d) { return float(std::floor(std::clamp(d, 0.0, 1.0) * 16777215.0 + 0.5) / 16777215.0); };
+    zr[0] = q((double(st.vp[5]) - double(st.vp[2])) / 16777216.0);
+    zr[1] = q(double(st.vp[5]) / 16777216.0);
+}
+
+// A depth-snapping draw whose vertices all lie within 3e-6 of one clip plane (full-screen quads on the near plane,
+// the sky on the far plane, the HUD): the shader would snap every fragment (|z - plane| < 4e-6, the near plane
+// first) to that plane. Returns the plane's depth, else -1. The caller then collapses the depth range onto it,
+// which gives every fragment exactly that depth without writing gl_FragDepth, so early depth testing stays on.
+// (Window depth is linear in screen space, so fragments stay within the vertices' range; the 1e-6 margin covers
+// the GPU's float rounding.)
+double flat_plane_depth(const GpuFrame& f, const GpuCmd& cmd, const GpuState& st, const float zr[2]) {
+    if (!cmd.vcount) return -1;
+    bool on_near = true, on_far = std::abs(double(zr[1]) - double(zr[0])) > 1e-5;
+    for (uint32_t i = 0; i < cmd.vcount && (on_near || on_far); i++) {
+        float pp[4];
+        memcpy(pp, f.vtx.data() + cmd.vtx_off + size_t(i) * cmd.stride, 16);
+        if (!(pp[3] > 1e-5f)) return -1;
+        double d = (double(pp[2]) / double(pp[3]) * double(st.vp[2]) + double(st.vp[5])) / 16777216.0;
+        on_near = on_near && std::abs(d - zr[0]) < 3e-6;
+        on_far = on_far && std::abs(d - zr[1]) < 3e-6;
+    }
+    return on_near ? zr[0] : on_far ? zr[1] : -1;
+}
+
 void run_draw(const GpuFrame& f, const GpuCmd& cmd) {
     const GpuState& st = f.states[cmd.state];
     const DrawCfg& c = st.cfg;
@@ -1149,7 +1198,10 @@ void run_draw(const GpuFrame& f, const GpuCmd& cmd) {
     // SSNE_GPU_ALWAYS_FRAGDEPTH=1: every draw writes gl_FragDepth like before the early-Z change (for A/B testing
     // if a driver's fixed-function depth ever differs from gl_FragCoord.z on coplanar geometry).
     static const bool always_fragdepth = getenv("SSNE_GPU_ALWAYS_FRAGDEPTH") != nullptr;
-    Program* p = program_for(c, ntex, cmd.zsnap || always_fragdepth);
+    float zr[2];
+    plane_depths(st, zr);
+    double flat_z = cmd.zsnap && !always_fragdepth ? flat_plane_depth(f, cmd, st, zr) : -1;
+    Program* p = program_for(c, ntex, (cmd.zsnap && flat_z < 0) || always_fragdepth);
     if (!p) return;
     // Textures first (reinterpretation passes change GL state).
     GLuint tex[8];
@@ -1232,11 +1284,7 @@ void run_draw(const GpuFrame& f, const GpuCmd& cmd) {
         GLint fc[4] = {c.fog_color[0], c.fog_color[1], c.fog_color[2], 0};
         if (changed(sh.fogc, fc, first)) Uniform4iv(p->u_fogcolor, 1, fc);
     }
-    {   // depth of the near (z = -w) and far (z = 0) planes for this viewport, quantized like the 24-bit z buffer
-        auto q = [](double d) { return float(std::floor(std::clamp(d, 0.0, 1.0) * 16777215.0 + 0.5) / 16777215.0); };
-        float zr[2] = {q((double(st.vp[5]) - double(st.vp[2])) / 16777216.0), q(double(st.vp[5]) / 16777216.0)};
-        if (changed(sh.zr, zr, first)) Uniform2fv(p->u_zrange, 1, zr);
-    }
+    if (changed(sh.zr, zr, first)) Uniform2fv(p->u_zrange, 1, zr);
     // vertex attributes
     const uint8_t* base = reinterpret_cast<const uint8_t*>(uintptr_t(cmd.vtx_off));
     GLsizei stride = GLsizei(cmd.stride);
@@ -1247,8 +1295,10 @@ void run_draw(const GpuFrame& f, const GpuCmd& cmd) {
         if (i < ntex) { sc_attrib(3 + i, true); VertexAttribPointer(GLuint(3 + i), 3, FLOAT, 0, stride, base + 24 + 12 * i); }
         else sc_attrib(3 + i, false);
     }
+    if (flat_z >= 0) DepthRange(flat_z, flat_z);
     DrawElements(TRIANGLES, GLsizei(cmd.idx_count), UNSIGNED_INT,
                  reinterpret_cast<const void*>(uintptr_t(cmd.idx_first) * 4));
+    if (flat_z >= 0) DepthRange(0, 1);
     g_stats.draws++;
     g_stats.triangles += cmd.idx_count / 3;
 }
@@ -1402,6 +1452,45 @@ void run_copy_xfb(const GpuCmd& cmd) {
     g_out_seq++;
 }
 
+// SSNE_GPU_PROFILE: reads back the frame's timestamps (reinterpretations run inside a draw and are not counted in it).
+void prof_frame(const GpuFrame& f) {
+    static const bool verbose = getenv("SSNE_GPU_PROFILE")[0] == '2';
+    std::vector<double> inner(f.cmds.size(), 0.0);
+    for (const ProfEvent& e : g_prof_events) {
+        double ms = prof_ms(e);
+        if (e.kind == 4) {
+            if (e.cmd < inner.size()) inner[e.cmd] += ms;
+            g_prof_ms[4] += ms; g_prof_n[4]++;
+            if (verbose) fprintf(stdout, "  reinterpret %6.3f ms\n", ms);
+            continue;
+        }
+        if (e.cmd < inner.size()) ms -= inner[e.cmd];
+        g_prof_ms[e.kind] += ms; g_prof_n[e.kind]++;
+        if (!verbose) continue;
+        const GpuCmd& c = f.cmds[e.cmd];
+        if (c.type == GpuCmd::DRAW) {
+            const DrawCfg& d = f.states[c.state].cfg;
+            fprintf(stdout, "  draw %6.3f ms tris %5u stages %d nind %d ntex %u zsnap %d blend %06X z %d/%d atest %d scissor %d,%d-%d,%d tex",
+                    ms, c.idx_count / 3, d.stages, d.nind, c.ntex, c.zsnap, d.blend, d.z_enable, d.z_update,
+                    !d.atest_always, d.scissor_x0, d.scissor_y0, d.scissor_x1, d.scissor_y1);
+            for (int m = 0; m < 8; m++)
+                if (const Texture* t = d.tex[m]) fprintf(stdout, " %d:%dx%d%s", m, t->w, t->h, t->efb_copy >= 0 ? "(copy)" : "");
+            const float* vp = f.states[c.state].vp;
+            double lo = 1e9, hi = -1e9;
+            for (uint32_t vi = 0; vi < c.vcount; vi++) {
+                float pp[4];
+                memcpy(pp, f.vtx.data() + c.vtx_off + size_t(vi) * c.stride, 16);
+                double z = (double(pp[2]) / double(pp[3]) * vp[2] + vp[5]) / 16777216.0;
+                lo = std::min(lo, z); hi = std::max(hi, z);
+            }
+            fprintf(stdout, " depth %.7f..%.7f planes %.7f/%.7f\n", lo, hi, (double(vp[5]) - vp[2]) / 16777216.0, vp[5] / 16777216.0);
+        } else fprintf(stdout, "  %s %6.3f ms\n", c.type == GpuCmd::CLEAR ? "clear" : c.type == GpuCmd::COPY_TEX ? "copy" : "xfb", ms);
+    }
+    if (verbose) fprintf(stdout, "  end of frame\n");
+    g_prof_events.clear();
+    g_prof_used = 0;
+}
+
 void execute(GpuFrame& f) {
     auto t0 = std::chrono::steady_clock::now();
     sc_invalidate();  // the port's UI used the context since the last frame
@@ -1481,8 +1570,7 @@ void execute(GpuFrame& f) {
         }
         g_phase_cmd = uint32_t(&c - f.cmds.data());
         g_phase = c.type == GpuCmd::DRAW ? "draw" : c.type == GpuCmd::CLEAR ? "clear" : c.type == GpuCmd::COPY_TEX ? "copy" : "display copy";
-        double pt0 = 0;
-        if (g_prof) { Finish(); pt0 = prof_now(); }
+        GLuint prof_q0 = g_prof ? prof_stamp() : 0;
         switch (c.type) {
         case GpuCmd::DRAW: run_draw(f, c); break;
         case GpuCmd::CLEAR: run_clear(c); break;
@@ -1496,19 +1584,11 @@ void execute(GpuFrame& f) {
             break;
         }
         if (g_prof) {
-            Finish();
             int k = c.type == GpuCmd::DRAW ? (c.zsnap ? 5 : 0) : c.type == GpuCmd::CLEAR ? 1 : c.type == GpuCmd::COPY_TEX ? 2 : 3;
-            g_prof_ms[k] += prof_now() - pt0;
-            g_prof_n[k]++;
-            static const bool verbose = getenv("SSNE_GPU_PROFILE")[0] == '2';
-            if (verbose && c.type == GpuCmd::DRAW) {
-                const DrawCfg& d = f.states[c.state].cfg;
-                fprintf(stdout, "  draw %5.2f ms tris %5u stages %d nind %d ntex %u zsnap %d blend %06X z %d/%d atest %d scissor %d,%d-%d,%d\n",
-                        prof_now() - pt0, c.idx_count / 3, d.stages, d.nind, c.ntex, c.zsnap, d.blend, d.z_enable, d.z_update,
-                        !d.atest_always, d.scissor_x0, d.scissor_y0, d.scissor_x1, d.scissor_y1);
-            } else if (verbose) fprintf(stdout, "  %s %5.2f ms\n", k == 1 ? "clear" : k == 2 ? "copy" : "xfb", prof_now() - pt0);
+            g_prof_events.push_back({k, g_phase_cmd.load(), prof_q0, prof_stamp()});
         }
     }
+    if (g_prof) prof_frame(f);
     if (g_dumping) {
         if (g_dump_log) { fprintf(g_dump_log, "end of frame\n"); fclose(g_dump_log); g_dump_log = nullptr; }
         g_dumping = false;
