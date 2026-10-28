@@ -61,11 +61,12 @@ Everything made from your disc (`game_data`, `SillyReEncounter-Game`) is only fo
 | W A S D / arrows | move (in vehicles: W / S drive, A / D steer) | Mouse | aim, steer vehicles (click the window to capture the mouse) |
 | Left mouse / Ctrl | fire | Space | jump |
 | E | use, enter / exit vehicles | R | reload, switch ammo type |
-| Mouse wheel, F / Q | next / previous weapon | Right mouse | next weapon; **hold** for the weapon wheel |
+| Right mouse | sniper rifle zoom (hold) | Q | next weapon; **hold** for the weapon wheel |
+| Mouse wheel | next / previous weapon | F | previous weapon |
 | 1 – 9 | weapons (see below) | Tab | NETRICSA |
 | Esc / Enter | pause | | |
 
-- **Weapon wheel:** hold the right mouse button, move the mouse towards a weapon, release to take it.
+- **Weapon wheel:** hold Q, move the mouse towards a weapon, release Q to take it.
 - **Number keys:** 1 chainsaw, 2 Desert Hawk, 3 double shotgun, 4 Uzis / minigun, 5 rocket / grenade launcher,
   6 Sirian power gun / flamethrower, 7 sniper rifle, 8 cannon, 9 Serious Bomb. Press a key again for the other
   weapon of its pair; weapons you don't have yet are skipped.

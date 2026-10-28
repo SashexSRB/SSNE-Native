@@ -20,7 +20,7 @@ const ActionInfo kActions[ACT_COUNT] = {
     {"move_left", "Strafe left"},       {"move_right", "Strafe right"},
     {"look_up", "Look up"},             {"look_down", "Look down"},
     {"look_left", "Turn left"},         {"look_right", "Turn right"},
-    {"a", "A  (use / select / skip)"},  {"b", "B  (reload / ammo type / back)"},
+    {"a", "A  (use / select / skip)"},  {"b", "B  (reload / ammo type / zoom / back)"},
     {"x", "X  (next weapon; hold: weapon wheel)"}, {"y", "Y  (previous weapon)"},
     {"z", "Z  (NETRICSA)"},             {"start", "Start  (pause)"},
     {"l", "L trigger  (jump)"},         {"r", "R trigger  (fire)"},
@@ -120,10 +120,12 @@ void Settings::reset_keyboard() {
     // Classic PC shooter layout. In menus, the pause screen and cutscenes the jump keys also select (A), Esc goes back
     // (B) and the mouse clicks / scrolls through the menus (main.cpp).
     kb[ACT_A][0] = k(SDL_SCANCODE_E);              // use, enter / exit vehicles
-    kb[ACT_B][0] = k(SDL_SCANCODE_R);              kb[ACT_B][1] = k(SDL_SCANCODE_BACKSPACE);  // reload / ammo type
-    kb[ACT_X][0] = Bind::mouse(SDL_BUTTON_RIGHT);  kb[ACT_X][1] = Bind::wheel(-1);  // next weapon; hold: weapon wheel
-    kb[ACT_X][2] = k(SDL_SCANCODE_F);              // (the mouse buttons and wheel work the menus there: F / Q reach X / Y)
-    kb[ACT_Y][0] = Bind::wheel(1);                 kb[ACT_Y][1] = k(SDL_SCANCODE_Q);  // previous weapon
+    // B: reload / ammo type, and the sniper rifle's zoom (held) on the right mouse button.
+    kb[ACT_B][0] = k(SDL_SCANCODE_R);              kb[ACT_B][1] = Bind::mouse(SDL_BUTTON_RIGHT);
+    kb[ACT_B][2] = k(SDL_SCANCODE_BACKSPACE);
+    kb[ACT_X][0] = k(SDL_SCANCODE_Q);              kb[ACT_X][1] = Bind::wheel(-1);  // next weapon; hold Q: weapon wheel
+    kb[ACT_Y][0] = Bind::wheel(1);                 kb[ACT_Y][1] = k(SDL_SCANCODE_F);  // previous weapon
+    // (in menus the mouse buttons and wheel select, go back and scroll: Q / F reach X / Y there)
     kb[ACT_Z][0] = k(SDL_SCANCODE_TAB);            // NETRICSA
     kb[ACT_START][0] = k(SDL_SCANCODE_ESCAPE);     kb[ACT_START][1] = k(SDL_SCANCODE_RETURN);
     kb[ACT_L][0] = k(SDL_SCANCODE_SPACE);          // jump (analog L)
@@ -359,6 +361,19 @@ bool load_settings(Settings& s, const std::string& path) {
         if (s.kb[ACT_Y][0] == Bind::wheel(1) && s.kb[ACT_Y][1] == Bind{} && !bound(Bind::key(SDL_SCANCODE_Q)))
             s.kb[ACT_Y][1] = Bind::key(SDL_SCANCODE_Q);
     }
+    // Version 8: the right mouse button zooms the sniper rifle (B, held), so the weapon wheel moves to holding Q (X)
+    // and previous weapon gets F. An untouched version 7 B / X / Y layout moves to it.
+    if (version < 8) {
+        auto k = [](SDL_Scancode c) { return Bind::key(c); };
+        auto is = [&](int a, Bind x, Bind y, Bind z) { return s.kb[a][0] == x && s.kb[a][1] == y && s.kb[a][2] == z; };
+        if (is(ACT_B, k(SDL_SCANCODE_R), k(SDL_SCANCODE_BACKSPACE), Bind{}) &&
+            is(ACT_X, Bind::mouse(SDL_BUTTON_RIGHT), Bind::wheel(-1), k(SDL_SCANCODE_F)) &&
+            is(ACT_Y, Bind::wheel(1), k(SDL_SCANCODE_Q), Bind{})) {
+            Settings fresh;
+            for (int a : {ACT_B, ACT_X, ACT_Y})
+                for (int i = 0; i < Settings::kKbSlots; i++) s.kb[a][i] = fresh.kb[a][i];
+        }
+    }
     // Version 4: the gamepad default became the Xbox layout (A jumps). Untouched old defaults (the GameCube layout)
     // move to it; "GameCube layout" in F12 > Gamepad brings the old one back.
     if (version < 4) {
@@ -404,7 +419,7 @@ bool load_settings(Settings& s, const std::string& path) {
 bool save_settings(const Settings& s, const std::string& path) {
     std::ostringstream o;
     o << "# Silly ReEncounter settings (edited in-game with F12)\n";
-    o << "settings_version = 7\n";
+    o << "settings_version = 8\n";
     o << "[graphics]\n";
     o << "renderer = " << s.renderer << "\n";
     o << "scale = " << s.scale << "    # internal resolution 1-8, 0 = automatic\n";

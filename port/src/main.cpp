@@ -488,8 +488,8 @@ void update_input(float dt) {
     // default pauses the game, and the wheel picks the weapon in the main stick's direction. A key / mouse hold of X
     // that starts in gameplay keeps X pressed until it is released (the pause would otherwise end player control and
     // hand the mouse buttons to the menus), and after the delay the mouse steers a virtual main stick instead of the
-    // view: move towards a weapon, release the button to take it. Only on foot: in vehicles X does other things and
-    // the main stick drives.
+    // view: move towards a weapon, release the key / button to take it. Only on foot: in vehicles X does other things
+    // and the main stick drives.
     static bool wheel_hold = false, x_was_down = false;
     static float wheel_t = 0, wheel_vx = 0, wheel_vy = 0;
     bool x_down = false, x_fresh = false;  // fresh: not a button that only captured the mouse / was held over

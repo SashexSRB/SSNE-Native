@@ -72,9 +72,9 @@ DEFAULT CONTROLS (keyboard & mouse; change them in F12 > Keyboard & Mouse, up to
   Mouse .............. aim, steer vehicles (click the game window to capture the mouse)
   Left mouse / Ctrl .. fire (R)        Space ............ jump (the GameCube's L trigger)
   E .................. use, enter / exit vehicles (A)    R .. reload / switch ammo type (B)
-  Mouse wheel ........ next / previous weapon (X / Y)    Right mouse .. next weapon; hold: weapon wheel (X):
-                       move the mouse towards a weapon and release the button to take it
-  F / Q .............. next / previous weapon (X / Y); in menus they are X / Y (e.g. Add / Delete Player)
+  Right mouse ........ sniper rifle zoom, held (B)       Mouse wheel .. next / previous weapon (X / Y)
+  Q .................. next weapon (X); hold: weapon wheel: move the mouse towards a weapon and release Q
+  F .................. previous weapon (Y)    in menus Q / F are X / Y (e.g. Add / Delete Player)
   Tab ................ NETRICSA (Z)    Esc / Enter ...... pause (Start)
   1-9 ................ weapons: 1 chainsaw, 2 Desert Hawk, 3 double shotgun, 4 Uzis / minigun, 5 rocket /
                        grenade launcher, 6 Sirian power gun / flamethrower, 7 sniper rifle, 8 cannon,
