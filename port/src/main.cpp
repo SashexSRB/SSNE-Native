@@ -403,23 +403,59 @@ void update_input(float dt) {
     bool kb_ok = !ImGui::GetIO().WantCaptureKeyboard;
     bool wheel_on[2] = {g_wheel[0].step(dt), g_wheel[1].step(dt)};
     // The game jumps with the (analog) L trigger and selects / skips with A. Outside player control (menus,
-    // cutscenes, the pause screen) the keys and pad buttons bound to jump press A instead, so Space (or the Xbox
-    // layout's A button) both jumps and selects.
+    // cutscenes, the pause screen) some inputs switch to menu duties:
+    //  - keys and pad buttons bound to jump press A, so Space (or the Xbox layout's A button) jumps and selects,
+    //  - Escape bound to Start (pause) presses B (back): it opens the pause menu in gameplay and closes it again,
+    //  - the mouse works the menus instead of its bindings: left click selects (A), right click goes back (B) and
+    //    the wheel moves the selection (stick up/down).
+    // Those inputs, if still held when control changes, only count once released: firing or jumping as a cutscene
+    // starts doesn't skip it, the Esc that paused doesn't close the pause menu, the click that starts a level
+    // doesn't also fire.
     const bool control = ssne::player_control_active();
+    static bool was_control = true;
+    static Uint32 held_mouse = 0;
+    static bool held_jump = false, held_esc = false, held_pad_jump = false;
+    bool jump_key = false;
+    for (const port::Bind& b : g_set.kb[port::ACT_L])
+        if (b.type == port::Bind::KEY && kb_ok && b.code > 0 && b.code < SDL_NUM_SCANCODES && k[b.code]) jump_key = true;
+    const bool esc = kb_ok && k[SDL_SCANCODE_ESCAPE];
+    const port::Bind& pj = g_set.pad[port::ACT_L];
+    const bool pad_jump = g_pad && pj.type == port::Bind::PAD_BUTTON &&
+                          SDL_GameControllerGetButton(g_pad, SDL_GameControllerButton(pj.code));
+    if (control != was_control) { held_mouse = mb; held_jump = jump_key; held_esc = esc; held_pad_jump = pad_jump; }
+    was_control = control;
+    held_mouse &= mb;
+    held_jump &= jump_key;
+    held_esc &= esc;
+    held_pad_jump &= pad_jump;
     for (int a = 0; a < port::ACT_COUNT; a++)
         for (const port::Bind& b : g_set.kb[a]) {
-            if (b.type == port::Bind::KEY && kb_ok && b.code > 0 && b.code < SDL_NUM_SCANCODES && k[b.code])
-                act[(a == port::ACT_L && !control) ? port::ACT_A : a] = 1;
-            if (b.type == port::Bind::MOUSE && (mb & SDL_BUTTON(b.code))) act[a] = 1;
-            if (b.type == port::Bind::WHEEL && wheel_on[b.code > 0 ? 1 : 0]) act[a] = 1;
+            if (b.type == port::Bind::KEY && kb_ok && b.code > 0 && b.code < SDL_NUM_SCANCODES && k[b.code]) {
+                if (a == port::ACT_START && b.code == SDL_SCANCODE_ESCAPE) { if (!held_esc) act[control ? a : port::ACT_B] = 1; }
+                else if (a == port::ACT_L) { if (!held_jump) act[control ? a : port::ACT_A] = 1; }
+                else act[a] = 1;
+            }
+            if (b.type == port::Bind::MOUSE && control && (mb & ~held_mouse & SDL_BUTTON(b.code))) act[a] = 1;
+            if (b.type == port::Bind::WHEEL && control && wheel_on[b.code > 0 ? 1 : 0]) act[a] = 1;
         }
+    if (!control) {
+        Uint32 clicks = mb & ~held_mouse;
+        if (clicks & SDL_BUTTON(SDL_BUTTON_LEFT)) act[port::ACT_A] = 1;
+        if (clicks & SDL_BUTTON(SDL_BUTTON_RIGHT)) act[port::ACT_B] = 1;
+        if (wheel_on[1]) ly += 1;
+        if (wheel_on[0]) ly -= 1;
+    }
     if (g_pad) {
         for (int a = port::kFirstButtonAction; a < port::ACT_COUNT; a++) {
             const port::Bind& b = g_set.pad[a];
             float v = 0;
             if (b.type == port::Bind::PAD_BUTTON) v = SDL_GameControllerGetButton(g_pad, SDL_GameControllerButton(b.code)) ? 1.f : 0.f;
             else if (b.type == port::Bind::PAD_AXIS) v = std::max(0.f, SDL_GameControllerGetAxis(g_pad, SDL_GameControllerAxis(b.code)) / 32767.f);
-            int target = (a == port::ACT_L && !control && b.type == port::Bind::PAD_BUTTON) ? int(port::ACT_A) : a;
+            int target = a;
+            if (a == port::ACT_L && b.type == port::Bind::PAD_BUTTON) {
+                if (held_pad_jump) continue;
+                if (!control) target = port::ACT_A;
+            }
             act[target] = std::max(act[target], v);
         }
         auto ax = [](SDL_GameControllerAxis a) { return SDL_GameControllerGetAxis(g_pad, a) / 32767.f; };

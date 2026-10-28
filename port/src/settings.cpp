@@ -20,9 +20,9 @@ const ActionInfo kActions[ACT_COUNT] = {
     {"move_left", "Strafe left"},       {"move_right", "Strafe right"},
     {"look_up", "Look up"},             {"look_down", "Look down"},
     {"look_left", "Turn left"},         {"look_right", "Turn right"},
-    {"a", "A  (select / use / skip)"}, {"b", "B  (back)"},
-    {"x", "X  (switch weapon)"},         {"y", "Y  (switch weapon)"},
-    {"z", "Z"},                         {"start", "Start  (pause)"},
+    {"a", "A  (use / select / skip)"},  {"b", "B  (reload / ammo type / back)"},
+    {"x", "X  (next weapon; hold: weapon wheel)"}, {"y", "Y  (previous weapon)"},
+    {"z", "Z  (NETRICSA)"},             {"start", "Start  (pause)"},
     {"l", "L trigger  (jump)"},         {"r", "R trigger  (fire)"},
     {"dpad_up", "D-pad up"},            {"dpad_down", "D-pad down"},
     {"dpad_left", "D-pad left"},        {"dpad_right", "D-pad right"},
@@ -112,13 +112,15 @@ void Settings::reset_keyboard() {
     kb[ACT_LOOK_DOWN][0] = k(SDL_SCANCODE_K);
     kb[ACT_LOOK_LEFT][0] = k(SDL_SCANCODE_J);
     kb[ACT_LOOK_RIGHT][0] = k(SDL_SCANCODE_L);
-    kb[ACT_A][0] = k(SDL_SCANCODE_F);              // in menus and cutscenes the jump keys also act as A (main.cpp)
-    kb[ACT_B][0] = k(SDL_SCANCODE_BACKSPACE);      kb[ACT_B][1] = k(SDL_SCANCODE_ESCAPE);
-    kb[ACT_X][0] = k(SDL_SCANCODE_E);              kb[ACT_X][1] = Bind::wheel(-1);
-    kb[ACT_Y][0] = k(SDL_SCANCODE_Q);              kb[ACT_Y][1] = Bind::wheel(1);
-    kb[ACT_Z][0] = k(SDL_SCANCODE_TAB);
-    kb[ACT_START][0] = k(SDL_SCANCODE_RETURN);
-    kb[ACT_L][0] = k(SDL_SCANCODE_SPACE);          kb[ACT_L][1] = Bind::mouse(SDL_BUTTON_RIGHT);  // jump (analog L)
+    // Classic PC shooter layout. In menus, the pause screen and cutscenes the jump keys also select (A), Esc goes back
+    // (B) and the mouse clicks / scrolls through the menus (main.cpp).
+    kb[ACT_A][0] = k(SDL_SCANCODE_E);              // use, enter / exit vehicles
+    kb[ACT_B][0] = k(SDL_SCANCODE_R);              kb[ACT_B][1] = k(SDL_SCANCODE_BACKSPACE);  // reload / ammo type
+    kb[ACT_X][0] = Bind::mouse(SDL_BUTTON_RIGHT);  kb[ACT_X][1] = Bind::wheel(-1);  // next weapon; hold: weapon wheel
+    kb[ACT_Y][0] = Bind::wheel(1);                 // previous weapon
+    kb[ACT_Z][0] = k(SDL_SCANCODE_TAB);            // NETRICSA
+    kb[ACT_START][0] = k(SDL_SCANCODE_ESCAPE);     kb[ACT_START][1] = k(SDL_SCANCODE_RETURN);
+    kb[ACT_L][0] = k(SDL_SCANCODE_SPACE);          // jump (analog L)
     kb[ACT_R][0] = Bind::mouse(SDL_BUTTON_LEFT);   kb[ACT_R][1] = k(SDL_SCANCODE_LCTRL);
     kb[ACT_DPAD_UP][0] = k(SDL_SCANCODE_KP_8);
     kb[ACT_DPAD_DOWN][0] = k(SDL_SCANCODE_KP_2);
@@ -317,6 +319,23 @@ bool load_settings(Settings& s, const std::string& path) {
         if (same(s.kb[ACT_X], Bind::key(SDL_SCANCODE_E), Bind{})) s.kb[ACT_X][1] = Bind::wheel(-1);
         if (same(s.kb[ACT_Y], Bind::key(SDL_SCANCODE_Q), Bind{})) s.kb[ACT_Y][1] = Bind::wheel(1);
     }
+    // Version 6: classic PC shooter keys (E use, R reload, Esc pause, right mouse / wheel for weapons). An untouched
+    // older default keyboard layout (after the version 3 update above) moves to it; rebound keys stay as they are.
+    if (version < 6) {
+        auto k = [](SDL_Scancode c) { return Bind::key(c); };
+        const Bind old[][2] = {
+            {k(SDL_SCANCODE_F), {}}, {k(SDL_SCANCODE_BACKSPACE), k(SDL_SCANCODE_ESCAPE)},
+            {k(SDL_SCANCODE_E), Bind::wheel(-1)}, {k(SDL_SCANCODE_Q), Bind::wheel(1)}, {k(SDL_SCANCODE_TAB), {}},
+            {k(SDL_SCANCODE_RETURN), {}}, {k(SDL_SCANCODE_SPACE), Bind::mouse(SDL_BUTTON_RIGHT)},
+            {Bind::mouse(SDL_BUTTON_LEFT), k(SDL_SCANCODE_LCTRL)}};
+        const int acts[] = {ACT_A, ACT_B, ACT_X, ACT_Y, ACT_Z, ACT_START, ACT_L, ACT_R};
+        bool untouched = true;
+        for (int i = 0; i < 8; i++) untouched &= s.kb[acts[i]][0] == old[i][0] && s.kb[acts[i]][1] == old[i][1];
+        if (untouched) {
+            Settings fresh;
+            for (int a : acts) { s.kb[a][0] = fresh.kb[a][0]; s.kb[a][1] = fresh.kb[a][1]; }
+        }
+    }
     // Version 4: the gamepad default became the Xbox layout (A jumps). Untouched old defaults (the GameCube layout)
     // move to it; "GameCube layout" in F12 > Gamepad brings the old one back.
     if (version < 4) {
@@ -361,7 +380,7 @@ bool load_settings(Settings& s, const std::string& path) {
 bool save_settings(const Settings& s, const std::string& path) {
     std::ostringstream o;
     o << "# Silly ReEncounter settings (edited in-game with F12)\n";
-    o << "settings_version = 5\n";
+    o << "settings_version = 6\n";
     o << "[graphics]\n";
     o << "renderer = " << s.renderer << "\n";
     o << "scale = " << s.scale << "    # internal resolution 1-8, 0 = automatic\n";

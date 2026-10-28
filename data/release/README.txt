@@ -69,9 +69,12 @@ PERFORMANCE
 
 DEFAULT CONTROLS (keyboard & mouse; change them in F12 > Keyboard & Mouse)
   W A S D / arrows ... move            Mouse ............ aim (click the game window to capture the mouse)
-  Space / Right mouse  jump (the GameCube's L trigger); Space also selects in menus and skips cutscenes
-  Left mouse / Ctrl .. fire (R)        E / Q, wheel ..... switch weapon (X / Y)
-  F .................. use / select (A)   Backspace / Esc .. back (B)   Tab .. Z   Enter .. pause (Start)
+  Left mouse / Ctrl .. fire (R)        Space ............ jump (the GameCube's L trigger)
+  E .................. use, enter / exit vehicles (A)    R .. reload / switch ammo type (B)
+  Mouse wheel ........ next / previous weapon (X / Y)    Right mouse .. next weapon; hold: weapon wheel (X)
+  Tab ................ NETRICSA (Z)    Esc / Enter ...... pause (Start)
+  Menus, the pause screen and cutscenes: the mouse wheel moves the selection, left click / Space selects and skips
+  cutscenes, right click / Esc goes back (Esc also closes the pause menu).
   Gamepad (Xbox layout, the default): A jump (also selects in menus and skips cutscenes), X use, B back,
   RT fire, LB / RB switch weapons, Y = the GameCube's Z, Start pause, Back = settings menu.
   F12 > Gamepad has a "GameCube layout" button (A use/select, LT jump, RT fire) and the on-screen button style:

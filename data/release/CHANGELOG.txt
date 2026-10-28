@@ -14,6 +14,12 @@ SSNE-NATIVE (github.com/SashexSRB/SSNE-Native)
   - Fix: with a frame limit above 60, menu animations ran too fast (scrolling lines, the spinning player model,
     the title's pulsing bomb). Menus, the pause screen and cutscenes now always run at 60 fps; the limit applies
     while you play on foot.
+  - Classic PC shooter keys (new defaults; layouts you changed yourself are kept): E use / enter and exit
+    vehicles, R reload / ammo type, Esc pause, mouse wheel next / previous weapon, right mouse next weapon (hold:
+    weapon wheel), Space jump (no longer also the right mouse button).
+  - Mouse in menus, the pause screen and cutscenes: the wheel moves the selection, left click selects, right click
+    goes back. Esc opens and closes the pause menu.
+  - Holding fire or jump when a cutscene starts no longer skips it (the button has to be pressed again).
   - Fix: in-engine cutscenes (GPU renderer) showed a frozen gameplay frame instead of the cutscene.
   - Slightly lower CPU use on the game thread (graphics command and vertex processing).
 
