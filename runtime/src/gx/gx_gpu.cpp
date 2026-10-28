@@ -489,7 +489,10 @@ GLuint make_ms_tex(int w, int h, GLenum ifmt) {
 }
 
 void create_efb() {
-    int w = SX(EFB_W), h = SY(EFB_H);
+    // Allocated a multiple of 8 in each direction (rendering uses the top-left SX(EFB_W) x SY(EFB_H) through the
+    // viewport): native resolutions give odd sizes such as 1440x1273, and on an Intel Iris Xe (Mesa) native 1080 with
+    // 8x MSAA hung the GPU, which no whole-number scale (always even sizes) did.
+    int w = (SX(EFB_W) + 7) & ~7, h = (SY(EFB_H) + 7) & ~7;
     if (g_efb_fbo) { DeleteFramebuffers(1, &g_efb_fbo); sc_delete_texture(g_efb_color); sc_delete_texture(g_efb_depth); }
     if (g_resolve_fbo) { DeleteFramebuffers(1, &g_resolve_fbo); sc_delete_texture(g_resolve_tex); g_resolve_fbo = g_resolve_tex = 0; }
     if (g_msaa > 1) {

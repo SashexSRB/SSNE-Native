@@ -415,6 +415,11 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   through SX() / SY() (the horizontal scale was fractional for widescreen before); the copy shaders work in internal
   pixels. A composite copy's band end now uses the same rounding as its start (identical at whole-number scales).
   gpu-replay --native H replays at a native height.
+  Native 1080 with 8x MSAA hung an Iris Xe GPU (i915 "GPU HANG", context reset; seconds of frozen picture) in the
+  game and in gpu-replay of a briefing capture; 2x with 8x MSAA didn't, and llvmpipe showed no GL errors. The
+  difference is the EFB size, odd at native (1440x1273) and always even at whole-number scales: the EFB textures are
+  now allocated in multiples of 8 (rendering still uses SX(EFB_W) x SY(EFB_H) through the viewport; replays are pixel
+  identical). Not confirmed on the hardware, which would risk another hang.
 * **Widescreen HUD at the edges** (`hud_edges`, default on): the widened frame's HUD draws (orthographic, narrower
   than the screen) were compressed back to 4:3 around the middle unless they touched an edge, so health and ammo
   stayed inside the 4:3 area (the game keeps a safe-area margin). Now a piece whose center is left / right of the
