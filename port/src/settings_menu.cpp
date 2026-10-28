@@ -24,7 +24,7 @@ void assign(Settings& s, const Bind& b) {
     if (!g_cap.pad) {
         // One key per control: drop the key from any other control it was bound to.
         for (int a = 0; a < ACT_COUNT; a++)
-            for (int k = 0; k < 2; k++)
+            for (int k = 0; k < Settings::kKbSlots; k++)
                 if (s.kb[a][k] == b && !(a == g_cap.action && k == g_cap.slot)) s.kb[a][k] = Bind{};
         s.kb[g_cap.action][g_cap.slot] = b;
     } else {
@@ -282,17 +282,18 @@ bool tab_keyboard(Settings& s) {
     ch |= slider_pct("Mouse sensitivity", s.mouse_sens, 0.1f, 5.0f);
     ch |= ImGui::Checkbox("Invert mouse Y", &s.mouse_invert_y);
     ImGui::SeparatorText("Bindings");
-    if (ImGui::BeginTable("##kb", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
-        ImGui::TableSetupColumn("GameCube control", ImGuiTableColumnFlags_WidthStretch, 1.2f);
+    if (ImGui::BeginTable("##kb", 1 + Settings::kKbSlots, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {
+        ImGui::TableSetupColumn("GameCube control", ImGuiTableColumnFlags_WidthStretch, 1.4f);
         ImGui::TableSetupColumn("Primary", ImGuiTableColumnFlags_WidthStretch, 1.0f);
         ImGui::TableSetupColumn("Secondary", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+        ImGui::TableSetupColumn("Third", ImGuiTableColumnFlags_WidthStretch, 1.0f);
         ImGui::TableHeadersRow();
         for (int a = 0; a < ACT_COUNT; a++) {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
             ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted(action_name(a));
-            for (int k = 0; k < 2; k++) {
+            for (int k = 0; k < Settings::kKbSlots; k++) {
                 ImGui::TableSetColumnIndex(1 + k);
                 if (bind_button(s.kb[a][k], false, a, k)) { s.kb[a][k] = Bind{}; ch = true; }
             }
@@ -346,15 +347,15 @@ bool tab_gamepad(Settings& s, const MenuInfo& info) {
     }
     help("For a Switch Pro / Nintendo-layout controller with the GameCube layout.");
     {
-        static const char* kIds[] = {"auto", "gamecube", "xbox", "playstation"};
-        static const char* kNames[] = {"Automatic (match my controller)", "GameCube", "Xbox", "PlayStation"};
+        static const char* kIds[] = {"auto", "keyboard", "gamecube", "xbox", "playstation"};
+        static const char* kNames[] = {"Automatic (what I use)", "Keyboard & mouse", "GameCube", "Xbox", "PlayStation"};
         int cur = 0;
-        for (int i = 0; i < 4; i++) if (s.prompts == kIds[i]) cur = i;
+        for (int i = 0; i < 5; i++) if (s.prompts == kIds[i]) cur = i;
         ImGui::SetNextItemWidth(300);
-        if (ImGui::Combo("On-screen buttons", &cur, kNames, 4)) { s.prompts = kIds[cur]; ch = true; }
+        if (ImGui::Combo("On-screen buttons", &cur, kNames, 5)) { s.prompts = kIds[cur]; ch = true; }
         help("The buttons the game shows in menus and hints (\"A Select\", \"Press A to skip\").\n"
-             "Automatic shows Xbox or PlayStation buttons while a controller is connected, matching your bindings,\n"
-             "and the GameCube buttons otherwise.");
+             "Automatic shows your keys and mouse buttons, or Xbox / PlayStation buttons when you play with a\n"
+             "controller, matching your bindings.");
     }
     ImGui::TextColored(kDim, "Click a slot, then press a controller button or pull a trigger. Right-click clears. Esc cancels.");
     if (ImGui::BeginTable("##pad", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)) {

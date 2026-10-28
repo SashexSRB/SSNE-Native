@@ -27,6 +27,11 @@ SSNE-NATIVE (github.com/SashexSRB/SSNE-Native)
     grenade launcher, 6 Sirian power gun / flamethrower, 7 sniper rifle, 8 cannon, 9 Serious Bomb. Press a
     key again for the other weapon of its pair; weapons you don't have (or have no ammo for) are skipped.
     Rebindable in F12 > Keyboard & Mouse (and to gamepad buttons).
+  - Keyboard & mouse button hints: the game's on-screen buttons ("A Select", "Press A to skip", tutorial
+    hints) show your keys and mouse buttons while you play with the keyboard and mouse, and switch to Xbox /
+    PlayStation buttons when you use a controller (F12 > Gamepad > On-screen buttons: Automatic).
+  - Up to three keys / buttons per control. F and Q are next / previous weapon, and X / Y in menus (Add /
+    Delete Player), where the mouse buttons and wheel select, go back and scroll.
   - Fix: in-engine cutscenes (GPU renderer) showed a frozen gameplay frame instead of the cutscene.
   - Slightly lower CPU use on the game thread (graphics command and vertex processing).
 

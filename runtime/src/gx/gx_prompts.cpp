@@ -1,6 +1,6 @@
 // Button prompts: the game draws its controller buttons (A, B, X, Y, Z, L, R) as glyphs of its two text fonts
-// (512x256 texture atlases). When the player uses another controller, the port asks for those glyphs to be
-// replaced with the matching Xbox / PlayStation buttons: the atlas is recognized when it is decoded and the glyph
+// (512x256 texture atlases). When the player uses another controller (or the keyboard and mouse), the port asks for
+// those glyphs to be replaced with the matching Xbox / PlayStation buttons, keycaps or mouse buttons: the atlas is recognized when it is decoded and the glyph
 // rectangles are repainted with the icons from prompt_icons.inc (tools/make_prompt_icons.py).
 //
 // GameCube A can stand for two pad buttons (with the Xbox layout, the jump button also selects in menus and X is
@@ -153,3 +153,12 @@ void set_button_prompts(const uint8_t menu[7], const uint8_t control[7]) {
 namespace ssne::gx {
 bool prompt_candidate_size(int w, int h) { return (w == 512 && h == 256) || (w == 256 && h == 128); }
 }
+
+namespace ssne {
+uint8_t prompt_key_glyph(const char* name) {
+    if (!name) return 0;
+    for (const auto& k : gx::kKeyGlyphs)
+        if (!strcmp(k.name, name)) return k.glyph;
+    return 0;
+}
+} // namespace ssne

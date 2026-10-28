@@ -107,7 +107,7 @@ void Settings::graphics_preset(int level) {
 }
 
 void Settings::reset_keyboard() {
-    for (auto& b : kb) b[0] = b[1] = Bind{};
+    for (auto& b : kb) for (Bind& x : b) x = Bind{};
     auto k = [](SDL_Scancode s) { return Bind::key(s); };
     kb[ACT_MOVE_UP][0] = k(SDL_SCANCODE_W);        kb[ACT_MOVE_UP][1] = k(SDL_SCANCODE_UP);
     kb[ACT_MOVE_DOWN][0] = k(SDL_SCANCODE_S);      kb[ACT_MOVE_DOWN][1] = k(SDL_SCANCODE_DOWN);
@@ -122,7 +122,8 @@ void Settings::reset_keyboard() {
     kb[ACT_A][0] = k(SDL_SCANCODE_E);              // use, enter / exit vehicles
     kb[ACT_B][0] = k(SDL_SCANCODE_R);              kb[ACT_B][1] = k(SDL_SCANCODE_BACKSPACE);  // reload / ammo type
     kb[ACT_X][0] = Bind::mouse(SDL_BUTTON_RIGHT);  kb[ACT_X][1] = Bind::wheel(-1);  // next weapon; hold: weapon wheel
-    kb[ACT_Y][0] = Bind::wheel(1);                 // previous weapon
+    kb[ACT_X][2] = k(SDL_SCANCODE_F);              // (the mouse buttons and wheel work the menus there: F / Q reach X / Y)
+    kb[ACT_Y][0] = Bind::wheel(1);                 kb[ACT_Y][1] = k(SDL_SCANCODE_Q);  // previous weapon
     kb[ACT_Z][0] = k(SDL_SCANCODE_TAB);            // NETRICSA
     kb[ACT_START][0] = k(SDL_SCANCODE_ESCAPE);     kb[ACT_START][1] = k(SDL_SCANCODE_RETURN);
     kb[ACT_L][0] = k(SDL_SCANCODE_SPACE);          // jump (analog L)
@@ -303,9 +304,11 @@ bool load_settings(Settings& s, const std::string& path) {
         auto it = kv.find(std::string("kb.") + action_id(a));
         if (it != kv.end()) {
             std::string v = it->second;
-            size_t comma = v.find(',');
-            s.kb[a][0] = bind_from_string(v.substr(0, comma));
-            s.kb[a][1] = comma == std::string::npos ? Bind{} : bind_from_string(v.substr(comma + 1));
+            for (int k = 0; k < Settings::kKbSlots; k++) {  // "a, b, c" (older files have two)
+                size_t comma = v.find(',');
+                s.kb[a][k] = bind_from_string(v.substr(0, comma));
+                v = comma == std::string::npos ? std::string() : v.substr(comma + 1);
+            }
         }
         if (a >= kFirstButtonAction) {
             auto p = kv.find(std::string("pad.") + action_id(a));
@@ -339,8 +342,22 @@ bool load_settings(Settings& s, const std::string& path) {
         for (int i = 0; i < 8; i++) untouched &= s.kb[acts[i]][0] == old[i][0] && s.kb[acts[i]][1] == old[i][1];
         if (untouched) {
             Settings fresh;
-            for (int a : acts) { s.kb[a][0] = fresh.kb[a][0]; s.kb[a][1] = fresh.kb[a][1]; }
+            for (int a : acts) for (int k = 0; k < Settings::kKbSlots; k++) s.kb[a][k] = fresh.kb[a][k];
         }
+    }
+    // Version 7: a third binding per control, and keys for X / Y (F / Q), which menus need (Add / Delete Player):
+    // there the mouse buttons and wheel select, go back and scroll. Added to untouched version 6 X / Y bindings when
+    // F / Q aren't bound to anything else (whatever version wrote the file: an older build keeps the bindings).
+    if (version < 7) {
+        auto bound = [&](Bind b) {
+            for (auto& slots : s.kb) for (const Bind& x : slots) if (x == b) return true;
+            return false;
+        };
+        if (s.kb[ACT_X][0] == Bind::mouse(SDL_BUTTON_RIGHT) && s.kb[ACT_X][1] == Bind::wheel(-1) &&
+            s.kb[ACT_X][2] == Bind{} && !bound(Bind::key(SDL_SCANCODE_F)))
+            s.kb[ACT_X][2] = Bind::key(SDL_SCANCODE_F);
+        if (s.kb[ACT_Y][0] == Bind::wheel(1) && s.kb[ACT_Y][1] == Bind{} && !bound(Bind::key(SDL_SCANCODE_Q)))
+            s.kb[ACT_Y][1] = Bind::key(SDL_SCANCODE_Q);
     }
     // Version 4: the gamepad default became the Xbox layout (A jumps). Untouched old defaults (the GameCube layout)
     // move to it; "GameCube layout" in F12 > Gamepad brings the old one back.
@@ -356,7 +373,8 @@ bool load_settings(Settings& s, const std::string& path) {
     s.music_volume = std::clamp(s.music_volume, 0, 100);
     s.sfx_volume = std::clamp(s.sfx_volume, 0, 100);
     if (s.win_w < 320 || s.win_h < 240) { s.win_w = 1280; s.win_h = 720; }
-    if (s.prompts != "gamecube" && s.prompts != "xbox" && s.prompts != "playstation") s.prompts = "auto";
+    if (s.prompts != "gamecube" && s.prompts != "xbox" && s.prompts != "playstation" && s.prompts != "keyboard")
+        s.prompts = "auto";
     // Sanitize.
     if (s.renderer != "software") s.renderer = "gpu";
     s.scale = std::clamp(s.scale, 0, 8);
@@ -386,7 +404,7 @@ bool load_settings(Settings& s, const std::string& path) {
 bool save_settings(const Settings& s, const std::string& path) {
     std::ostringstream o;
     o << "# Silly ReEncounter settings (edited in-game with F12)\n";
-    o << "settings_version = 6\n";
+    o << "settings_version = 7\n";
     o << "[graphics]\n";
     o << "renderer = " << s.renderer << "\n";
     o << "scale = " << s.scale << "    # internal resolution 1-8, 0 = automatic\n";
@@ -414,7 +432,8 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "mouse_sensitivity = " << s.mouse_sens << "\n";
     o << "mouse_invert_y = " << (s.mouse_invert_y ? 1 : 0) << "\n";
     for (int a = 0; a < ACT_COUNT; a++)
-        o << "kb." << action_id(a) << " = " << bind_to_string(s.kb[a][0]) << ", " << bind_to_string(s.kb[a][1]) << "\n";
+        o << "kb." << action_id(a) << " = " << bind_to_string(s.kb[a][0]) << ", " << bind_to_string(s.kb[a][1]) << ", "
+          << bind_to_string(s.kb[a][2]) << "\n";
     o << "[gamepad]\n";
     o << "pad_deadzone = " << s.pad_deadzone << "\n";
     o << "pad_trigger_threshold = " << s.trigger_threshold << "\n";
@@ -423,7 +442,7 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "pad_swap_sticks = " << (s.swap_sticks ? 1 : 0) << "\n";
     o << "pad_rumble = " << (s.rumble ? 1 : 0) << "\n";
     o << "pad_rumble_strength = " << s.rumble_strength << "\n";
-    o << "pad_prompts = " << s.prompts << "    # on-screen buttons: auto, gamecube, xbox, playstation\n";
+    o << "pad_prompts = " << s.prompts << "    # on-screen buttons: auto, keyboard, gamecube, xbox, playstation\n";
     for (int a = kFirstButtonAction; a < ACT_COUNT; a++) o << "pad." << action_id(a) << " = " << bind_to_string(s.pad[a]) << "\n";
     o << "[general]\n";
     o << "pause_in_menu = " << (s.pause_in_menu ? 1 : 0) << "\n";

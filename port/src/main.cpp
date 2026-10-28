@@ -356,19 +356,55 @@ uint8_t prompt_glyph(const port::Bind& b, bool ps) {
     return 0;
 }
 
+// Keyboard / mouse glyph of a binding: the keycap of a key, or the mouse button / wheel (0 = none).
+uint8_t kbm_glyph(const port::Bind& b) {
+    switch (b.type) {
+    case port::Bind::KEY: return ssne::prompt_key_glyph(SDL_GetScancodeName(SDL_Scancode(b.code)));
+    case port::Bind::WHEEL: return b.code > 0 ? ssne::MS_WHEEL_UP : ssne::MS_WHEEL_DOWN;
+    case port::Bind::MOUSE:
+        switch (b.code) {
+        case SDL_BUTTON_LEFT: return ssne::MS_LEFT;
+        case SDL_BUTTON_RIGHT: return ssne::MS_RIGHT;
+        case SDL_BUTTON_MIDDLE: return ssne::MS_MIDDLE;
+        case SDL_BUTTON_X1: return ssne::MS_BACK;
+        case SDL_BUTTON_X2: return ssne::MS_FORWARD;
+        }
+        return 0;
+    default: return 0;
+    }
+}
+
+bool g_input_pad = false;  // the last input came from the gamepad ("automatic" on-screen buttons follow it)
+
 void update_prompts() {
     uint8_t menu[7] = {}, control[7] = {};
+    static const int kSlots[7] = {port::ACT_A, port::ACT_B, port::ACT_X, port::ACT_Y, port::ACT_Z, port::ACT_L, port::ACT_R};
     std::string style = g_set.prompts;
     if (style == "auto") {
-        style = "gamecube";
-        if (g_pad) {
+        style = "keyboard";
+        if (g_pad && g_input_pad) {
             SDL_GameControllerType t = SDL_GameControllerGetType(g_pad);
             style = (t == SDL_CONTROLLER_TYPE_PS3 || t == SDL_CONTROLLER_TYPE_PS4 || t == SDL_CONTROLLER_TYPE_PS5) ? "playstation" : "xbox";
         }
     }
-    if (style != "gamecube") {
+    if (style == "keyboard") {
+        // Gameplay: each control's first binding with a glyph. Menus, the pause screen and cutscenes only take keys
+        // (the mouse clicks, goes back and scrolls there, see update_input): A is a jump key (they select there) and
+        // B is Esc when it pauses (it goes back there).
+        auto first = [](const port::Bind* b, bool keys_only) {
+            for (int k = 0; k < port::Settings::kKbSlots; k++)
+                if (uint8_t g = (keys_only && b[k].type != port::Bind::KEY) ? 0 : kbm_glyph(b[k])) return g;
+            return uint8_t(0);
+        };
+        for (int s = 0; s < 7; s++) {
+            control[s] = first(g_set.kb[kSlots[s]], false);
+            menu[s] = first(g_set.kb[kSlots[s]], true);
+        }
+        if (uint8_t g = first(g_set.kb[port::ACT_L], true)) menu[0] = g;
+        for (const port::Bind& b : g_set.kb[port::ACT_START])
+            if (b == port::Bind::key(SDL_SCANCODE_ESCAPE)) menu[1] = kbm_glyph(b);
+    } else if (style != "gamecube") {
         bool ps = style == "playstation";
-        static const int kSlots[7] = {port::ACT_A, port::ACT_B, port::ACT_X, port::ACT_Y, port::ACT_Z, port::ACT_L, port::ACT_R};
         for (int s = 0; s < 7; s++) menu[s] = control[s] = prompt_glyph(g_set.pad[kSlots[s]], ps);
         if (g_set.pad[port::ACT_L].type == port::Bind::PAD_BUTTON) menu[0] = prompt_glyph(g_set.pad[port::ACT_L], ps);
     }
@@ -1082,6 +1118,9 @@ int main(int argc, char** argv) {
         bool changed = false;  // settings changed by hotkeys/menu this frame
         while (SDL_PollEvent(&e)) {
             if (port::menu_handle_event(e, g_set, changed)) continue;  // rebinding in progress
+            if (e.type == SDL_KEYDOWN || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEWHEEL) g_input_pad = false;
+            else if (e.type == SDL_CONTROLLERBUTTONDOWN || (e.type == SDL_CONTROLLERAXISMOTION && std::abs(e.caxis.value) > 16000))
+                g_input_pad = true;
             ImGui_ImplSDL2_ProcessEvent(&e);
             switch (e.type) {
             case SDL_QUIT: quit = true; break;
@@ -1164,7 +1203,7 @@ int main(int argc, char** argv) {
                 if (e.cbutton.button == SDL_CONTROLLER_BUTTON_BACK) toggle_menu();
                 break;
             case SDL_CONTROLLERDEVICEADDED:
-                if (!g_pad) g_pad = SDL_GameControllerOpen(e.cdevice.which);
+                if (!g_pad) { g_pad = SDL_GameControllerOpen(e.cdevice.which); g_input_pad = g_pad != nullptr; }
                 break;
             case SDL_CONTROLLERDEVICEREMOVED:
                 if (g_pad && SDL_GameControllerGetAttached(g_pad) == SDL_FALSE) { SDL_GameControllerClose(g_pad); g_pad = nullptr; }

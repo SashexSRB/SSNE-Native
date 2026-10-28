@@ -60,7 +60,8 @@ struct Settings {
     bool muted = false;
     bool audio_hq = true;          // band-limited resampling (off: the DSP's original linear interpolation)
     // Keyboard / mouse
-    Bind kb[ACT_COUNT][2];
+    static constexpr int kKbSlots = 3;  // bindings per control
+    Bind kb[ACT_COUNT][kKbSlots];
     bool mouse_look = true;        // captured mouse turns the view
     bool mouse_aim = true;         // direct 1:1 aim in gameplay (off: the mouse emulates the C-stick)
     float mouse_sens = 1.0f;
@@ -74,7 +75,7 @@ struct Settings {
     bool swap_sticks = false;
     bool rumble = true;              // pass the game's controller rumble to the gamepad
     float rumble_strength = 1.0f;    // 0.1 .. 1
-    std::string prompts = "auto";    // on-screen buttons: auto (match the gamepad), gamecube, xbox, playstation
+    std::string prompts = "auto";    // on-screen buttons: auto (keyboard & mouse, or the gamepad in use), keyboard, gamecube, xbox, playstation
     // General
     bool pause_in_menu = true;
     bool pause_unfocused = true;     // pause (and silence) the game while the window is in the background

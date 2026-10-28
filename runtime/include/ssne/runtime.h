@@ -68,8 +68,11 @@ enum PromptGlyph : uint8_t {
     GLYPH_GC = 0, XB_A, XB_B, XB_X, XB_Y, XB_LB, XB_RB, XB_LT, XB_RT, XB_LS, XB_RS, XB_VIEW, XB_MENU,
     GLYPH_DPAD_UP, GLYPH_DPAD_DOWN, GLYPH_DPAD_LEFT, GLYPH_DPAD_RIGHT,
     PS_CROSS, PS_CIRCLE, PS_SQUARE, PS_TRIANGLE, PS_L1, PS_R1, PS_L2, PS_R2, PS_L3, PS_R3, PS_SHARE, PS_OPTIONS,
+    MS_LEFT, MS_RIGHT, MS_MIDDLE, MS_WHEEL_UP, MS_WHEEL_DOWN, MS_BACK, MS_FORWARD,  // then the keyboard keycaps
 };
 void set_button_prompts(const uint8_t menu[7], const uint8_t control[7]);
+// Glyph id of the keycap for a key by its SDL scancode name ("E", "Space", "Escape", ...), 0 if there is none.
+uint8_t prompt_key_glyph(const char* sdl_scancode_name);
 float fov();
 void set_widescreen(float factor);
 float widescreen();
