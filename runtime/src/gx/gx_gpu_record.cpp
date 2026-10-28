@@ -58,8 +58,11 @@ std::vector<std::unique_ptr<GpuFrame>> g_pool;
 // Draw state snapshot, rebuilt only when g_cfg_dirty says its inputs changed (most draws repeat the previous
 // draw's state, and building + comparing the ~1.4 KB snapshot for each of ~2,000 draws per frame was a large share
 // of the game thread). R->state_index: entry of the current frame's `states` equal to R->state (none: ~0u).
+// A widescreen HUD draw of the frame being recorded: its vertices (clip position first) and NDC extent.
+struct HudPiece { size_t off; uint32_t n, stride; float mn, mx, ymn, ymx, k; };
 struct RecCtx {
     std::unique_ptr<GpuFrame> cur;  // frame being recorded
+    std::vector<HudPiece> hud;      // its widescreen HUD draws, placed when it's submitted (place_hud)
     GpuState state;
     uint32_t state_index = ~0u;
     uint64_t state_vx = 0;  // version of state.vcfg / xf (gpu_record_vertices); 0: mode 0, zeroed
@@ -130,10 +133,63 @@ int tex_bpp(uint32_t fmt) {
     }
 }
 
+// Widescreen HUD (see widescreen_hud_left): a recorded 2D draw is noted with its extent and placed when the frame is
+// submitted. The game draws text one glyph per draw, so placing each draw by its own position splits words and lines
+// where they cross from the middle to a side. Consecutive HUD draws that touch or nearly touch (a word, a line, the
+// lines of a message, an icon with its number) form a group, placed as a whole.
+void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
+    float k = widescreen_frame_factor();
+    if (k <= 1.001f || !(g.xf_reg[0x26] & 1)) return;
+    HudPiece h{off, n, stride, 1e30f, -1e30f, 1e30f, -1e30f, k};
+    const uint8_t* v = f.vtx.data() + off;
+    for (uint32_t i = 0; i < n; i++) {
+        float p[4];
+        memcpy(p, v + size_t(i) * stride, 16);
+        if (!(p[3] > 0)) return;
+        float x = p[0] / p[3], y = p[1] / p[3];
+        h.mn = std::min(h.mn, x); h.mx = std::max(h.mx, x);
+        h.ymn = std::min(h.ymn, y); h.ymx = std::max(h.ymx, y);
+    }
+    if (h.mx - h.mn >= 1.9f) return;  // spans the screen (scene redraws, fades): left alone
+    R->hud.push_back(h);
+}
+
+void place_hud(RecCtx& r) {
+    if (!r.cur) { r.hud.clear(); return; }
+    GpuFrame& f = *r.cur;
+    const bool sides = hud_edges();
+    constexpr float kGapX = 0.08f, kGapY = 0.06f;  // NDC: about a glyph's width / height at 448 lines
+    for (size_t i = 0; i < r.hud.size();) {
+        const float k = r.hud[i].k;
+        float mn = r.hud[i].mn, mx = r.hud[i].mx, ymn = r.hud[i].ymn, ymx = r.hud[i].ymx;
+        size_t j = i + 1;
+        for (; j < r.hud.size(); j++) {
+            const HudPiece& p = r.hud[j];
+            if (p.k != k || std::max(p.mn - mx, mn - p.mx) > kGapX || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
+            mn = std::min(mn, p.mn); mx = std::max(mx, p.mx);
+            ymn = std::min(ymn, p.ymn); ymx = std::max(ymx, p.ymx);
+        }
+        const float nmn = widescreen_hud_left(mn, mx, k, sides);
+        for (size_t q = i; q < j; q++) {
+            const HudPiece& p = r.hud[q];
+            uint8_t* v = f.vtx.data() + p.off;
+            for (uint32_t m = 0; m < p.n; m++, v += p.stride) {
+                float c[4];
+                memcpy(c, v, 16);
+                c[0] = (nmn + (c[0] / c[3] - mn) / k) * c[3];
+                memcpy(v, c, 4);
+            }
+        }
+        i = j;
+    }
+    r.hud.clear();
+}
+
 void submit_frame() {
     if (g_cmp.on) {
         long n = g_cmp.seen++;
         for (int k = 0; k < 2; k++) {
+            place_hud(g_rec[k]);
             GpuFrame& f = frame_of(g_rec[k]);
             f.wide = widescreen_frame_factor();
             if (n >= g_cmp.first && n < g_cmp.first + g_cmp.count) {
@@ -146,6 +202,7 @@ void submit_frame() {
         gpu_recycle_frame(std::move(g_rec[0].cur));
         R = &g_rec[1];
     }
+    place_hud(*R);
     if (!R->cur) return;
     R->cur->seq = ++g_frame_seq;
     R->cur->wide = widescreen_frame_factor();
@@ -324,6 +381,7 @@ void gpu_record_draw(uint8_t prim, const std::vector<Vtx>& v) {
         if (ntex) memcpy(p + 24, s.tex, size_t(ntex) * 12);
     }
     add_indices(f, prim, n, tris, base);
+    note_hud(f, off, uint32_t(n), stride);
 }
 
 uint8_t* gpu_vtx_reserve(size_t bytes) {
@@ -350,6 +408,7 @@ void gpu_record_vertices(uint8_t prim, uint32_t n, const GpuVcfg& vcfg, const Gp
     }
     uint32_t base = batch(f, vcfg.ntg, stride, zsnap, off, n, true);
     add_indices(f, prim, n, tris, base);
+    note_hud(f, off, n, stride);
 }
 
 void gpu_record_efb_copy(uint32_t cmd) {

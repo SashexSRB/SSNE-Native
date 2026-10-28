@@ -4,6 +4,11 @@ Silly ReEncounter - changes since the first public release
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.1.1
+  - Fix: with the HUD at the screen edges (widescreen), on-screen text such as hints, pickup messages and the
+    combo counter could be split apart where it crossed from the middle of the screen to a side. Text and the
+    pieces drawn with it now move as a whole.
+
 SSNE-NATIVE 1.1
   Performance: about two and a half times the frame rate where the CPU is the limit (high frame rate limits,
   weaker CPUs, levels with a lot of geometry), and less GPU time per frame. Measured with the frame limit off on

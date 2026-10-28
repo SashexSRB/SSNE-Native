@@ -803,11 +803,11 @@ void tev_reg_write(uint32_t reg, uint32_t v) {
 }
 
 // Widescreen HUD: in widescreen gameplay frames, 2D (orthographic) draws keep their 4:3 proportions. Everything
-// is scaled around the screen center (the HUD and menus stay inside the original 4:3 area, laid out exactly as
-// designed) except elements that touch the left or right screen edge (frames, side decorations), which stay
-// attached to that edge. Anchoring by position alone (e.g. "left third -> left edge") breaks text: a string is
-// drawn one glyph per draw, so glyphs on either side of a boundary would move apart. Draws spanning the whole
-// screen (scene redraws, fades) are left alone.
+// is scaled around the screen center (the HUD stays inside the original 4:3 area, laid out exactly as designed)
+// except elements that touch the left or right screen edge, which stay attached to that edge. Draws spanning the
+// whole screen (scene redraws, fades) are left alone. This is the software renderer's per-draw version; the GPU
+// recorder places whole groups of draws at the end of the frame (gx_gpu_record.cpp, place_hud), which also allows
+// moving the HUD out to the screen edges (hud_edges): per draw, that splits text, which is drawn one glyph per draw.
 const std::vector<Vtx>& widescreen_hud(const std::vector<Vtx>& v, std::vector<Vtx>& tmp) {
     float k = widescreen_frame_factor();
     if (k <= 1.001f || !(g.xf_reg[0x26] & 1)) return v;
@@ -818,7 +818,7 @@ const std::vector<Vtx>& widescreen_hud(const std::vector<Vtx>& v, std::vector<Vt
         mn = std::min(mn, x); mx = std::max(mx, x);
     }
     if (mx - mn >= 1.9f) return v;
-    float nmn = widescreen_hud_left(mn, mx, k);
+    float nmn = widescreen_hud_left(mn, mx, k, false);
     tmp = v;
     for (Vtx& p : tmp) {
         float x = p.x / p.w;
@@ -919,9 +919,9 @@ void draw(uint8_t prim, const std::vector<Vtx>& v_in) {
 }
 
 void draw_prims(uint8_t prim, const std::vector<Vtx>& v_in) {
+    if (gpu_enabled()) { gpu_record_draw(prim, v_in); return; }  // (the recorder places the widescreen HUD)
     static std::vector<Vtx> hud_tmp;
     const std::vector<Vtx>& v = widescreen_hud(v_in, hud_tmp);
-    if (gpu_enabled()) { gpu_record_draw(prim, v); return; }
     if (dbg.nodraw) return;
     g_cfgs.push_back(build_cfg());
     const DrawCfg& c = g_cfgs.back();
@@ -1132,13 +1132,13 @@ bool g_hud_edges = true;
 bool hud_edges() { return g_hud_edges; }
 
 // Where a 4:3 HUD piece spanning [mn, mx] (NDC of the widened frame) starts once compressed back to its 4:3 width
-// (factor k): pieces at a screen edge stay there; with hud_edges on (the default), pieces left / right of the middle
-// keep their margin from the left / right edge of the screen instead of the 4:3 area (health and ammo move out to
-// the corners, as in a widescreen game); pieces around the middle stay centered.
-float widescreen_hud_left(float mn, float mx, float k) {
+// (factor k): pieces at a screen edge stay there; with `sides`, pieces left / right of the middle keep their margin
+// from the left / right edge of the screen instead of the 4:3 area (health and ammo move out to the corners, as in a
+// widescreen game); pieces around the middle stay centered.
+float widescreen_hud_left(float mn, float mx, float k, bool sides) {
     constexpr float kEdge = 0.97f, kSide = 1.f / 3.f;
     float c = (mn + mx) * 0.5f;
-    bool left = mn <= -kEdge || (hud_edges() && c < -kSide), right = mx >= kEdge || (hud_edges() && c > kSide);
+    bool left = mn <= -kEdge || (sides && c < -kSide), right = mx >= kEdge || (sides && c > kSide);
     if (left) return -1.f + (mn + 1.f) / k;
     if (right) return 1.f - (1.f - mx) / k - (mx - mn) / k;
     return mn / k;  // centered 4:3 layout

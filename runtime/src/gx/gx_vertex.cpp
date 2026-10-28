@@ -672,29 +672,6 @@ uint32_t pack_light_part(const LightPart& lp) {
            uint32_t(lp.atten) << 5 | uint32_t(lp.spot) << 6 | (lp.mask & 0xFF) << 8;
 }
 
-// The widescreen HUD adjustment (gx_raster.cpp widescreen_hud) on a draw's written clip positions.
-void widescreen_hud_inplace(uint8_t* v, uint32_t n, uint32_t stride) {
-    float k = widescreen_frame_factor();
-    if (k <= 1.001f || !(g.xf_reg[0x26] & 1)) return;
-    float mn = 1e30f, mx = -1e30f;
-    for (uint32_t i = 0; i < n; i++) {
-        float p[4];
-        memcpy(p, v + size_t(i) * stride, 16);
-        if (p[3] <= 0) return;
-        float x = p[0] / p[3];
-        mn = std::min(mn, x); mx = std::max(mx, x);
-    }
-    if (mx - mn >= 1.9f) return;
-    float nmn = widescreen_hud_left(mn, mx, k);
-    for (uint32_t i = 0; i < n; i++) {
-        float p[4];
-        memcpy(p, v + size_t(i) * stride, 16);
-        float x = p[0] / p[3];
-        p[0] = (nmn + (x - mn) / k) * p[3];
-        memcpy(v + size_t(i) * stride, p, 4);
-    }
-}
-
 } // namespace
 
 bool g_gpu_vertex = !(getenv("SSNE_GPU_TL") && getenv("SSNE_GPU_TL")[0] == '0');
@@ -908,7 +885,6 @@ bool gpu_draw(uint8_t prim, int vat, const uint8_t* data, uint32_t count) {
             }
         }
     }
-    widescreen_hud_inplace(out, count, L.stride);
     gpu_record_vertices(prim, count, g_vc_last, g_xf_last, g_vx_version, zsnap);
     return true;
 }

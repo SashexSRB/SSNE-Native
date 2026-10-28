@@ -424,7 +424,12 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   than the screen) were compressed back to 4:3 around the middle unless they touched an edge, so health and ammo
   stayed inside the 4:3 area (the game keeps a safe-area margin). Now a piece whose center is left / right of the
   middle third keeps its margin from the left / right screen edge; the middle third stays centered (score,
-  crosshair, messages, the weapon wheel). Pieces are whole draws, so the parts of one element move together.
+  crosshair, messages, the weapon wheel).
+  Deciding per draw split text (1.1): strings are drawn one glyph per draw, so hints, pickup messages and the combo
+  counter crossing x = -1/3 or 1/3 came apart. The GPU recorder now notes each 2D draw (vertex range, NDC extent) and
+  places them when the frame is submitted: consecutive draws that touch or nearly touch (gaps up to 0.08 x / 0.06 y
+  NDC, about a glyph) form one group (a word, a line, a message's lines, an icon with its number), placed as a whole.
+  The software renderer keeps the per-draw centering, without the side placement.
 * **In-game menus stay 4:3**: the pause menu, NETRICSA and briefings were widened with gameplay (the weapon is still
   projected behind them), and the edge placement tore their layouts apart. Centering alone isn't enough either:
   NETRICSA's rotating weapon model is drawn with the widened scene camera, so it shrinks around the screen middle
