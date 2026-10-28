@@ -511,6 +511,13 @@ void update_input(float dt) {
         {port::ACT_DPAD_UP, ssne::PAD_UP}, {port::ACT_DPAD_DOWN, ssne::PAD_DOWN},
         {port::ACT_DPAD_LEFT, ssne::PAD_LEFT}, {port::ACT_DPAD_RIGHT, ssne::PAD_RIGHT}};
     for (auto& m : map) if (act[m.a] >= 0.5f) p.buttons |= m.m;
+    // Weapon groups 1-9 (number keys by default), on foot only: the runtime picks and switches the weapon.
+    static bool weapon_was[9] = {};
+    for (int i = 0; i < 9; i++) {
+        bool on = act[port::ACT_WEAPON1 + i] >= 0.5f;
+        if (on && !weapon_was[i] && ssne::mouse_aim_active()) ssne::weapon_select_group(i);
+        weapon_was[i] = on;
+    }
     lt = act[port::ACT_L];
     rt = act[port::ACT_R];
     if (g_mouse_captured && g_set.mouse_look && g_set.mouse_aim && ssne::mouse_aim_active()) {

@@ -74,6 +74,9 @@ DEFAULT CONTROLS (keyboard & mouse; change them in F12 > Keyboard & Mouse)
   Mouse wheel ........ next / previous weapon (X / Y)    Right mouse .. next weapon; hold: weapon wheel (X):
                        move the mouse towards a weapon and release the button to take it
   Tab ................ NETRICSA (Z)    Esc / Enter ...... pause (Start)
+  1-9 ................ weapons: 1 chainsaw, 2 Desert Hawk, 3 double shotgun, 4 Uzis / minigun, 5 rocket /
+                       grenade launcher, 6 Sirian power gun / flamethrower, 7 sniper rifle, 8 cannon,
+                       9 Serious Bomb (press again for the other weapon of the pair)
   Menus, the pause screen and cutscenes: the mouse wheel moves the selection, left click / Space selects and skips
   cutscenes, right click / Esc goes back (Esc also closes the pause menu).
   Gamepad (Xbox layout, the default): A jump (also selects in menus and skips cutscenes), X use, B back,

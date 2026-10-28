@@ -23,6 +23,10 @@ SSNE-NATIVE (github.com/SashexSRB/SSNE-Native)
   - Weapon wheel with the mouse: hold the right mouse button (or whichever key / button you bound to X), move
     the mouse towards a weapon and release to take it. A quick click still switches to the next weapon.
   - The click that captures the mouse no longer also selects in menus or fires.
+  - Number keys pick weapons: 1 chainsaw, 2 Desert Hawk, 3 double shotgun, 4 Uzis / minigun, 5 rocket /
+    grenade launcher, 6 Sirian power gun / flamethrower, 7 sniper rifle, 8 cannon, 9 Serious Bomb. Press a
+    key again for the other weapon of its pair; weapons you don't have (or have no ammo for) are skipped.
+    Rebindable in F12 > Keyboard & Mouse (and to gamepad buttons).
   - Fix: in-engine cutscenes (GPU renderer) showed a frozen gameplay frame instead of the cutscene.
   - Slightly lower CPU use on the game thread (graphics command and vertex processing).
 

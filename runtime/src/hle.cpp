@@ -17,6 +17,7 @@
 
 #include "gc/dol.h"
 #include "ssne/hw.h"
+#include "ssne/input.h"
 #include "ssne/recomp_hooks.h"
 #include "ssne/scheduler.h"
 #include "ssne/runtime.h"
@@ -386,6 +387,63 @@ const uint32_t kPlayerUpdateSig[6] = {0x9421FF18u, 0x7C0802A6u, 0xDB6100C0u, 0xD
 PPCFunc g_orig_player_update = nullptr;
 std::atomic<int64_t> g_vehicle_last_ms{-100000};
 
+// ---- weapon number keys. The player's weapons by id: 0 chainsaw, 1 Desert Hawk, 2 Uzis, 3 double shotgun,
+// 4 minigun, 5 rocket launcher, 6 grenade launcher, 7 flamethrower (gas gun), 8 sniper rifle, 9 Sirian power gun,
+// 10 cannon, 11 Serious Bomb; player+0x5DC is the weapon in hand, +0x5F8 the one highlighted in the weapon bar /
+// wheel, +0x5E0 the previous one. Next weapon (800C59CC, X) steps the highlight to the next id that is owned
+// (800C6170) and has ammo (800C61A0) and marks a switch: the weapon in hand lowers, and the weapon update (800C4EF8,
+// part of the player update) then commits the highlight (800C5C18) and raises it. A number key picks its group's
+// first available weapon (the group's next one if one of them is already in hand or highlighted), taps X so the game
+// starts a normal switch, and once the game has taken the tap (highlight != weapon in hand) puts the chosen id into
+// the highlight: the game finishes the switch with it. Same addresses on PAL (unchanged below 800E270C).
+const int kWeaponGroups[9][2] = {{0, -1}, {1, -1}, {3, -1}, {2, 4}, {5, 6}, {9, 7}, {8, -1}, {10, -1}, {11, -1}};
+const uint32_t kWeaponOwned = 0x800C6170, kWeaponHasAmmo = 0x800C61A0;
+const uint32_t kWeaponOwnedSig[6] = {0x1C840018u, 0x386304CCu, 0x39200000u, 0x7C03202Eu, 0x2C000000u, 0x40820010u};
+const uint32_t kWeaponHasAmmoSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBF810008u, 0x9001001Cu, 0x1FA40018u, 0x7C7C1B78u};
+PPCFunc g_weapon_owned = nullptr, g_weapon_has_ammo = nullptr;
+std::atomic<int> g_weapon_req{-1};
+std::atomic<int64_t> g_weapon_req_ms{0};
+int g_weapon_target = -1;      // chosen weapon waiting for the X tap to be taken
+int64_t g_weapon_deadline = 0;
+
+bool weapon_available(PPCContext& ctx, uint32_t player, int id) {
+    PPCContext saved = ctx;  // the game's functions run on the caller's registers; give them back untouched
+    ctx.r[3] = player; ctx.r[4] = uint32_t(id);
+    g_weapon_owned(ctx);
+    bool ok = ctx.r[3] != 0;
+    if (ok) {
+        ctx.r[3] = player; ctx.r[4] = uint32_t(id);
+        g_weapon_has_ammo(ctx);
+        ok = ctx.r[3] != 0;
+    }
+    ctx = saved;
+    return ok;
+}
+
+void weapon_keys(PPCContext& ctx, uint32_t player) {
+    int cur = int(mem_read32(player + 0x5DC)), sel = int(mem_read32(player + 0x5F8));
+    if (cur < 0 || cur > 11 || sel < 0 || sel > 11) return;
+    int group = g_weapon_req.exchange(-1);
+    if (group >= 0 && group < 9 && now_ms() - g_weapon_req_ms.load() < 500) {
+        const int* g = kWeaponGroups[group];
+        int n = g[1] < 0 ? 1 : 2, from = 0, base = -1;
+        for (int i = 0; i < n; i++) if (g[i] == sel || (base < 0 && g[i] == cur)) { base = g[i]; from = i + 1; }
+        int target = -1;
+        for (int k = 0; k < n && target < 0; k++) {
+            int id = g[(from + k) % n];
+            if (id != base && weapon_available(ctx, player, id)) target = id;
+        }
+        if (target >= 0 && target != cur) {
+            if (sel != cur) mem_write32(player + 0x5F8, uint32_t(target));  // a switch is under way: retarget it
+            else { inject_buttons(PAD_X, 60); g_weapon_target = target; g_weapon_deadline = now_ms() + 500; }
+        }
+    }
+    if (g_weapon_target >= 0) {
+        if (sel != cur) { mem_write32(player + 0x5F8, uint32_t(g_weapon_target)); g_weapon_target = -1; }
+        else if (now_ms() > g_weapon_deadline) g_weapon_target = -1;
+    }
+}
+
 void hle_player_update(PPCContext& ctx) {
     uint32_t player = ctx.r[3];
     PPCFunc* slot = ssne_hook_slot(g_ver->player_update);
@@ -395,6 +453,7 @@ void hle_player_update(PPCContext& ctx) {
     if (player < 0x80000000u || player >= 0x81800000u) return;
     uint32_t vehicle = mem_read32(player + 0x6C4);
     if (vehicle >= 0x80000000u && vehicle < 0x81800000u) g_vehicle_last_ms = now_ms();
+    else if (g_weapon_owned && g_weapon_has_ammo) weapon_keys(ctx, player);
 }
 
 void install_vehicle_detector() {
@@ -404,6 +463,14 @@ void install_vehicle_detector() {
     if (!ok) { fprintf(stdout, "[ssne] vehicles: player update not found (different game build?)\n"); return; }
     g_orig_player_update = f->func;
     ssne_install_hook(g_ver->player_update, hle_player_update);
+    const SSNEFuncEntry* own = ssne_find_func(kWeaponOwned);
+    const SSNEFuncEntry* ammo = ssne_find_func(kWeaponHasAmmo);
+    bool wk = own && ammo;
+    for (int k = 0; k < 6 && wk; k++)
+        wk = mem_read32(kWeaponOwned + uint32_t(k) * 4) == kWeaponOwnedSig[k] &&
+             mem_read32(kWeaponHasAmmo + uint32_t(k) * 4) == kWeaponHasAmmoSig[k];
+    if (wk) { g_weapon_owned = own->func; g_weapon_has_ammo = ammo->func; }
+    else fprintf(stdout, "[ssne] weapon keys: weapon functions not found (different game build?)\n");
 }
 
 bool in_vehicle() { return now_ms() - g_vehicle_last_ms.load() < 200; }
@@ -603,6 +670,7 @@ void mouse_aim_add(double yaw, double pitch) {
 bool mouse_aim_available() { return g_orig_look != nullptr; }
 bool mouse_aim_active() { return g_orig_look && now_ms() - g_aim_last_ms.load() < 200; }
 bool player_control_active() { return mouse_aim_active() || in_vehicle(); }
+void weapon_select_group(int group) { g_weapon_req_ms = now_ms(); g_weapon_req = group; }
 
 void set_frame_limit(int fps) { g_frame_limit = fps < 0 ? 0 : fps; }
 int frame_limit() { return g_frame_limit.load(); }

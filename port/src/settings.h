@@ -28,6 +28,8 @@ enum Action : int {
     ACT_LOOK_UP, ACT_LOOK_DOWN, ACT_LOOK_LEFT, ACT_LOOK_RIGHT,
     ACT_A, ACT_B, ACT_X, ACT_Y, ACT_Z, ACT_START, ACT_L, ACT_R,
     ACT_DPAD_UP, ACT_DPAD_DOWN, ACT_DPAD_LEFT, ACT_DPAD_RIGHT,
+    // Weapon groups 1-9 (not GameCube controls: the runtime picks the weapon, ssne::weapon_select_group)
+    ACT_WEAPON1, ACT_WEAPON2, ACT_WEAPON3, ACT_WEAPON4, ACT_WEAPON5, ACT_WEAPON6, ACT_WEAPON7, ACT_WEAPON8, ACT_WEAPON9,
     ACT_COUNT
 };
 constexpr int kFirstButtonAction = ACT_A;  // gamepad bindings exist for ACT_A..ACT_DPAD_RIGHT

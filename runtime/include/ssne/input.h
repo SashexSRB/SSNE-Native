@@ -19,6 +19,8 @@ struct PadState {
 
 void set_pad(int port, const PadState& state);
 PadState get_pad(int port);
+// Buttons the runtime itself presses on port 1 for `ms` milliseconds (added to the host's input).
+void inject_buttons(uint16_t mask, int ms);
 
 // Rumble motor state the game last sent to a port (PADControlMotor writes it into the SI output word):
 // 0 = stop, 1 = rumble, 2 = hard stop. The host turns it into gamepad rumble.

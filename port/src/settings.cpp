@@ -26,6 +26,11 @@ const ActionInfo kActions[ACT_COUNT] = {
     {"l", "L trigger  (jump)"},         {"r", "R trigger  (fire)"},
     {"dpad_up", "D-pad up"},            {"dpad_down", "D-pad down"},
     {"dpad_left", "D-pad left"},        {"dpad_right", "D-pad right"},
+    {"weapon1", "Weapon 1  (chainsaw)"},  {"weapon2", "Weapon 2  (Desert Hawk)"},
+    {"weapon3", "Weapon 3  (double shotgun)"}, {"weapon4", "Weapon 4  (Uzis / minigun)"},
+    {"weapon5", "Weapon 5  (rocket / grenade launcher)"}, {"weapon6", "Weapon 6  (Sirian power gun / flamethrower)"},
+    {"weapon7", "Weapon 7  (sniper rifle)"}, {"weapon8", "Weapon 8  (cannon)"},
+    {"weapon9", "Weapon 9  (Serious Bomb)"},
 };
 
 std::string trim(const std::string& s) {
@@ -126,6 +131,7 @@ void Settings::reset_keyboard() {
     kb[ACT_DPAD_DOWN][0] = k(SDL_SCANCODE_KP_2);
     kb[ACT_DPAD_LEFT][0] = k(SDL_SCANCODE_KP_4);
     kb[ACT_DPAD_RIGHT][0] = k(SDL_SCANCODE_KP_6);
+    for (int i = 0; i < 9; i++) kb[ACT_WEAPON1 + i][0] = k(SDL_Scancode(SDL_SCANCODE_1 + i));
     mouse_look = true; mouse_aim = true; mouse_sens = 1.0f; mouse_invert_y = false;
 }
 
