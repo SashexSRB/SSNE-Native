@@ -4,6 +4,10 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.1
+  - Fix (HUD at the screen edges): an ammo count of 1000 or more (e.g. picking up bullets at 999) moved the ammo
+    number inwards, away from the weapon's ammo icon, until the weapon was selected again.
+
 SSNE-NATIVE 1.2
   - New name: Serious Sam: Next Encounter Native (SSNE-Native). The launcher is now SSNE-Native (.exe) and the game
     SSNE-Native-Game (.exe); the files under the old names are removed once the game is rebuilt. Game data, saves,

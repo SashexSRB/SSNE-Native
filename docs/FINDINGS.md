@@ -435,7 +435,11 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   0.08 x / 0.06 y NDC); glyphs right after the group follow it (health / armor / ammo numbers) when they lie within its
   height, near it, and next to the glyph before them, without changing its extent (1.1.2 let them extend it: the
   "Armor +100" pickup message, drawn right after the health and armor bars, pulled them to the middle; a shadow
-  letter overlapping the armor icon's top moved with the bars). A group moves to a side only in
+  letter overlapping the armor icon's top moved with the bars; 1.2.0 measured "near" from the glyph's center, so the
+  first digit of a 4-digit ammo count, right-aligned against the ammo icon, fell just outside and the number was
+  centered; and a 4-digit number's second pass (shadow, then text) starts a whole number left of the previous glyph,
+so "next to the glyph before it" failed: now the gap between the glyph's box and the group's, and next to the run of
+glyphs that followed the group so far). A group moves to a side only in
   the top / bottom bands (|y| > 0.55) or at the far side (|x| > 0.8, the weapon bar): the weapon wheel's slots and
   icons lie apart around the middle and were placed one by one, so icons left their slots. The software renderer
   keeps the per-draw centering, without the side placement.

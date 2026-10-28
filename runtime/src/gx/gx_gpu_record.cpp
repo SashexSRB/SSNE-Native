@@ -191,19 +191,21 @@ void place_hud(RecCtx& r) {
             continue;
         }
         float mn = first.mn, mx = first.mx, ymn = first.ymn, ymx = first.ymx;
+        float gmn = 1e30f, gmx = -1e30f;  // extent of the glyphs following the group since its last element
         size_t j = i + 1;
         for (; j < r.hud.size(); j++) {
             const HudPiece& p = r.hud[j];
             if (p.k != k || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
-            if (p.glyph) {  // follows the group only within its height and right after the glyph before it (the
-                            // health number); it doesn't change the group's extent
-                const HudPiece& q = r.hud[j - 1];
-                float c = (p.mn + p.mx) * 0.5f;
-                if (c < mn - kGapX || c > mx + kGapX || p.ymn < ymn - 0.01f || p.ymx > ymx + 0.01f) break;
-                if (q.glyph && std::max(p.mn - q.mx, q.mn - p.mx) > kGapX) break;
+            if (p.glyph) {  // follows the group only near it, within its height and next to the glyphs that followed it
+                            // so far (the health and ammo numbers, shadow pass then text); it doesn't change the
+                            // group's extent
+                if (std::max(p.mn - mx, mn - p.mx) > kGapX || p.ymn < ymn - 0.01f || p.ymx > ymx + 0.01f) break;
+                if (gmn <= gmx && std::max(p.mn - gmx, gmn - p.mx) > kGapX) break;
+                gmn = std::min(gmn, p.mn); gmx = std::max(gmx, p.mx);
                 continue;
             }
             if (std::max(p.mn - mx, mn - p.mx) > kGapX) break;
+            gmn = 1e30f; gmx = -1e30f;
             mn = std::min(mn, p.mn); mx = std::max(mx, p.mx);
             ymn = std::min(ymn, p.ymn); ymx = std::max(ymx, p.ymx);
         }
