@@ -4,6 +4,10 @@ Silly ReEncounter - changes since the first public release
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.1.3
+  - Fix (HUD at the screen edges): picking up armor or another item could move the health and armor display to the
+    middle of the screen while the pickup message ("Armor +100") was shown.
+
 SSNE-NATIVE 1.1.2
   - Fix (HUD at the screen edges): when a hint flew in, the health display could jump to the middle of the screen
     and text shadows could be left behind; text now always stays centered, and only the HUD's corner pieces (health,
