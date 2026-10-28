@@ -111,7 +111,9 @@ bool tab_graphics(Settings& s, const MenuInfo& info) {
     for (int i = 0; i < 6; i++) if (kFps[i] == s.fps_limit) cur = i;
     ImGui::SetNextItemWidth(260);
     if (ImGui::Combo("Frame rate limit  (F10)", &cur, kFpsNames, 6)) { s.fps_limit = kFps[cur]; ch = true; }
-    help("The game times everything by real elapsed time, so it plays at the same speed at any frame rate.\n"
+    help("The game times gameplay by real elapsed time, so it plays at the same speed at any frame rate.\n"
+         "Menus, the pause screen, cutscenes and vehicles always run at 60 (their animations and the jeep's\n"
+         "physics depend on the original frame rate).\n"
          "Unlimited is still capped by your monitor when vertical sync is on.");
     ch |= ImGui::Checkbox("Sync game to display", &s.sync_display);
     help("With vertical sync on, the 60 fps limit and a 60 Hz display, the game advances exactly once per display "

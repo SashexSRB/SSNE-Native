@@ -412,13 +412,18 @@ bool in_vehicle() { return now_ms() - g_vehicle_last_ms.load() < 200; }
 // ---- frame rate limit. The game measures real frame time (median of the last 5 frames, 8015544C) and
 // CcEngine::Flip waits for the next VI retrace when no retrace happened since the previous flip, capping it at
 // 59.94 fps. With a different limit that wait is skipped and frames are paced on the host clock instead
-// (frame_limiter_wait, called at each display copy). In a vehicle, limits above 60 (and unlimited) use the
-// game's own 60 fps pacing.
+// (frame_limiter_wait, called at each display copy). Limits above 60 (and unlimited) only apply while playing on
+// foot (the look update runs every gameplay frame): everywhere else the game uses its own 60 fps pacing. The front
+// end, the pause screen and cutscenes animate per frame (menu lines scrolled, the player model spun and the title's
+// bomb pulsed twice as fast at 120 fps), and vehicles need the original time step (see in_vehicle; the look update
+// doesn't run while driving).
 namespace {
 std::atomic<int> g_frame_limit{60};
 int effective_frame_limit() {
     int lim = g_frame_limit.load();
-    return (lim <= 0 || lim > 60) && in_vehicle() ? 60 : lim;
+    if (lim > 0 && lim <= 60) return lim;
+    if (!mouse_aim_available()) return in_vehicle() ? 60 : lim;  // look update not found: only vehicles are known
+    return mouse_aim_active() ? lim : 60;
 }
 PPCFunc g_orig_vi_wait = nullptr;
 // CcEngine::Flip's call to VIWaitForRetrace returns here (USA 80118560)
