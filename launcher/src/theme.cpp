@@ -96,6 +96,27 @@ bool find_boink() {
     return false;
 }
 
+// A glyph of font f (scale k, drawn at p as AddText would) with a flat color `top` down to `split` of its height and a
+// gradient to `bot` below it. (One quad per glyph would spread the gradient over the whole height.)
+void glyph_gradient(ImDrawList* dl, ImFont* f, const ImFontGlyph* g, float k, ImVec2 p, ImU32 top, ImU32 bot, float split) {
+    float x0 = p.x + g->X0 * k, x1 = p.x + g->X1 * k, y0 = p.y + g->Y0 * k, y1 = p.y + g->Y1 * k;
+    float ys = y0 + (y1 - y0) * split, vs = g->V0 + (g->V1 - g->V0) * split;
+    dl->PushTextureID(f->ContainerAtlas->TexID);
+    dl->PrimReserve(12, 8);
+    auto quad = [&](float ya, float yb, float va, float vb, ImU32 ca, ImU32 cb) {
+        ImDrawIdx i = ImDrawIdx(dl->_VtxCurrentIdx);
+        dl->PrimWriteVtx(ImVec2(x0, ya), ImVec2(g->U0, va), ca);
+        dl->PrimWriteVtx(ImVec2(x1, ya), ImVec2(g->U1, va), ca);
+        dl->PrimWriteVtx(ImVec2(x1, yb), ImVec2(g->U1, vb), cb);
+        dl->PrimWriteVtx(ImVec2(x0, yb), ImVec2(g->U0, vb), cb);
+        dl->PrimWriteIdx(i); dl->PrimWriteIdx(ImDrawIdx(i + 1)); dl->PrimWriteIdx(ImDrawIdx(i + 2));
+        dl->PrimWriteIdx(i); dl->PrimWriteIdx(ImDrawIdx(i + 2)); dl->PrimWriteIdx(ImDrawIdx(i + 3));
+    };
+    quad(y0, ys, g->V0, vs, top, top);
+    quad(ys, y1, vs, g->V1, top, bot);
+    dl->PopTextureID();
+}
+
 void rotate_verts(ImDrawList* dl, int v0, ImVec2 c, float ang) {
     float cs = std::cos(ang), sn = std::sin(ang);
     for (int v = v0; v < dl->VtxBuffer.Size; v++) {
@@ -213,13 +234,19 @@ void draw_background(ImDrawList* dl, ImVec2 p0, ImVec2 p1, float t) {
 ImVec2 chunky_text(ImDrawList* dl, ImVec2 pos, float size, const char* text, Look look, float t, float small) {
     ImFont* f = fonts.display;
     const float fs = f->FontSize;
-    ImU32 c_top = kYellow, c_bot = kOrange, c_out = kOutline, c_edge = kEdge;
-    if (look == Look::Selected) { c_top = IM_COL32(255, 240, 90, 255); c_bot = IM_COL32(247, 160, 20, 255); }
+    ImU32 c_top = kYellow, c_bot = kOrange, c_out = kOutline, c_edge = kEdge, c_hi = kHighlight;
+    if (look == Look::Selected) { c_top = IM_COL32(255, 236, 80, 255); c_bot = IM_COL32(240, 150, 10, 255); }
     if (look == Look::Disabled) {
-        c_top = IM_COL32(150, 160, 215, 255); c_bot = IM_COL32(80, 90, 160, 255);
-        c_out = IM_COL32(14, 16, 60, 255); c_edge = IM_COL32(6, 6, 30, 255);
+        c_top = IM_COL32(150, 160, 215, 255); c_bot = IM_COL32(110, 120, 185, 255);
+        c_out = IM_COL32(40, 46, 110, 255); c_edge = IM_COL32(6, 6, 30, 255); c_hi = IM_COL32(200, 205, 240, 255);
     }
-    const float outline = std::max(2.0f, size * 0.065f);
+    // Like the logo: a thick near-black edge, a red outline inside it, a thin white highlight along each letter's
+    // upper left, the yellow face (orange along the bottom). Each layer is drawn for the whole text before the next,
+    // so the outlines of neighbouring letters merge into one.
+    const float red = std::max(2.0f, size * 0.06f), edge = red + std::max(2.0f, size * 0.06f);
+    const float hi = std::max(1.0f, size * 0.025f);
+    struct G { ImVec2 p, center; float gs, ang; const ImFontGlyph* g; char s[2]; };
+    std::vector<G> gl;
     float x = pos.x;
     bool word_start = true;
     int idx = 0;
@@ -239,35 +266,34 @@ ImVec2 chunky_text(ImDrawList* dl, ImVec2 pos, float size, const char* text, Loo
             ang += std::sin(t * 4.0f + idx) * 0.03f;
         }
         idx++;
-        if (dl) {
-            ImVec2 gp(x, y);
-            ImVec2 center(x + adv * 0.5f, y + (g->Y0 + g->Y1) * 0.5f * k);
-            char s[2] = {u, 0};
-            // Shadow
-            int v0 = dl->VtxBuffer.Size;
-            dl->AddText(f, gs, gp + ImVec2(size * 0.05f, size * 0.08f), kShadow, s);
-            // Outline rings: the thin dark edge, then the thick red outline inside it
-            for (int d = 0; d < 16; d++) {
-                float a = d * IM_PI / 8;
-                dl->AddText(f, gs, gp + ImVec2(std::cos(a), std::sin(a)) * (outline + std::max(1.0f, size * 0.025f)), c_edge, s);
-            }
-            for (int d = 0; d < 16; d++) {
-                float a = d * IM_PI / 8;
-                dl->AddText(f, gs, gp + ImVec2(std::cos(a), std::sin(a)) * outline, c_out, s);
-            }
-            // Fill with a vertical gradient over the glyph
-            int vf = dl->VtxBuffer.Size;
-            dl->AddText(f, gs, gp, c_top, s);
-            float gy0 = y + g->Y0 * k, gy1 = y + g->Y1 * k;
-            for (int v = vf; v < dl->VtxBuffer.Size; v++) {
-                float tt = (dl->VtxBuffer[v].pos.y - gy0) / std::max(1.0f, gy1 - gy0);
-                dl->VtxBuffer[v].col = lerp_col(c_top, c_bot, (tt - 0.62f) / 0.38f);  // flat, orange at the bottom
-            }
-            rotate_verts(dl, v0, center, ang);
-        }
-        x += adv + size * 0.01f;
+        G e{ImVec2(x, y), ImVec2(x + adv * 0.5f, y + (g->Y0 + g->Y1) * 0.5f * k), gs, ang, g, {u, 0}};
+        gl.push_back(e);
+        x += adv - size * 0.01f;
     }
-    return ImVec2(x - pos.x, size * f->Ascent / fs + outline);
+    if (dl) {
+        auto ring = [&](const G& e, float r, ImU32 c) {
+            int v0 = dl->VtxBuffer.Size;
+            for (int d = 0; d < 16; d++) {
+                float a = d * IM_PI / 8;
+                dl->AddText(f, e.gs, e.p + ImVec2(std::cos(a), std::sin(a)) * r, c, e.s);
+            }
+            rotate_verts(dl, v0, e.center, e.ang);
+        };
+        for (const G& e : gl) {  // drop shadow
+            int v0 = dl->VtxBuffer.Size;
+            dl->AddText(f, e.gs, e.p + ImVec2(size * 0.05f, size * 0.09f), kShadow, e.s);
+            rotate_verts(dl, v0, e.center, e.ang);
+        }
+        for (const G& e : gl) ring(e, edge, c_edge);
+        for (const G& e : gl) ring(e, red, c_out);
+        for (const G& e : gl) {
+            int v0 = dl->VtxBuffer.Size;
+            dl->AddText(f, e.gs, e.p - ImVec2(hi, hi), c_hi, e.s);  // shows along the upper left of the face
+            glyph_gradient(dl, f, e.g, e.gs / fs, e.p, c_top, c_bot, 0.72f);  // flat, orange along the bottom
+            rotate_verts(dl, v0, e.center, e.ang);
+        }
+    }
+    return ImVec2(x - pos.x, size * f->Ascent / fs + edge);
 }
 
 float spaced_text(ImDrawList* dl, ImFont* font, float size, ImVec2 pos, ImU32 col, const char* text, float spacing) {

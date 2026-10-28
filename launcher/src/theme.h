@@ -15,12 +15,13 @@ struct Fonts {
 extern Fonts fonts;
 
 // Palette
-// Lettering, from the Serious Sam logo: flat yellow face turning orange along the bottom, thick red outline, thin
-// near-black edge around it.
+// Lettering, from the Serious Sam logo: flat yellow face turning orange along the bottom, a thin white highlight on
+// its upper left, a red outline and a thick near-black edge around it.
 constexpr ImU32 kYellow = IM_COL32(251, 215, 6, 255);
 constexpr ImU32 kOrange = IM_COL32(208, 117, 1, 255);
-constexpr ImU32 kOutline = IM_COL32(191, 45, 34, 255);
+constexpr ImU32 kOutline = IM_COL32(204, 22, 22, 255);
 constexpr ImU32 kEdge = IM_COL32(30, 23, 27, 255);
+constexpr ImU32 kHighlight = IM_COL32(246, 240, 228, 255);
 constexpr ImU32 kShadow = IM_COL32(0, 0, 20, 170);
 const ImVec4 kText(0.92f, 0.93f, 1.00f, 1), kDim(0.62f, 0.66f, 0.86f, 1), kGood(0.55f, 0.95f, 0.45f, 1),
     kWarn(1.00f, 0.80f, 0.25f, 1), kBad(1.00f, 0.42f, 0.32f, 1), kGold(1.00f, 0.80f, 0.20f, 1);
