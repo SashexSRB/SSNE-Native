@@ -280,7 +280,9 @@ void timer_loop() {
             } else ++it;
         }
         lk.unlock();
-        for (auto [alarm, handler] : fire) {
+        for (const auto& f : fire) {
+            // (plain copies: capturing structured bindings needs clang 16, and releases build with older ones)
+            uint32_t alarm = f.first, handler = f.second;
             queue_interrupt_work([alarm, handler](PPCContext& c) {
                 c.r[3] = alarm;
                 c.r[4] = IRQ_CONTEXT;
