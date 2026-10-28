@@ -388,7 +388,7 @@ PPCFunc g_orig_player_update = nullptr;
 std::atomic<int64_t> g_vehicle_last_ms{-100000};
 
 // ---- weapon number keys. The player's weapons by id: 0 chainsaw, 1 Desert Hawk, 2 Uzis, 3 double shotgun,
-// 4 minigun, 5 rocket launcher, 6 grenade launcher, 7 flamethrower (gas gun), 8 sniper rifle, 9 Sirian power gun,
+// 4 minigun, 5 grenade launcher, 6 rocket launcher, 7 flamethrower (gas gun), 8 sniper rifle, 9 Sirian power gun,
 // 10 cannon, 11 Serious Bomb; player+0x5DC is the weapon in hand, +0x5F8 the one highlighted in the weapon bar /
 // wheel, +0x5E0 the previous one. Next weapon (800C59CC, X) steps the highlight to the next id that is owned
 // (800C6170) and has ammo (800C61A0) and marks a switch: the weapon in hand lowers, and the weapon update (800C4EF8,
@@ -396,7 +396,7 @@ std::atomic<int64_t> g_vehicle_last_ms{-100000};
 // first available weapon (the group's next one if one of them is already in hand or highlighted), taps X so the game
 // starts a normal switch, and once the game has taken the tap (highlight != weapon in hand) puts the chosen id into
 // the highlight: the game finishes the switch with it. Same addresses on PAL (unchanged below 800E270C).
-const int kWeaponGroups[9][2] = {{0, -1}, {1, -1}, {3, -1}, {2, 4}, {5, 6}, {9, 7}, {8, -1}, {10, -1}, {11, -1}};
+const int kWeaponGroups[9][2] = {{0, -1}, {1, -1}, {3, -1}, {2, 4}, {6, 5}, {9, 7}, {8, -1}, {10, -1}, {11, -1}};
 const uint32_t kWeaponOwned = 0x800C6170, kWeaponHasAmmo = 0x800C61A0;
 const uint32_t kWeaponOwnedSig[6] = {0x1C840018u, 0x386304CCu, 0x39200000u, 0x7C03202Eu, 0x2C000000u, 0x40820010u};
 const uint32_t kWeaponHasAmmoSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBF810008u, 0x9001001Cu, 0x1FA40018u, 0x7C7C1B78u};

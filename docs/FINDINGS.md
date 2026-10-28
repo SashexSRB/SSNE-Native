@@ -145,9 +145,10 @@ Rendering facts learned from the game:
 ## Weapons (number keys)
 * Player object (pointer at 802D8948, also r3 of the player update 800BEEC8): +0x5DC weapon in hand, +0x5F8 weapon
   highlighted in the weapon bar / wheel, +0x5E0 previous weapon; per-weapon 24-byte records from +0x4BC (+0x4CC
-  owned). Ids: 0 chainsaw, 1 Desert Hawk, 2 Uzis, 3 double shotgun, 4 minigun, 5 rocket launcher, 6 grenade launcher,
+  owned). Ids: 0 chainsaw, 1 Desert Hawk, 2 Uzis, 3 double shotgun, 4 minigun, 5 grenade launcher, 6 rocket launcher,
   7 flamethrower (GasGun), 8 sniper rifle, 9 Sirian power gun, 10 cannon, 11 Serious Bomb (base.cfg's `Weapons`
-  order without the unused MissileLauncher). Found by RAM diffs while cycling with X, with base.cfg's
+  order without the unused MissileLauncher, except that 5 and 6 are swapped: base.cfg lists RocketLauncher first;
+  checked by the weapon in hand). Found by RAM diffs while cycling with X, with base.cfg's
   `Cheats.GiveAllWeapons` / `GiveInfiniteAmmo` set in a test copy of the game data (same file size).
 * Next / previous weapon (800C59CC / 800C5B18) step the highlight to the next id that is owned (800C6170) and has
   ammo (800C61A0) and mark a switch (+0x5F4 = 2); the weapon in hand lowers and the weapon update (800C4EF8) commits
