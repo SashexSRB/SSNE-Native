@@ -432,7 +432,10 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   groups. Now the GPU recorder notes each 2D draw (vertex range, NDC extent, whether its texture is one of the two font
   atlases, recognized by gx_prompts.cpp) and places them when the frame is submitted: glyphs are only ever scaled
   toward the middle; other draws are grouped with the draws right after them that touch or nearly touch (gaps up to
-  0.08 x / 0.06 y NDC), glyphs included (health and ammo numbers follow their icons). A group moves to a side only in
+  0.08 x / 0.06 y NDC); glyphs right after the group follow it (health / armor / ammo numbers) when they lie within its
+  height, near it, and next to the glyph before them, without changing its extent (1.1.2 let them extend it: the
+  "Armor +100" pickup message, drawn right after the health and armor bars, pulled them to the middle; a shadow
+  letter overlapping the armor icon's top moved with the bars). A group moves to a side only in
   the top / bottom bands (|y| > 0.55) or at the far side (|x| > 0.8, the weapon bar): the weapon wheel's slots and
   icons lie apart around the middle and were placed one by one, so icons left their slots. The software renderer
   keeps the per-draw centering, without the side placement.

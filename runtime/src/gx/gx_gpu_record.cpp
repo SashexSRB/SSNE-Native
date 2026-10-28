@@ -140,7 +140,9 @@ int tex_bpp(uint32_t fmt) {
 // Placing glyphs by position splits words, lines and their shadows, and grouping them by proximity drags the HUD
 // along with letters passing by. So text is never moved to a side: every glyph is just scaled toward the middle, as
 // in the 4:3 layout. The rest (icons, bars, frames) is placed in groups: an element and the draws right after it that
-// touch or nearly touch it, glyphs included (the health and ammo numbers follow their icons). Only groups in a corner
+// touch or nearly touch it. Glyphs right after it that lie over it (the health and ammo numbers) follow the group, but
+// never decide its place: a pickup message ("Armor +100") drawn right after the health bars and next to them had
+// pulled the group to the middle. Only groups in a corner
 // band (health, ammo, the NETRICSA envelope) or at the far side of the 4:3 area (the weapon bar) move out to the
 // sides: the weapon wheel's slots and icons lie apart from each other around the middle and stay centered with it.
 void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
@@ -192,7 +194,16 @@ void place_hud(RecCtx& r) {
         size_t j = i + 1;
         for (; j < r.hud.size(); j++) {
             const HudPiece& p = r.hud[j];
-            if (p.k != k || std::max(p.mn - mx, mn - p.mx) > kGapX || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
+            if (p.k != k || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
+            if (p.glyph) {  // follows the group only within its height and right after the glyph before it (the
+                            // health number); it doesn't change the group's extent
+                const HudPiece& q = r.hud[j - 1];
+                float c = (p.mn + p.mx) * 0.5f;
+                if (c < mn - kGapX || c > mx + kGapX || p.ymn < ymn - 0.01f || p.ymx > ymx + 0.01f) break;
+                if (q.glyph && std::max(p.mn - q.mx, q.mn - p.mx) > kGapX) break;
+                continue;
+            }
+            if (std::max(p.mn - mx, mn - p.mx) > kGapX) break;
             mn = std::min(mn, p.mn); mx = std::max(mx, p.mx);
             ymn = std::min(ymn, p.ymn); ymx = std::max(ymx, p.ymx);
         }
