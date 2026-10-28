@@ -105,6 +105,10 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
   at the original 60 fps, because their animations and the jeep's physics depend on it.
 - **Slow on your PC?** F12 › Graphics › Presets › Low. Automatic resolution (on by default) already lowers the
   internal resolution when the GPU can't keep up.
+- **Updates install themselves** (1.2): when it starts, the launcher checks for a newer release on GitHub and offers
+  to install it, then restarts and rebuilds the game if the engine changed. `check_updates=0` in `launcher.ini`
+  turns the check off.
+- **Launcher lettering**: uses Boink LET (the font of the game's menus) if it's installed on your PC.
 - **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus (also pause, NETRICSA and briefings) and cutscenes
   stay 4:3, because the game places 3D models into 2D menu layouts. A blurred copy of the picture fills the sides
   (F12 › Graphics › Fill the sides of 4:3 screens). The HUD moves out to the screen edges (F12 › Graphics).

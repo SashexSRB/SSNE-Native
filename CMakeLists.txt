@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(SSNERecomp LANGUAGES C CXX)
+set(SSNE_VERSION "1.2.0")  # release version (the launcher's self-update compares it with the latest GitHub release)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -111,7 +112,7 @@ endif()
 if(SSNE_BUILD_LAUNCHER)
   add_executable(ssne-launcher WIN32
     launcher/src/main.cpp launcher/src/launcher_app.cpp launcher/src/platform.cpp launcher/src/config.cpp
-    launcher/src/theme.cpp launcher/src/game_builder.cpp)
+    launcher/src/theme.cpp launcher/src/game_builder.cpp launcher/src/updater.cpp)
   target_link_libraries(ssne-launcher PRIVATE gc imgui SDL2::SDL2main)
   # Fonts (SIL OFL, see launcher/fonts/*-OFL.txt) are compiled into the launcher.
   set(EMBED_DIR ${CMAKE_BINARY_DIR}/embed)
@@ -124,7 +125,7 @@ if(SSNE_BUILD_LAUNCHER)
     target_sources(ssne-launcher PRIVATE ${EMBED_DIR}/${sym}.h)
   endforeach()
   target_include_directories(ssne-launcher PRIVATE ${EMBED_DIR})
-  target_compile_definitions(ssne-launcher PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
+  target_compile_definitions(ssne-launcher PRIVATE IMGUI_DEFINE_MATH_OPERATORS SSNE_VERSION="${SSNE_VERSION}")
   set_target_properties(ssne-launcher PROPERTIES OUTPUT_NAME "SSNE-Native")
   if(WIN32)
     target_link_libraries(ssne-launcher PRIVATE comdlg32 shell32 winhttp)

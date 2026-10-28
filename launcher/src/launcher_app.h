@@ -9,10 +9,11 @@
 #include "config.h"
 #include "game_builder.h"
 #include "gc/verify.h"
+#include "updater.h"
 
 class LauncherApp {
 public:
-    LauncherApp();
+    explicit LauncherApp(bool updated = false);  // updated: started by the self-update (rebuild the game if needed)
     ~LauncherApp();
 
     void on_file_dropped(const std::string& path);
@@ -20,7 +21,7 @@ public:
     bool wants_quit() const { return quit_; }
 
 private:
-    enum class Phase { Idle, Verifying, Extracting, Building };
+    enum class Phase { Idle, Verifying, Extracting, Building, Updating };
 
     void select_rom(const std::string& path);
     void start_verify();
@@ -30,6 +31,8 @@ private:
     bool game_ready() const { return game_built() && !game_outdated(); }
     void launch_game();
     void join_worker();
+    void start_update();           // download and install update_, then restart
+    void draw_update(ImVec2 p0, ImVec2 p1);  // the update prompt / progress over the window
 
     enum Item { ITEM_PLAY, ITEM_DISC, ITEM_INSTALL, ITEM_FULLSCREEN, ITEM_CLOSE, ITEM_QUIT, ITEM_COUNT };
     bool item_enabled(int item) const;
@@ -54,13 +57,19 @@ private:
     std::atomic<uint64_t> prog_done_{0}, prog_total_{1};
     std::atomic<bool> cancel_{false};
 
+    std::thread update_check_;
+    std::atomic<bool> update_found_{false};  // update_ is set
+    updater::Release update_;
+    bool update_prompt_ = false;      // asking the player
+    std::string update_step_;         // guarded by mu_
+
     std::mutex mu_;
     bool have_result_ = false;
     gc::VerifyResult result_;
     std::string message_;             // last error / info
     bool message_is_error_ = false;
     char path_buf_[1024] = {};
-    bool quit_ = false;
+    std::atomic<bool> quit_{false};
     int selected_ = ITEM_DISC;
     float time_ = 0;
 };

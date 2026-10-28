@@ -651,3 +651,20 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   1080p frame, lossless round trip checked with Pillow). Print Screen is handled on key-up (Windows doesn't send
   its key-down); Shift+F12 also works. png_write.obj ships in the build kit (kit.ini link line).
 * Info bar: top_bar 0/1/2 (hidden / frame rate only / full), migrated from show_top_bar (settings version 5).
+
+## Launcher self-update (1.2)
+* `launcher/src/updater.cpp`: at start the launcher downloads `api.github.com/repos/SashexSRB/SSNE-Native/releases/latest`
+  (curl on Linux, WinHTTP on Windows; GitHub's API needs a User-Agent, which both send), compares `tag_name` with its
+  own SSNE_VERSION (CMakeLists.txt) and picks the asset ending in `-Linux-x86_64.tar.gz` / `-Windows-x64.zip`.
+  `SSNE_UPDATE_URL` points the check at another feed (testing with a local `python3 -m http.server`),
+  `SSNE_NO_UPDATE_CHECK` skips it.
+* Install: the package is unpacked into `update/` next to the launcher (tar on Linux, gc::zip on Windows) and every file
+  is moved over its counterpart. A replaced file is renamed to `.old` first: Windows can't overwrite or delete a
+  running .exe but can rename it; what can't be deleted yet is listed in `update-leftovers.txt` and removed at the next
+  start. The package holds no player data (game_data, saves, states, settings.ini, launcher.ini, the built game).
+* The new launcher is started with `--updated`; if the game is installed and the build kit's version changed, it
+  rebuilds the game right away (Update Game). Tested end to end: fake 1.2.1 feed and package from a local server
+  (files replaced, data untouched, no second prompt), and a rebuild from a copy of an installed folder whose kit
+  version was raised (the game was rebuilt as SSNE-Native-Game and the old SillyReEncounter-Game removed).
+* A version string patched into a copy of the binary isn't a valid test: the compiler builds the short version string
+  from immediates, so the comparison kept the old version.

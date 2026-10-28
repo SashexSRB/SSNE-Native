@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 
@@ -20,8 +21,9 @@ bool acceptable(gc::VerifyStatus s) {
 }
 } // namespace
 
-LauncherApp::LauncherApp() {
+LauncherApp::LauncherApp(bool updated) {
     base_dir_ = platform::exe_dir();
+    updater::cleanup(base_dir_);
     {   // The launcher's name until 1.2 (a newer package unpacked over an older one leaves it behind)
         std::error_code ec;
 #ifdef _WIN32
@@ -56,11 +58,54 @@ LauncherApp::LauncherApp() {
             }
         }
     }
+    if (updated) {
+        message_ = std::string("Updated to SSNE-Native ") + updater::current_version() + ".";
+        // A new build kit (engine update): rebuild the game right away, as Update Game would.
+        if (cfg_.installed && kit_present_ && game_outdated()) start_install();
+    }
+    if (cfg_.check_updates && !getenv("SSNE_NO_UPDATE_CHECK"))
+        update_check_ = std::thread([this] {
+            std::string err;
+            if (updater::check(update_, err)) update_found_ = true;
+        });
 }
 
 LauncherApp::~LauncherApp() {
     cancel_ = true;
     join_worker();
+    if (update_check_.joinable()) update_check_.join();
+}
+
+void LauncherApp::start_update() {
+    join_worker();
+    update_prompt_ = false;
+    cancel_ = false;
+    prog_done_ = 0; prog_total_ = 1000;
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        message_.clear();
+        update_step_ = "Downloading SSNE-Native " + update_.version;
+    }
+    phase_ = Phase::Updating;
+    worker_ = std::thread([this] {
+        std::string launcher, err;
+        bool ok = updater::install(update_, base_dir_, [this](const std::string& step, double f) {
+            std::lock_guard<std::mutex> lk(mu_);
+            update_step_ = step;
+            prog_done_ = uint64_t(std::clamp(f, 0.0, 1.0) * 1000);
+            return !cancel_.load();
+        }, launcher, err);
+        if (ok && platform::launch(launcher, {"--updated"}, base_dir_, err)) {
+            cfg_.save(config_path_);
+            quit_ = true;
+            return;
+        }
+        std::lock_guard<std::mutex> lk(mu_);
+        message_ = (ok ? "The update was installed, but the new launcher didn't start (" + err + "): start it again."
+                       : "Update failed: " + err);
+        message_is_error_ = true;
+        phase_ = Phase::Idle;
+    });
 }
 
 void LauncherApp::join_worker() {
@@ -247,8 +292,13 @@ void LauncherApp::frame() {
     float w = p1.x - p0.x, h = p1.y - p0.y;
     theme::draw_background(ImGui::GetBackgroundDrawList(), p0, p1, time_);
 
-    // Keyboard navigation (not while typing in the path box).
-    if (!io.WantTextInput) {
+    if (update_found_.load() && phase_ == Phase::Idle) {
+        update_found_ = false;
+        if (update_.version != cfg_.skip_version) update_prompt_ = true;
+    }
+    bool overlay = update_prompt_ || phase_ == Phase::Updating;
+    // Keyboard navigation (not while typing in the path box, nor under the update prompt).
+    if (!io.WantTextInput && !overlay) {
         auto step = [&](int dir) {
             for (int n = 0; n < ITEM_COUNT; n++) {
                 selected_ = (selected_ + dir + ITEM_COUNT) % ITEM_COUNT;
@@ -286,6 +336,64 @@ void LauncherApp::frame() {
     draw_menu(ImVec2(p0.x + w * 0.04f, top), ImVec2(split, bottom));
     draw_panel(ImVec2(split + w * 0.01f, top), ImVec2(p1.x - w * 0.04f, bottom));
     draw_prompt_bar(ImVec2(p0.x, p1.y - bar_h), p1);
+    ImGui::End();
+    if (overlay) draw_update(p0, p1);
+}
+
+// Update prompt / progress: a panel over the dimmed launcher.
+void LauncherApp::draw_update(ImVec2 p0, ImVec2 p1) {
+    ImGui::SetNextWindowPos(p0);
+    ImGui::SetNextWindowSize(p1 - p0);
+    ImGui::SetNextWindowFocus();
+    ImGui::Begin("##update", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+                     ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollWithMouse);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(p0, p1, IM_COL32(0, 0, 12, 160));
+    float w = std::min(620.0f, (p1.x - p0.x) - 40), h = 270;
+    ImVec2 a(p0.x + ((p1.x - p0.x) - w) * 0.5f, p0.y + ((p1.y - p0.y) - h) * 0.5f), b(a.x + w, a.y + h);
+    theme::panel(dl, a, b);
+    const float pad = 22;
+    ImGui::SetCursorScreenPos(a + ImVec2(pad, pad * 0.8f));
+    ImGui::BeginChild("##updatepanel", ImVec2(w - pad * 2, h - pad * 1.6f), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground);
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    ImVec2 sz = theme::chunky_text(ImGui::GetWindowDrawList(), pos + ImVec2(3, 0), 34,
+                                   phase_ == Phase::Updating ? "Updating" : "Update Available", theme::Look::Normal, time_);
+    ImGui::Dummy(ImVec2(sz.x, sz.y + 6));
+    ImGui::TextWrapped("SSNE-Native %s is available (this is %s).", update_.version.c_str(), updater::current_version());
+    ImGui::PushStyleColor(ImGuiCol_Text, kDim);
+    ImGui::TextWrapped("Update downloads it from GitHub, installs it in this folder and restarts the launcher. Your game "
+                       "files, saves and settings are kept; if the new version brings an engine update, the game is "
+                       "rebuilt right after.");
+    ImGui::PopStyleColor();
+    ImGui::Dummy(ImVec2(0, 8));
+    if (phase_ == Phase::Updating) {
+        std::string step;
+        {
+            std::lock_guard<std::mutex> lk(mu_);
+            step = update_step_;
+        }
+        float f = float(double(prog_done_.load()) / double(prog_total_.load()));
+        char label[256];
+        snprintf(label, sizeof(label), "%s  %d%%", step.c_str(), int(f * 100));
+        theme::progress_bar(f, ImVec2(-110, 30), label);
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(-1, 30))) cancel_ = true;
+    } else {
+        float bw = (ImGui::GetContentRegionAvail().x - 16) / 3;
+        if (ImGui::Button("Update", ImVec2(bw, 34)) || ImGui::IsKeyPressed(ImGuiKey_Enter, false) ||
+            ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false))
+            start_update();
+        ImGui::SameLine(0, 8);
+        if (ImGui::Button("Later", ImVec2(bw, 34)) || ImGui::IsKeyPressed(ImGuiKey_Escape, false)) update_prompt_ = false;
+        ImGui::SameLine(0, 8);
+        if (ImGui::Button("Skip This Version", ImVec2(bw, 34))) {
+            cfg_.skip_version = update_.version;
+            cfg_.save(config_path_);
+            update_prompt_ = false;
+        }
+    }
+    ImGui::EndChild();
     ImGui::End();
 }
 

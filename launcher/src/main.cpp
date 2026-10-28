@@ -8,6 +8,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <vector>
 
 #include "launcher_app.h"
@@ -28,7 +29,8 @@ static void save_screenshot(SDL_Window* win, const char* path) {
 }
 
 int main(int argc, char** argv) {
-    (void)argc; (void)argv;
+    bool updated = false;  // started by the self-update
+    for (int i = 1; i < argc; i++) updated |= strcmp(argv[i], "--updated") == 0;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return 1;
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
     ImGui_ImplOpenGL3_Init(core ? "#version 330 core" : "#version 130");
 
     {
-        LauncherApp app;
+        LauncherApp app(updated);
         bool quit = false;
         while (!quit && !app.wants_quit()) {
             SDL_Event e;
