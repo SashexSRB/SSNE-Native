@@ -67,10 +67,19 @@ constexpr int EFB_W = gx::EFB_W, EFB_H = gx::EFB_H;
 bool g_ready = false;
 bool g_gpu_mode = false;
 int g_scale = 2;
+// Internal pixels per EFB pixel: g_scale in both directions, or with native resolution (g_native_h, the display
+// height of the 448-line image) h / 448 vertically and h / 480 horizontally: the GameCube's pixels aren't square
+// (640x448 fill a 4:3 screen), so each EFB pixel then maps to whole display pixels' worth in both directions.
+int g_native_h = 0;
+double g_sx = 2, g_sy = 2;
 float g_wide = 1.0f;  // widescreen: the EFB is rendered this much wider (anamorphic), the display stretches it back
 // EFB pixel coordinate -> internal framebuffer coordinate
-inline int SX(int x) { return int(std::lround(double(x) * g_scale * g_wide)); }
-inline int SY(int y) { return y * g_scale; }
+inline int SX(int x) { return int(std::lround(double(x) * g_sx * g_wide)); }
+inline int SY(int y) { return int(std::lround(double(y) * g_sy)); }
+void update_scale_factors() {
+    if (g_native_h > 0) { g_sy = g_native_h / 448.0; g_sx = g_native_h / 480.0; }
+    else g_sx = g_sy = g_scale;
+}
 std::string g_info;
 bool g_trace = getenv("SSNE_GPU_TRACE") != nullptr;
 
@@ -1494,7 +1503,9 @@ void run_copy_tex(const GpuCmd& cmd) {
     const bool comp = cmd.base_copy_id != 0;
     int w = std::max(1, SX(std::max(1, comp ? cmd.base_w : cmd.out_w)));
     int h = std::max(1, SY(std::max(1, comp ? cmd.base_h : cmd.out_h)));
-    int yoff = comp ? SY(cmd.dst_row) : 0, bh = comp ? std::min(h - yoff, std::max(1, SY(std::max(1, cmd.out_h)))) : h;
+    // (the band's end from the same rounding as its start: equal at whole-number scales, no gap or overlap at native)
+    int yoff = comp ? SY(cmd.dst_row) : 0;
+    int bh = comp ? std::min(h - yoff, std::max(1, SY(cmd.dst_row + std::max(1, cmd.out_h)) - yoff)) : h;
     RT t = rt_acquire(w, h);
     PooledTex entry{t, g_frame_no};
     // Source origin in internal pixels; the shader reads it at gl_FragCoord (x2 for half-size copies), which starts at
@@ -1805,6 +1816,7 @@ bool gpu_renderer_init(void* (*getproc)(const char*), int scale, std::string& er
     const char* missing = nullptr;
     if (!gl::load(getproc, &missing)) { err = std::string("OpenGL function missing: ") + (missing ? missing : "?"); return false; }
     g_scale = std::clamp(scale, 1, 8);
+    update_scale_factors();
     g_info = std::string(reinterpret_cast<const char*>(GetString(RENDERER))) + " | " +
              reinterpret_cast<const char*>(GetString(VERSION));
     GenVertexArrays(1, &g_vao);
@@ -1861,7 +1873,7 @@ bool gpu_renderer_init(void* (*getproc)(const char*), int scale, std::string& er
     create_efb();
     BindFramebuffer(FRAMEBUFFER, 0);
     g_ready = true;
-    fprintf(stdout, "[gpu] renderer: %s, internal resolution %dx (%dx%d)\n", g_info.c_str(), g_scale, SX(EFB_W), SY(EFB_H));
+    fprintf(stdout, "[gpu] renderer: %s, internal resolution %dx (%dx%d)\n", g_info.c_str(), gpu_renderer_scale(), SX(EFB_W), SY(EFB_H));
     return true;
 }
 
@@ -1883,13 +1895,25 @@ bool gpu_renderer_wait(int timeout_ms) { return gx::gpu_wait_frame(timeout_ms); 
 
 void gpu_renderer_set_scale(int scale) {
     scale = std::clamp(scale, 1, 8);
-    if (scale == g_scale || !g_ready) { g_scale = scale; return; }
+    if ((scale == g_scale && g_native_h == 0) || !g_ready) { g_scale = scale; g_native_h = 0; update_scale_factors(); return; }
     g_scale = scale;
+    g_native_h = 0;
+    update_scale_factors();
     sc_invalidate();
     create_efb();
     BindFramebuffer(FRAMEBUFFER, 0);
 }
-int gpu_renderer_scale() { return g_scale; }
+void gpu_renderer_set_native(int display_h) {
+    display_h = std::clamp(display_h, 224, 448 * 8);
+    if ((display_h == g_native_h) || !g_ready) { g_native_h = display_h; update_scale_factors(); return; }
+    g_native_h = display_h;
+    update_scale_factors();
+    sc_invalidate();
+    create_efb();
+    BindFramebuffer(FRAMEBUFFER, 0);
+}
+int gpu_renderer_scale() { return g_native_h > 0 ? std::max(1, int(std::lround(g_sy))) : g_scale; }
+int gpu_renderer_native() { return g_native_h; }
 
 void gpu_renderer_set_widescreen(float) {}  // per frame now (GpuFrame::wide)
 

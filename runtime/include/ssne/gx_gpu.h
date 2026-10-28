@@ -17,6 +17,10 @@ bool gpu_renderer_init(void* (*getproc)(const char*), int scale, std::string& er
 bool gpu_renderer_run(int max_frames = 2);   // executes recorded frames; true if a new display frame is ready
 bool gpu_renderer_wait(int timeout_ms);      // sleeps until the game has queued a frame (or the timeout)
 void gpu_renderer_set_scale(int scale);      // internal resolution: 1 = 640x528 ... 8
+// Native resolution: the 448-line game image rendered at display_h lines (and the matching width: h / 480 internal
+// pixels per EFB pixel horizontally, the GameCube's pixel aspect). 1920x1080 for 16:9 gameplay at display_h 1080.
+void gpu_renderer_set_native(int display_h);
+int gpu_renderer_native();  // display height of native resolution, 0 = integer scale
 // Anti-aliasing: MSAA sample count for the EFB (1 = off; capped by the driver), FXAA post pass on the display image,
 // smooth (mipmapped) downscaling of the display image (for supersampling). Callable before or after init.
 void gpu_renderer_set_antialiasing(int msaa_samples, bool fxaa, bool smooth_downscale);

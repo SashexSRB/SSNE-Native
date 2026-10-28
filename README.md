@@ -105,7 +105,9 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 - **Slow on your PC?** F12 › Graphics › Presets › Low. Automatic resolution (on by default) already lowers the
   internal resolution when the GPU can't keep up.
 - **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus and cutscenes stay 4:3 with bars on the sides,
-  because the game places 3D models into 2D menu layouts.
+  because the game places 3D models into 2D menu layouts. The HUD moves out to the screen edges (F12 › Graphics).
+- **Sharpest image:** F12 › Graphics › Internal resolution › Native renders at exactly your screen or window
+  resolution (e.g. 1920x1080 in widescreen gameplay on a 1080p screen); Automatic picks a multiple of 640x448.
 - **Pause in the background** (on by default): switching to another window pauses and silences the game.
 - **Graphics thread and GPU vertex processing:** the game's graphics commands are processed on their own CPU thread,
   in parallel with the game (like the console's GPU), and texture coordinates and lighting are computed on the GPU.

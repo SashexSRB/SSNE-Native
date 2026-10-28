@@ -17,6 +17,11 @@ SSNE-NATIVE 1.1
   - Full-screen layers lying on a clip plane (sky, the distortion effect, the HUD) keep the GPU's early depth
     test: 3-10% less GPU time per frame, same image.
   - The prebuilt engine in the build kit is compiled with profile-guided optimization.
+  - Native resolution (F12 > Graphics > Internal resolution > Native): the game is rendered at exactly the size
+    it's shown at, e.g. 1920x1080 in widescreen gameplay on a 1080p screen (1440x1080 for the 4:3 menus), instead of
+    a multiple of 640x448 that has to be scaled to the screen.
+  - Widescreen HUD: health, ammo and the weapon bar sit at the edges of the screen instead of in the middle 4:3 area
+    (F12 > Graphics > HUD at the screen edges).
   - Fix: the number key 5 picks the rocket launcher first, then the grenade launcher (it was the other way round).
   - Fix: with an uncapped frame rate, loading could make the game report "System looks hung" in its log.
 

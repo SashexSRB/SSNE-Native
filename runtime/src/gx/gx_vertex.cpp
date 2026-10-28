@@ -685,11 +685,7 @@ void widescreen_hud_inplace(uint8_t* v, uint32_t n, uint32_t stride) {
         mn = std::min(mn, x); mx = std::max(mx, x);
     }
     if (mx - mn >= 1.9f) return;
-    constexpr float kEdge = 0.97f;
-    float nmn;
-    if (mn <= -kEdge) nmn = -1.f + (mn + 1.f) / k;
-    else if (mx >= kEdge) nmn = 1.f - (1.f - mx) / k - (mx - mn) / k;
-    else nmn = mn / k;
+    float nmn = widescreen_hud_left(mn, mx, k);
     for (uint32_t i = 0; i < n; i++) {
         float p[4];
         memcpy(p, v + size_t(i) * stride, 16);

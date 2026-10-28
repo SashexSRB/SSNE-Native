@@ -15,6 +15,7 @@ struct MenuInfo {
     std::string renderer_info;      // e.g. "NVIDIA GeForce RTX 4060 ..."
     int out_w = 0, out_h = 0;       // current GPU output size
     int current_scale = 0;          // internal resolution in use (with automatic resolution: what it picked)
+    int native_h = 0;               // native resolution in use: image height in pixels (0 = a whole-number scale)
     float gpu_ms = 0;               // measured GPU time per frame (0 = unknown)
     bool display_synced = false;    // the game is currently ticking with the display (sync_display active)
     int aniso_active = 1;           // anisotropic filtering level in use (capped by the GPU)

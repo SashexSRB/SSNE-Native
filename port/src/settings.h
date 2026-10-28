@@ -40,7 +40,8 @@ const char* action_id(int a);     // ini key suffix: "move_up", "a", ...
 struct Settings {
     // Graphics
     std::string renderer = "gpu";  // "gpu" or "software" (applies on restart)
-    int scale = 0;                 // GPU internal resolution 1..8, 0 = automatic (fits the window, lowered if the GPU is too slow)
+    int scale = 0;                 // GPU internal resolution 1..8, 0 = automatic (fits the window, lowered if the GPU is too
+                                   // slow), -1 = native (exactly the size the image is shown at)
     int aspect = 1;                // 0 4:3, 1 16:9, 2 21:9
     int anisotropy = 1;            // anisotropic filtering 1 (off), 2, 4, 8, 16
     std::string antialiasing = "off";  // off, fxaa, msaa2, msaa4, msaa8, ssaa (2x automatic resolution, filtered down)
@@ -50,6 +51,7 @@ struct Settings {
     bool sync_display = true;      // 60 Hz display + vsync + 60 fps: tick the game with the display (no repeated frames)
     bool gx_thread = true;         // graphics commands processed on their own thread (read at start)
     bool gpu_vertex = true;        // GPU renderer: texture coordinates and lighting computed on the GPU (read at start)
+    bool hud_edges = true;         // widescreen: HUD pieces left / right of the middle at the screen's edges
     bool fullscreen = false;
     int top_bar = 2;               // info bar at the top: 0 hidden, 1 frame rate only, 2 full (Shift+F1 cycles)
     int display = -1;              // monitor for fullscreen / the window (-1 = wherever the window is)

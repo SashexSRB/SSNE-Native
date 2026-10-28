@@ -2,7 +2,7 @@
 // (headless EGL, Linux) and writes the output images. Comparing the images of two builds checks renderer
 // changes independently of the game's timing; --time reports the render time per frame (glFinish'ed; with --repeat,
 // also the median over every repetition after the first).
-//   gpu_replay <capture dir> <out dir> [--scale N] [--skip K] [--time] [--repeat R] [--shader-cache dir]
+//   gpu_replay <capture dir> <out dir> [--scale N | --native H] [--skip K] [--time] [--repeat R] [--shader-cache dir]
 #include <dlfcn.h>
 
 #include <algorithm>
@@ -47,12 +47,13 @@ static bool egl_init(std::string& err) {
 int main(int argc, char** argv) {
     if (argc < 3) { puts("usage: gpu_replay <capture dir> <out dir> [--scale N] [--skip K] [--time] [--repeat R]"); return 1; }
     std::string in = argv[1], out = argv[2], tex_dir;
-    int scale = 1, skip = 0, repeat = 1;
+    int scale = 1, skip = 0, repeat = 1, native = 0;  // native: display height (fractional internal resolution)
     bool timing = false, fxaa = false;
     int msaa = 1, aniso = 1;
     for (int i = 3; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--scale" && i + 1 < argc) scale = atoi(argv[++i]);
+        else if (a == "--native" && i + 1 < argc) native = atoi(argv[++i]);
         else if (a == "--skip" && i + 1 < argc) skip = atoi(argv[++i]);
         else if (a == "--repeat" && i + 1 < argc) repeat = atoi(argv[++i]);
         else if (a == "--time") timing = true;
@@ -64,6 +65,7 @@ int main(int argc, char** argv) {
     }
     std::string err;
     if (!egl_init(err) || !ssne::gpu_renderer_init(getproc, scale, err)) { printf("GPU init failed: %s\n", err.c_str()); return 1; }
+    if (native > 0) ssne::gpu_renderer_set_native(native);
     ssne::gpu_renderer_set_antialiasing(msaa, fxaa, false);
     ssne::gpu_renderer_set_anisotropy(aniso);
     if (aniso > 1) printf("anisotropic filtering %dx\n", ssne::gpu_renderer_anisotropy());

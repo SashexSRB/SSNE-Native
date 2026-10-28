@@ -77,6 +77,7 @@ void set_button_prompts(const uint8_t menu[7], const uint8_t control[7]);
 uint8_t prompt_key_glyph(const char* sdl_scancode_name);
 float fov();
 void set_widescreen(float factor);
+void set_hud_edges(bool on);  // widescreen: HUD pieces left / right of the middle at the screen's edges (default on)
 float widescreen();
 float widescreen_frame_factor();  // factor the game's current frame was rendered with (1 outside gameplay)  // runtime diagnostics: stdout + the log sink (ssne.log in the port)
 

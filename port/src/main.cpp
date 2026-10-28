@@ -165,12 +165,24 @@ struct AutoScale {
     bool measurable = true;
 } g_auto;
 
-int fit_scale(SDL_Window* win) {
+// Height of the game image in the window, in pixels (4:3, or wider in widescreen gameplay).
+double shown_height(SDL_Window* win) {
     int w = 0, h = 0;
     SDL_GL_GetDrawableSize(win, &w, &h);
-    // Height of the game image in the window (4:3, or wider in widescreen gameplay), in GameCube lines (~448).
     float wide = g_gpu ? std::max(1.f, ssne::gpu_renderer_output().wide) : 1.f;
-    double shown_h = std::min(double(h), double(w) / (4.0 / 3.0 * wide));
+    return std::min(double(h), double(w) / (4.0 / 3.0 * wide));
+}
+
+// Native resolution (scale = -1): the image rendered at exactly the size it's shown (twice that with supersampling).
+int native_height(SDL_Window* win) {
+    int nh = std::max(224, int(std::lround(shown_height(win))));
+    if (g_set.antialiasing == "ssaa") nh *= 2;
+    return std::min(nh, 448 * 8);
+}
+
+int fit_scale(SDL_Window* win) {
+    // Height of the game image in GameCube lines (~448).
+    double shown_h = shown_height(win);
     int fit = std::clamp(int(shown_h / 448.0 + 0.75), 1, 6);
     if (g_set.antialiasing == "ssaa") fit = std::min(8, fit * 2);  // supersampling: twice the needed resolution
     return fit;
@@ -186,8 +198,8 @@ void update_auto_scale(SDL_Window* win) {
     uint32_t now = SDL_GetTicks();
     if (!g_auto.window_start) g_auto.window_start = now;
     int fit = fit_scale(win);
-    if (g_set.scale != 0) g_auto.cur = g_set.scale;
-    else if (g_auto.cur == 0 || g_auto.cur > fit) g_auto.cur = fit;  // start, or the window got smaller
+    if (g_set.scale > 0) g_auto.cur = g_set.scale;
+    else if (g_set.scale == 0 && (g_auto.cur == 0 || g_auto.cur > fit)) g_auto.cur = fit;  // start, or the window got smaller
     // Judge once a second, or after up to 3 s when the GPU is so slow that few frames finish (it must still be
     // able to step down from there).
     uint32_t elapsed = now - g_auto.window_start;
@@ -215,7 +227,12 @@ void update_auto_scale(SDL_Window* win) {
             }
         }
     }
-    if (ssne::gpu_renderer_scale() != g_auto.cur) ssne::gpu_renderer_set_scale(g_auto.cur);
+    if (g_set.scale < 0) {  // native: follows the window (and the image's width: 4:3 front end, widescreen gameplay)
+        int nh = native_height(win);
+        if (ssne::gpu_renderer_native() != nh) ssne::gpu_renderer_set_native(nh);
+    } else if (ssne::gpu_renderer_native() || ssne::gpu_renderer_scale() != g_auto.cur) {
+        ssne::gpu_renderer_set_scale(g_auto.cur);
+    }
 }
 
 void draw_game_view() {
@@ -915,6 +932,7 @@ void draw_overlay(const std::string& data_dir, float dt) {
 // Applies g_set to the running game/renderer/window. `win` may be null before the window exists.
 void apply_settings(SDL_Window* win) {
     ssne::set_widescreen(kAspects[std::clamp(g_set.aspect, 0, 2)].factor);
+    ssne::set_hud_edges(g_set.hud_edges);
     {
         const std::string& aa = g_set.antialiasing;
         int msaa = aa == "msaa2" ? 2 : aa == "msaa4" ? 4 : aa == "msaa8" ? 8 : 1;
@@ -941,7 +959,8 @@ void apply_settings(SDL_Window* win) {
             SDL_SetWindowPosition(win, int(SDL_WINDOWPOS_CENTERED_DISPLAY(want)), int(SDL_WINDOWPOS_CENTERED_DISPLAY(want)));
         }
         if (fs != g_set.fullscreen) SDL_SetWindowFullscreen(win, g_set.fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-        if (g_gpu && g_set.scale != 0 && ssne::gpu_renderer_scale() != g_set.scale) ssne::gpu_renderer_set_scale(g_set.scale);
+        if (g_gpu && g_set.scale > 0 && (ssne::gpu_renderer_native() || ssne::gpu_renderer_scale() != g_set.scale))
+            ssne::gpu_renderer_set_scale(g_set.scale);
     }
 }
 
@@ -978,7 +997,10 @@ int main(int argc, char** argv) {
             std::string v = argv[++i];
             for (int k = 0; k < 3; k++) if (v == kAspects[k].name) g_set.aspect = k;
         }
-        else if (a == "--scale" && i + 1 < argc) g_set.scale = std::clamp(atoi(argv[++i]), 0, 8);  // 0 = automatic
+        else if (a == "--scale" && i + 1 < argc) {  // 0 = automatic, "native" (or -1) = native resolution
+            std::string v = argv[++i];
+            g_set.scale = v == "native" ? -1 : std::clamp(atoi(v.c_str()), -1, 8);
+        }
         else if (a == "--fov" && i + 1 < argc) g_set.fov = std::clamp(atoi(argv[++i]), 45, 110);
         else if (a == "--fps" && i + 1 < argc) {
             std::string v = argv[++i];
@@ -1077,13 +1099,15 @@ int main(int argc, char** argv) {
             std::filesystem::create_directories(std::filesystem::u8path(dir), ec);
             if (!ec) ssne::gpu_renderer_set_shader_cache(dir);
         }
-        int start_scale = g_set.scale ? g_set.scale : fit_scale(win);
+        int start_scale = g_set.scale > 0 ? g_set.scale : fit_scale(win);
         if (ssne::gpu_renderer_init(SDL_GL_GetProcAddress, start_scale, err)) {
             g_gpu = true;
             g_auto.cur = start_scale;
             ssne::gx_use_gpu(true);
-            log_line("[gpu] " + ssne::gpu_renderer_info() + ", internal resolution " + std::to_string(start_scale) + "x" +
-                     (g_set.scale ? "" : " (automatic)"));
+            if (g_set.scale < 0) ssne::gpu_renderer_set_native(native_height(win));
+            log_line("[gpu] " + ssne::gpu_renderer_info() + ", internal resolution " +
+                     (g_set.scale < 0 ? "native (" + std::to_string(native_height(win)) + " lines)"
+                                      : std::to_string(start_scale) + "x" + (g_set.scale ? "" : " (automatic)")));
         } else {
             log_line("[gpu] GPU renderer unavailable (" + err + "); using the software renderer");
         }
@@ -1259,7 +1283,7 @@ int main(int argc, char** argv) {
                          (unsigned long long)gs.tex_copies, (unsigned long long)gs.uploads, (unsigned long long)gs.programs,
                          (unsigned long long)gs.cached_programs,
                          (unsigned long long)gs.render_targets, gs.frame_ms, ssne::gpu_renderer_take_max_frame_ms(), g_auto.gpu_ms,
-                         o.w, o.h, ssne::gpu_renderer_scale(), g_set.scale ? "" : ", automatic");
+                         o.w, o.h, ssne::gpu_renderer_scale(), g_set.scale < 0 ? ", native" : g_set.scale ? "" : ", automatic");
                 log_line(buf);
             }
         }
@@ -1281,6 +1305,7 @@ int main(int argc, char** argv) {
                 auto o = ssne::gpu_renderer_output();
                 mi.out_w = o.w; mi.out_h = o.h;
                 mi.current_scale = ssne::gpu_renderer_scale();
+                mi.native_h = ssne::gpu_renderer_native();
                 mi.msaa_active = ssne::gpu_renderer_msaa();
                 mi.aniso_active = ssne::gpu_renderer_anisotropy();
                 mi.gpu_ms = float(g_auto.gpu_ms);

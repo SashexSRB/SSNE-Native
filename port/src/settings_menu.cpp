@@ -129,6 +129,11 @@ bool tab_graphics(Settings& s, const MenuInfo& info) {
     ImGui::SetNextItemWidth(260);
     ch |= ImGui::Combo("Aspect ratio  (F8)", &s.aspect, kAspect, 3);
     help("Widescreen widens the view during gameplay; menus and cutscenes stay 4:3.");
+    if (s.aspect > 0) {
+        ch |= ImGui::Checkbox("HUD at the screen edges", &s.hud_edges);
+        help("Widescreen gameplay: health, ammo and the weapon bar sit at the edges of the screen, like in a widescreen\n"
+             "game. Off: the HUD keeps the GameCube's 4:3 layout in the middle of the screen.");
+    }
     {
         static const float kWide[3] = {1.0f, 4.0f / 3.0f, 7.0f / 4.0f};
         float hfov = 2.f * std::atan(std::tan(0.5f * float(s.fov) * 0.017453292f) * 1.4286f * kWide[std::clamp(s.aspect, 0, 2)]) / 0.017453292f;
@@ -159,7 +164,7 @@ bool tab_graphics(Settings& s, const MenuInfo& info) {
             if (info.msaa_active < want)
                 ImGui::TextColored(kWarn, "Your GPU allows MSAA %dx at most here.", info.msaa_active);
         }
-        if (aa == 5 && s.scale != 0) ImGui::TextColored(kWarn, "Supersampling needs Automatic resolution (below).");
+        if (aa == 5 && s.scale > 0) ImGui::TextColored(kWarn, "Supersampling needs Automatic or Native resolution (below).");
     }
     {
         static const char* kAfNames[] = {"Off (original)", "2x", "4x", "8x", "16x"};
@@ -174,23 +179,28 @@ bool tab_graphics(Settings& s, const MenuInfo& info) {
             ImGui::TextColored(kWarn, "Your GPU allows %dx at most.", info.aniso_active);
     }
     {
-        bool autos = s.scale == 0;
-        if (ImGui::Checkbox("Automatic resolution", &autos)) { s.scale = autos ? 0 : std::max(1, info.current_scale); ch = true; }
-        help("Picks the internal resolution that fits your window and lowers it while your GPU can't keep up "
-             "(and raises it again when there is headroom). Turn it off to choose the resolution yourself.");
-        if (s.scale == 0) {
-            if (info.current_scale > 0)
-                ImGui::TextColored(kDim, "Now rendering at %dx (%dx%d)", info.current_scale, 640 * info.current_scale,
-                                   448 * info.current_scale);
-            if (info.gpu_ms > 0) { ImGui::SameLine(); ImGui::TextColored(kDim, " -  GPU %.1f ms per frame", info.gpu_ms); }
-        } else {
-            ImGui::SetNextItemWidth(260);
-            char fmt[64];
-            snprintf(fmt, sizeof(fmt), "%%dx  (%dx%d)", 640 * s.scale, 448 * s.scale);
-            ch |= ImGui::SliderInt("Internal resolution  (F6/F7)", &s.scale, 1, 8, fmt);
-            help("Renders the game at a multiple of the GameCube's 640x448. Higher is sharper but costs GPU time.");
-            if (info.gpu_ms > 0) ImGui::TextColored(info.gpu_ms > 14.f ? kWarn : kDim, "GPU %.1f ms per frame%s", info.gpu_ms,
-                                                    info.gpu_ms > 14.f ? " - too slow for 60 fps, try a lower resolution" : "");
+        static const char* kRes[] = {"Automatic", "Native (screen / window resolution)", "1x  (640x448)", "2x  (1280x896)",
+                                      "3x  (1920x1344)", "4x  (2560x1792)", "5x  (3200x2240)", "6x  (3840x2688)",
+                                      "7x  (4480x3136)", "8x  (5120x3584)"};
+        int sel = s.scale == 0 ? 0 : s.scale < 0 ? 1 : s.scale + 1;
+        ImGui::SetNextItemWidth(320);
+        if (ImGui::Combo("Internal resolution  (F6/F7)", &sel, kRes, IM_ARRAYSIZE(kRes))) {
+            s.scale = sel == 0 ? 0 : sel == 1 ? -1 : sel - 1;
+            ch = true;
+        }
+        help("Automatic: fits your window and lowers the resolution while your GPU can't keep up.\n"
+             "Native: renders at exactly the size the game is shown at (e.g. 1920x1080 in widescreen gameplay on a\n"
+             "1080p screen) - the sharpest image without scaling; GPU cost between 2x and 3x on a 1080p screen.\n"
+             "1x-8x: multiples of the GameCube's 640x448 (scaled to your window).");
+        if (s.scale == 0 && info.current_scale > 0)
+            ImGui::TextColored(kDim, "Now rendering at %dx (%dx%d)", info.current_scale, 640 * info.current_scale,
+                               448 * info.current_scale);
+        else if (s.scale < 0 && info.native_h > 0)
+            ImGui::TextColored(kDim, "Now rendering at %dx%d", info.out_w, info.out_h);
+        if (info.gpu_ms > 0) {
+            if (s.scale == 0) { ImGui::SameLine(); ImGui::TextColored(kDim, " -  GPU %.1f ms per frame", info.gpu_ms); }
+            else ImGui::TextColored(info.gpu_ms > 14.f ? kWarn : kDim, "GPU %.1f ms per frame%s", info.gpu_ms,
+                                    info.gpu_ms > 14.f ? " - too slow for 60 fps, try a lower resolution" : "");
         }
     }
     ImGui::EndDisabled();

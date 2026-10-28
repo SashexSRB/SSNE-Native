@@ -818,11 +818,7 @@ const std::vector<Vtx>& widescreen_hud(const std::vector<Vtx>& v, std::vector<Vt
         mn = std::min(mn, x); mx = std::max(mx, x);
     }
     if (mx - mn >= 1.9f) return v;
-    constexpr float kEdge = 0.97f;
-    float nmn;
-    if (mn <= -kEdge) nmn = -1.f + (mn + 1.f) / k;                   // attached to the left edge
-    else if (mx >= kEdge) nmn = 1.f - (1.f - mx) / k - (mx - mn) / k;  // attached to the right edge
-    else nmn = mn / k;                                              // centered 4:3 layout
+    float nmn = widescreen_hud_left(mn, mx, k);
     tmp = v;
     for (Vtx& p : tmp) {
         float x = p.x / p.w;
@@ -1132,9 +1128,26 @@ void tev_regs_access(int16_t regs[4][4], int16_t konst[4][4], bool write) {
     else { memcpy(regs, g_tev_reg, sizeof(g_tev_reg)); memcpy(konst, g_konst, sizeof(g_konst)); }
 }
 
+bool g_hud_edges = true;
+bool hud_edges() { return g_hud_edges; }
+
+// Where a 4:3 HUD piece spanning [mn, mx] (NDC of the widened frame) starts once compressed back to its 4:3 width
+// (factor k): pieces at a screen edge stay there; with hud_edges on (the default), pieces left / right of the middle
+// keep their margin from the left / right edge of the screen instead of the 4:3 area (health and ammo move out to
+// the corners, as in a widescreen game); pieces around the middle stay centered.
+float widescreen_hud_left(float mn, float mx, float k) {
+    constexpr float kEdge = 0.97f, kSide = 1.f / 3.f;
+    float c = (mn + mx) * 0.5f;
+    bool left = mn <= -kEdge || (hud_edges() && c < -kSide), right = mx >= kEdge || (hud_edges() && c > kSide);
+    if (left) return -1.f + (mn + 1.f) / k;
+    if (right) return 1.f - (1.f - mx) / k - (mx - mn) / k;
+    return mn / k;  // centered 4:3 layout
+}
+
 } // namespace ssne::gx
 
 namespace ssne {
+void set_hud_edges(bool on) { gx::g_hud_edges = on; }
 
 bool gx_get_frame(std::vector<uint32_t>& rgba, int& w, int& h, uint64_t& seq) {
     std::lock_guard<std::mutex> lk(gx::g_frame_mutex);

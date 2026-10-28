@@ -409,6 +409,17 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   two draw-done syncs per frame drain both threads: Touts +3% (noise), Arena -23% (job copies and handing data
   between cores). Splitting the vertex work itself over several workers would be needed; with ~15-vertex draws and
   the per-frame syncs that's a large change for an uncertain gain.
+* **Native resolution** (`scale = -1`): the GameCube's pixels aren't square (640x448 fill a 4:3 screen), so native
+  rendering uses separate scales: h / 448 vertically and h / 480 horizontally for an image shown h pixels high
+  (2.41 / 2.25 at 1080: 1440x1080 for the 4:3 front end, 1920x1080 for 16:9 gameplay). Everything already went
+  through SX() / SY() (the horizontal scale was fractional for widescreen before); the copy shaders work in internal
+  pixels. A composite copy's band end now uses the same rounding as its start (identical at whole-number scales).
+  gpu-replay --native H replays at a native height.
+* **Widescreen HUD at the edges** (`hud_edges`, default on): the widened frame's HUD draws (orthographic, narrower
+  than the screen) were compressed back to 4:3 around the middle unless they touched an edge, so health and ammo
+  stayed inside the 4:3 area (the game keeps a safe-area margin). Now a piece whose center is left / right of the
+  middle third keeps its margin from the left / right screen edge; the middle third stays centered (score,
+  crosshair, messages, the weapon wheel). Pieces are whole draws, so the parts of one element move together.
 * **1.1 vs 1.0** (same machine, 16:9, 1x, frame limit off, PGO build): Arena 190 -> 448 fps, Touts at the
   Colosseum 57 -> 143 fps.
   Sleeping uses mutex + condition variable, not C++20 atomic waits (libc++ on Windows can use Windows 8 functions).

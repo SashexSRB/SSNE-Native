@@ -139,6 +139,9 @@ struct DrawCfg {
 DrawCfg build_cfg();
 void build_cfg(DrawCfg& c);  // the same, in place (c is cleared first, padding included)
 
+float widescreen_hud_left(float mn, float mx, float k);  // widescreen HUD placement (gx_raster.cpp)
+bool hud_edges();       // HUD pieces at the widescreen edges (ssne::set_hud_edges)
+
 // ---- GPU renderer (gx_gpu_record.cpp): when enabled, draws and EFB copies are recorded for the GPU
 bool gpu_enabled();
 void gpu_record_draw(uint8_t prim, const std::vector<Vtx>& v);
