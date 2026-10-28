@@ -45,6 +45,25 @@ Same layout as the Windows release, but `build-kit/kit.ini` (from `data/kit/kit-
 C++ compiler instead of a download: `compiler = clang++` (or `g++`) is looked up in `PATH`. The script uses clang++
 if installed, else g++; set `CXX`/`CC` to choose. The launcher's Install Game then works exactly as on Windows.
 
+### Profile-guided optimization of the runtime (release packages)
+Both release scripts build the prebuilt runtime (`libssne-runtime.a`, the emulation side: graphics command and
+vertex processing, audio, timing) with profile-guided optimization when the compiler is clang: about 7% less CPU time
+on the game thread. The profile is `data/pgo/runtime.proftext` (only the runtime's function names and execution
+counts). The release scripts convert it for their compiler with `tools/pgo_build_profile.sh`: clang versions and
+standard libraries name and hash some functions differently, so `tools/pgo_target_names.sh` asks the compiler for its
+names and `tools/pgo_retarget.py` maps the profile onto them (~98% of the profile's counts match llvm-mingw 19 and
+Ubuntu 22.04's clang 14). Without clang, `llvm-profdata` of the compiler's version, or `python3`, the scripts say so
+and build without it. The Ubuntu container for Linux packages needs the `llvm` and `python3-minimal` packages.
+
+Re-train after larger runtime changes (functions changed since training just aren't optimized with profile data),
+with your recompiled game, its `game_data` and a few save states (gameplay; F5 in the game):
+```sh
+tools/make_pgo_profile.sh <recompiled dir> <game_data dir> states/G3BE9G/slot1.state ...
+```
+It builds the headless runner with an instrumented runtime (host clang), plays boot + menus and each state for about
+30 s in parallel on the GPU renderer (surfaceless EGL), and rewrites `data/pgo/runtime.proftext`. CMake options for
+manual builds: `-DSSNE_PGO_GENERATE=ON` (instrument) and `-DSSNE_PGO_PROFILE=<file.profdata>` (optimize).
+
 ## Recompiling the game
 1. Install your disc with the launcher, or run `gctool extract game.iso game_data`.
 2. Translate the executable:

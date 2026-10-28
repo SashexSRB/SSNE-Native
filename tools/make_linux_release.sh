@@ -27,7 +27,20 @@ EXTRA=""
 [ -n "$IMGUISRC" ] && EXTRA="$EXTRA -DFETCHCONTENT_SOURCE_DIR_IMGUI=$IMGUISRC"
 # PIE everywhere, so the kit links the same way whatever the distribution's compiler defaults are.
 cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX_PATH" \
-      -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSSNE_RECOMPILED_DIR= -DSSNE_BUILD_TESTS=OFF $EXTRA >/dev/null
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSSNE_RECOMPILED_DIR= -DSSNE_BUILD_TESTS=OFF -DSSNE_PGO_PROFILE= $EXTRA >/dev/null
+# Profile-guided optimization of the runtime (clang only): the trained profile converted for this compiler, with
+# the llvm-profdata of the same version (LLVM_PROFDATA overrides).
+PGO=
+case "$CXX_BASE" in *clang*)
+  MAJOR=$("$CXX_PATH" --version | head -1 | sed -E 's/.*version ([0-9]+).*/\1/')
+  PROFDATA=$LLVM_PROFDATA
+  for p in "llvm-profdata-$MAJOR" "$(dirname "$CXX_PATH")/llvm-profdata" llvm-profdata; do
+    [ -n "$PROFDATA" ] && break
+    command -v "$p" >/dev/null 2>&1 && PROFDATA=$(command -v "$p")
+  done
+  PGO=$("$ROOT/tools/pgo_build_profile.sh" "$BUILD" "${PROFDATA:-llvm-profdata}" "$BUILD/runtime.profdata") || PGO=;;
+esac
+cmake -S "$ROOT" -B "$BUILD" -DSSNE_PGO_PROFILE="$PGO" >/dev/null
 cmake --build "$BUILD" --target ssne-launcher gctool ssne-recomp ssne-port
 
 rm -rf "$OUT"; mkdir -p "$OUT/build-kit/lib/port" "$OUT/build-kit/include" "$OUT/licenses"

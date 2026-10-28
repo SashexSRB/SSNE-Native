@@ -16,7 +16,10 @@ EXTRA=""
 [ -n "$SDLSRC" ] && EXTRA="$EXTRA -DFETCHCONTENT_SOURCE_DIR_SDL2=$SDLSRC"
 [ -n "$IMGUISRC" ] && EXTRA="$EXTRA -DFETCHCONTENT_SOURCE_DIR_IMGUI=$IMGUISRC"
 cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$ROOT/cmake/mingw-w64-x86_64.cmake" \
-      -DLLVM_MINGW="$LLVM" -DSSNE_RECOMPILED_DIR= -DSSNE_BUILD_TESTS=OFF $EXTRA >/dev/null
+      -DLLVM_MINGW="$LLVM" -DSSNE_RECOMPILED_DIR= -DSSNE_BUILD_TESTS=OFF -DSSNE_PGO_PROFILE= $EXTRA >/dev/null
+# Profile-guided optimization of the runtime: the trained profile converted for this llvm-mingw (or none).
+PGO=$("$ROOT/tools/pgo_build_profile.sh" "$BUILD" "$LLVM/bin/llvm-profdata" "$BUILD/runtime.profdata") || PGO=
+cmake -S "$ROOT" -B "$BUILD" -DSSNE_PGO_PROFILE="$PGO" >/dev/null
 cmake --build "$BUILD" --target ssne-launcher gctool ssne-recomp ssne-port
 
 STRIP=$LLVM/bin/llvm-strip

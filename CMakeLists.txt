@@ -57,6 +57,23 @@ target_link_libraries(ssne-runtime PUBLIC Threads::Threads)
 target_include_directories(ssne-runtime PUBLIC runtime/include)
 target_link_libraries(ssne-runtime PUBLIC gc)
 
+# Profile-guided optimization of the runtime (clang). Only the runtime is instrumented / optimized: it is shipped
+# prebuilt, while the game code is compiled on the player's PC. tools/make_pgo_profile.sh trains
+# data/pgo/runtime.proftext; the release scripts convert it for their compiler (tools/pgo_build_profile.sh).
+#   SSNE_PGO_GENERATE=ON       instrumented runtime; running the game writes .profraw files (LLVM_PROFILE_FILE)
+#   SSNE_PGO_PROFILE=<file>    runtime optimized with a .profdata matching this compiler
+option(SSNE_PGO_GENERATE "Instrument the runtime for profile-guided optimization (clang)" OFF)
+set(SSNE_PGO_PROFILE "" CACHE FILEPATH "Merged .profdata to optimize the runtime with (clang)")
+if((SSNE_PGO_GENERATE OR SSNE_PGO_PROFILE) AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  message(WARNING "SSNE_PGO_GENERATE / SSNE_PGO_PROFILE need clang; building without profile-guided optimization")
+elseif(SSNE_PGO_GENERATE)
+  target_compile_options(ssne-runtime PRIVATE -fprofile-instr-generate)
+  target_link_options(ssne-runtime INTERFACE -fprofile-instr-generate)
+elseif(SSNE_PGO_PROFILE)
+  target_compile_options(ssne-runtime PRIVATE "-fprofile-instr-use=${SSNE_PGO_PROFILE}"
+                         -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date -Wno-backend-plugin)
+endif()
+
 # GPU renderer regression/benchmark tool: replays frames captured with SSNE_GPU_CAPTURE (headless EGL, Linux).
 if(UNIX AND NOT APPLE)
   add_executable(gpu-replay tools/gpu_replay.cpp port/src/no_game_code.cpp)

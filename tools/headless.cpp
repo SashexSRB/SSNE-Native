@@ -28,6 +28,17 @@
 
 [[noreturn]] static void throw_fatal(const char* m) { throw std::runtime_error(m); }
 
+#if defined(__clang__) && !defined(_WIN32)
+// PGO training (SSNE_PGO_GENERATE): the profile is normally written at exit, which _Exit skips.
+extern "C" int __llvm_profile_write_file(void) __attribute__((weak));
+#endif
+[[noreturn]] static void quit(int code) {
+#if defined(__clang__) && !defined(_WIN32)
+    if (__llvm_profile_write_file) __llvm_profile_write_file();
+#endif
+    std::_Exit(code);
+}
+
 #ifdef __linux__
 // Headless OpenGL for testing the GPU renderer: surfaceless EGL (Mesa), loaded at runtime.
 static void* (*s_egl_getproc)(const char*) = nullptr;
@@ -348,8 +359,8 @@ int main(int argc, char** argv) {
                (unsigned long long)rs.triangles, (unsigned long long)rs.pixels, (unsigned long long)rs.display_copies,
                (unsigned long long)rs.tex_copies, (unsigned long long)rs.textures_decoded, (unsigned long long)rs.lines_skipped);
         fflush(stdout);
-        std::_Exit(3);
+        quit(3);
     }
-    std::_Exit(0);
+    quit(0);
     return 0;
 }

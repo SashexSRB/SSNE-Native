@@ -1,0 +1,7907 @@
+_Z10mem_read16j
+# Func Hash:
+172590168
+# Num Counters:
+2
+# Counter Values:
+7810824
+0
+
+_Z10mem_read32j
+# Func Hash:
+172590168
+# Num Counters:
+2
+# Counter Values:
+785767619
+0
+
+_Z10mem_write8jh
+# Func Hash:
+2696721
+# Num Counters:
+2
+# Counter Values:
+1658481
+0
+
+_Z10ssne_mfsprR10PPCContextj
+# Func Hash:
+9750085811149148
+# Num Counters:
+11
+# Counter Values:
+116
+0
+16
+0
+0
+0
+0
+0
+0
+0
+100
+
+_Z10ssne_mtsprR10PPCContextjj
+# Func Hash:
+797312387294911198
+# Num Counters:
+11
+# Counter Values:
+1196
+1196
+12
+0
+8
+8
+0
+0
+0
+0
+1168
+
+_Z11mem_write16jt
+# Func Hash:
+2696721
+# Num Counters:
+2
+# Counter Values:
+31460
+0
+
+_Z11mem_write32jj
+# Func Hash:
+2696721
+# Num Counters:
+2
+# Counter Values:
+383927701
+17160880
+
+_Z12ssne_syscallR10PPCContextj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+24270
+
+_Z13ssne_quantizejdjiPi
+# Func Hash:
+1033009899248524141
+# Num Counters:
+7
+# Counter Values:
+384482719
+0
+1429721
+0
+45752
+0
+383007246
+
+_Z13ssne_timebasev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+309905639
+
+_Z14ssne_find_funcj
+# Func Hash:
+406120479
+# Num Counters:
+4
+# Counter Values:
+16417452
+16417452
+16417452
+16417452
+
+_Z14ssne_hook_slotj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+65962
+
+_Z15ssne_dequantizejjiPi
+# Func Hash:
+1033009899248524141
+# Num Counters:
+7
+# Counter Values:
+793529280
+0
+1186616
+125134
+108232
+7685690
+784423624
+
+_Z17ssne_install_hookjPFvR10PPCContextE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+132
+
+_Z18ssne_unimplementedR10PPCContextjj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_Z19ssne_timebase_shiftl
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+3
+
+_Z3f2uf
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+383777086
+
+_Z3u2fj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+784678254
+
+_Z9mem_read8j
+# Func Hash:
+172590168
+# Num Counters:
+2
+# Counter Values:
+1010178641
+0
+
+_Z9ssne_callR10PPCContextj
+# Func Hash:
+119009402145928346
+# Num Counters:
+5
+# Counter Values:
+16434816
+4
+16432474
+17400
+16417416
+
+_ZN2gc4be32EPKh
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+1084
+
+_ZN4Pow2C2Ev
+# Func Hash:
+18257
+# Num Counters:
+2
+# Counter Values:
+4
+260
+
+_ZN4ssne10audio_pullEPsj
+# Func Hash:
+19466040452184
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne10audio_rateEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne10call_guestER10PPCContextj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne10exi_read16Ej
+# Func Hash:
+316894458782562423
+# Num Counters:
+9
+# Counter Values:
+78968
+0
+78968
+65050
+0
+0
+12708
+1210
+39484
+
+_ZN4ssne10gx_use_gpuEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne10mmio_writeEjji
+# Func Hash:
+272065045843772730
+# Num Counters:
+5
+# Counter Values:
+125148666
+124273068
+273565
+602033
+0
+
+_ZN4ssne10set_pausedEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne10si_write16Ejt
+# Func Hash:
+203332526493788361
+# Num Counters:
+13
+# Counter Values:
+366354
+68696
+68696
+34346
+68711
+68711
+19
+19
+19
+38
+19
+4
+0
+
+_ZN4ssne10vi_retraceEv
+# Func Hash:
+185286008276317329
+# Num Counters:
+6
+# Counter Values:
+12948
+12948
+12948
+12948
+0
+0
+
+_ZN4ssne10widescreenEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateReader3podI10PPCContextEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+3
+
+_ZN4ssne11StateReader3podIhEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+39183
+
+_ZN4ssne11StateReader3podIiEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6
+
+_ZN4ssne11StateReader3podIjEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+57
+
+_ZN4ssne11StateReader3podImEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+39
+
+_ZN4ssne11StateReader3podItEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+3
+
+_ZN4ssne11StateReader3tagERA5_Kc
+# Func Hash:
+703741920344
+# Num Counters:
+4
+# Counter Values:
+21
+0
+21
+21
+
+_ZN4ssne11StateReader3u32Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+57
+
+_ZN4ssne11StateReader3u64Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+39
+
+_ZN4ssne11StateReader3vecERSt6vectorIhSaIhEE
+# Func Hash:
+45039649129560
+# Num Counters:
+4
+# Counter Values:
+3
+0
+3
+3
+
+_ZN4ssne11StateReader5blockEPhm
+# Func Hash:
+948556773594502279
+# Num Counters:
+8
+# Counter Values:
+12
+0
+12
+12
+39168
+0
+22240
+0
+
+_ZN4ssne11StateReader5bytesEPvm
+# Func Hash:
+45039649129560
+# Num Counters:
+4
+# Counter Values:
+61603
+0
+61603
+61603
+
+_ZN4ssne11StateWriter3podI10PPCContextEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3podIhEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3podIiEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3podIjEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3podImEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3podItEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3tagERA5_Kc
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3u32Ej
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3u64Em
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter3vecERKSt6vectorIhSaIhEE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11StateWriter5blockEPKhm
+# Func Hash:
+252056234370992827
+# Num Counters:
+7
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne11StateWriter5bytesEPKvm
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11audio_statsEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+41
+
+_ZN4ssne11exi_write16Ejt
+# Func Hash:
+128746455122950645
+# Num Counters:
+10
+# Counter Values:
+91084
+0
+45542
+45542
+28347
+1700
+1700
+8050
+8050
+5745
+
+_ZN4ssne11frame_limitEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne11log_messageERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne12audio_set_hqEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne12boot_globalsEj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne12gx_cp_read16Ej
+# Func Hash:
+99167
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne12gx_get_frameERSt6vectorIjSaIjEERiS4_Rm
+# Func Hash:
+45039699461208
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+_ZN4ssne12gx_pe_read16Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+23735
+
+_ZN4ssne12set_log_sinkEPFvPKcE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne12vi_host_syncEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne13audio_push_aiEPKhjj
+# Func Hash:
+1077898697327273925
+# Num Counters:
+4
+# Counter Values:
+227440
+227440
+0
+0
+
+_ZN4ssne13audio_set_mixEii
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne13gx_cp_write16Ejt
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+92
+
+_ZN4ssne13gx_fifo_writeEji
+# Func Hash:
+534546986167016324
+# Num Counters:
+4
+# Counter Values:
+124273068
+407093684
+59733014
+25291440
+
+_ZN4ssne13gx_gpu_activeEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne13gx_pe_write16Ejt
+# Func Hash:
+175973905
+# Num Counters:
+2
+# Counter Values:
+23751
+23719
+
+_ZN4ssne13gx_state_loadERNS_11StateReaderE
+# Func Hash:
+18385928871712633
+# Num Counters:
+4
+# Counter Values:
+3
+0
+0
+0
+
+_ZN4ssne13gx_state_saveERNS_11StateWriterE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne13hw_state_loadERNS_11StateReaderE
+# Func Hash:
+319466748853259277
+# Num Counters:
+7
+# Counter Values:
+3
+0
+0
+0
+0
+0
+3
+
+_ZN4ssne13hw_state_saveERNS_11StateWriterE
+# Func Hash:
+337
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne13mouse_aim_addEdd
+# Func Hash:
+2930361984722065
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne13si_state_loadERNS_11StateReaderE
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+3
+0
+
+_ZN4ssne13si_state_saveERNS_11StateWriterE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne14audio_bufferedEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne14exi_state_loadERNS_11StateReaderE
+# Func Hash:
+14621534209891401
+# Num Counters:
+13
+# Counter Values:
+3
+0
+0
+0
+3
+3
+3
+3
+0
+0
+3
+3
+3
+
+_ZN4ssne14exi_state_saveERNS_11StateWriterE
+# Func Hash:
+3450001
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne14inject_buttonsEti
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne14scheduler_initER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne14set_widescreenEf
+# Func Hash:
+859
+# Num Counters:
+2
+# Counter Values:
+4
+0
+
+_ZN4ssne14vi_host_vblankEv
+# Func Hash:
+174663185
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne15gx_render_statsEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+45
+
+_ZN4ssne15raise_interruptEi
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+168548
+
+_ZN4ssne15scheduler_statsEv
+# Func Hash:
+93028735179625560
+# Num Counters:
+4
+# Counter Values:
+4
+4
+4
+2
+
+_ZN4ssne15set_frame_limitEi
+# Func Hash:
+859
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne15set_skip_introsEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+3
+
+_ZN4ssne16exi_memcard_pathB5cxx11Ev
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne16gpu_renderer_runEi
+# Func Hash:
+1117675593275365899
+# Num Counters:
+4
+# Counter Values:
+207051
+0
+218510
+207049
+
+_ZN4ssne16mouse_aim_activeEv
+# Func Hash:
+99227
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne16prompt_key_glyphEPKc
+# Func Hash:
+166189997852816722
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+_ZN4ssne16sched_state_loadERNS_11StateReaderE
+# Func Hash:
+259900498485386314
+# Num Counters:
+9
+# Counter Values:
+3
+0
+0
+3
+3
+3
+3
+3
+0
+
+_ZN4ssne16sched_state_saveERNS_11StateWriterE
+# Func Hash:
+53585
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne16set_vi_host_syncEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne17audio_state_resetEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+3
+
+_ZN4ssne17gpu_renderer_infoB5cxx11Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne17gpu_renderer_initEPFPvPKcEiRNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+311547949547025054
+# Num Counters:
+21
+# Counter Values:
+4
+0
+0
+4
+4
+0
+0
+4
+4
+0
+4
+4
+4
+4
+4
+4
+4
+4
+4
+4
+4
+
+_ZN4ssne17gpu_renderer_msaaEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne17gpu_renderer_waitEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne17install_sdk_hooksEv
+# Func Hash:
+294294018135797077
+# Num Counters:
+12
+# Counter Values:
+4
+31728
+29284
+31728
+2444
+24440
+36
+4
+8
+48
+8
+4
+
+_ZN4ssne17player_in_vehicleEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne17savestate_pendingEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne17savestate_requestEbRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+3
+
+_ZN4ssne17sched_state_checkERNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+601204657930302255
+# Num Counters:
+9
+# Counter Values:
+3
+3
+0
+3
+3
+3
+3
+0
+0
+
+_ZN4ssne17set_fatal_handlerEPFvPKcE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne18ax_process_cmdlistEjt
+# Func Hash:
+625831903931236470
+# Num Counters:
+51
+# Counter Values:
+43040
+301280
+0
+0
+0
+258240
+43040
+387360
+61977600
+115520
+0
+0
+0
+0
+43040
+43040
+0
+0
+0
+0
+43040
+6886400
+0
+0
+0
+0
+0
+0
+43040
+6886400
+43040
+0
+0
+0
+0
+0
+43040
+6850299
+6850695
+6850299
+6850143
+6849898
+401
+1494
+303200
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne18exi_memcard_writesEv
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne18frame_limiter_waitEv
+# Func Hash:
+1064673916430284452
+# Num Counters:
+11
+# Counter Values:
+11461
+0
+11461
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne18gpu_dropped_framesEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne18gpu_renderer_phaseB5cxx11Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne18gpu_renderer_scaleEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne18gpu_renderer_statsEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+41
+
+_ZN4ssne18scheduler_shutdownEv
+# Func Hash:
+337
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne18set_button_promptsEPKhS1_
+# Func Hash:
+353587744321688323
+# Num Counters:
+7
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne18spawn_guest_threadESt8functionIFvvEEm
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+4
+0
+
+_ZN4ssne19gpu_renderer_outputEv
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne19mouse_aim_availableEv
+# Func Hash:
+1568
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne19savestate_read_infoERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERm
+# Func Hash:
+536995427122265070
+# Num Counters:
+10
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne19weapon_select_groupEi
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne20gpu_renderer_profileB5cxx11Ev
+# Func Hash:
+1160280
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne20install_thread_hooksEv
+# Func Hash:
+890632062534676575
+# Num Counters:
+7
+# Counter Values:
+4
+31728
+29284
+31728
+2444
+39104
+64
+
+_ZN4ssne20intro_skip_file_readEPKc
+# Func Hash:
+380260866837780589
+# Num Counters:
+7
+# Counter Values:
+4503
+4
+1236
+4
+4
+3280
+4
+
+_ZN4ssne20queue_interrupt_workESt8functionIFvR10PPCContextEE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+11107
+
+_ZN4ssne20savestate_safe_pointER10PPCContext
+# Func Hash:
+702186981569023802
+# Num Counters:
+6
+# Counter Values:
+11449
+11446
+0
+0
+0
+0
+
+_ZN4ssne21audio_set_sink_activeEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne21exi_configure_memcardERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEj
+# Func Hash:
+26
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne21player_control_activeEv
+# Func Hash:
+1551
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne21savestate_take_resultERNS_15SavestateResultE
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+4276
+4273
+
+_ZN4ssne22gpu_renderer_set_scaleEi
+# Func Hash:
+703827879441
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+_ZN4ssne22vi_framebuffer_addressEv
+# Func Hash:
+2696280
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne23gpu_renderer_anisotropyEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne23widescreen_frame_factorEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+16872824
+
+_ZN4ssne24gpu_renderer_read_outputERSt6vectorIjSaIjEERiS4_
+# Func Hash:
+715420406616
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne25gpu_renderer_request_dumpERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne26gpu_renderer_take_gpu_timeERdRi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne27gpu_renderer_set_anisotropyEi
+# Func Hash:
+152961918801
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+_ZN4ssne27gpu_renderer_set_widescreenEf
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne29gpu_renderer_set_antialiasingEibb
+# Func Hash:
+350375967580261515
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne29gpu_renderer_set_shader_cacheERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne2gl4loadEPFPvPKcEPS3_
+# Func Hash:
+879992433579888393
+# Num Counters:
+139
+# Counter Values:
+4
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx10bp_writtenEjj
+# Func Hash:
+601075051565029747
+# Num Counters:
+9
+# Counter Values:
+10882934
+0
+1284571
+0
+4669120
+7286442
+4669120
+0
+0
+
+_ZN4ssne2gx10draw_primsEhRKSt6vectorINS0_3VtxESaIS2_EE
+# Func Hash:
+414504827850033653
+# Num Counters:
+25
+# Counter Values:
+16861363
+16861363
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx11get_textureEi
+# Func Hash:
+182966462763753937
+# Num Counters:
+30
+# Counter Values:
+948031
+0
+948031
+948031
+38957
+909074
+909074
+909074
+909074
+13905
+0
+895169
+895169
+895169
+499769
+895169
+395400
+895169
+895169
+895169
+895169
+3950226
+2646357
+0
+52108
+975
+1143
+23
+34
+23
+
+_ZN4ssne2gx11gpu_enabledEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+18690869
+
+_ZN4ssne2gx11texture_refEPKNS0_7TextureE
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+347928
+347928
+
+_ZN4ssne2gx11vertex_sizeEi
+# Func Hash:
+457332797948249846
+# Num Counters:
+17
+# Counter Values:
+36429762
+327867858
+5457324
+5457324
+30972438
+0
+0
+0
+0
+0
+72859524
+36429762
+5457324
+291438096
+226104688
+9727016
+9727016
+
+_ZN4ssne2gx12prompt_applyERNS0_7TextureEj
+# Func Hash:
+1005591393098482827
+# Num Counters:
+7
+# Counter Values:
+23
+0
+23
+0
+0
+0
+0
+
+_ZN4ssne2gx13publish_frameEPKjiiii
+# Func Hash:
+4749112401
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+_ZN4ssne2gx13tev_reg_writeEjj
+# Func Hash:
+1090663605252647177
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+_ZN4ssne2gx14gpu_push_frameESt10unique_ptrINS0_8GpuFrameESt14default_deleteIS2_EE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne2gx14gpu_take_frameEv
+# Func Hash:
+172590168
+# Num Counters:
+2
+# Counter Values:
+218510
+207049
+
+_ZN4ssne2gx14gpu_wait_frameEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne2gx14prompt_variantEj
+# Func Hash:
+45039615575128
+# Num Counters:
+4
+# Counter Values:
+52108
+52108
+0
+0
+
+_ZN4ssne2gx14widescreen_hudERKSt6vectorINS0_3VtxESaIS2_EERS4_
+# Func Hash:
+73618427513091801
+# Num Counters:
+10
+# Counter Values:
+16861363
+16861363
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx15decode_verticesEiPKhjRSt6vectorINS0_3VtxESaIS4_EE
+# Func Hash:
+397731333571369034
+# Num Counters:
+10
+# Counter Values:
+16861363
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx15gpu_record_drawEhRKSt6vectorINS0_3VtxESaIS2_EE
+# Func Hash:
+903855238363102617
+# Num Counters:
+61
+# Counter Values:
+16861363
+0
+16861363
+16861363
+16861363
+16861363
+528143
+3168858
+0
+0
+0
+0
+0
+0
+16861363
+2306194
+0
+777454
+7739488
+6038227
+13777679
+0
+36
+205372025
+206520216
+205372025
+929069
+1154298
+203305756
+203288658
+16841446
+16849898
+16841446
+3899
+508231
+3899
+15868974
+15868974
+16157724
+15868974
+16661049
+16157724
+992353
+524213
+4193704
+224185592
+448371184
+1793484736
+224014712
+16861327
+2306194
+0
+23606807
+777454
+6336200
+7739452
+61780642
+29025735
+6038227
+21413764
+0
+
+_ZN4ssne2gx15gpu_set_enabledEb
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne2gx15load_indexed_xfEij
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne2gx15tev_regs_accessEPA4_sS2_b
+# Func Hash:
+2696401
+# Num Counters:
+2
+# Counter Values:
+3
+3
+
+_ZN4ssne2gx17gpu_capture_frameERKNS0_8GpuFrameE
+# Func Hash:
+250122862359704283
+# Num Counters:
+21
+# Counter Values:
+11461
+11461
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx17gpu_frames_queuedEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne2gx17gpu_recycle_frameESt10unique_ptrINS0_8GpuFrameESt14default_deleteIS2_EE
+# Func Hash:
+2930361984726161
+# Num Counters:
+3
+# Counter Values:
+11461
+0
+11461
+
+_ZN4ssne2gx18texture_cache_trimEv
+# Func Hash:
+11211920465
+# Num Counters:
+3
+# Counter Values:
+11461
+0
+0
+
+_ZN4ssne2gx19decode_vertices_refEiPKhjRSt6vectorINS0_3VtxESaIS4_EE
+# Func Hash:
+15373422365708561
+# Num Counters:
+51
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx19expand_points_linesEhRKSt6vectorINS0_3VtxESaIS2_EERS4_
+# Func Hash:
+853568668297898590
+# Num Counters:
+19
+# Counter Values:
+3776
+0
+3776
+3776
+2748
+672903
+1028
+32854
+48
+32828
+32806
+17915
+17915
+17915
+17915
+131224
+0
+0
+0
+
+_ZN4ssne2gx19gpu_lookup_efb_copyEjjii
+# Func Hash:
+570379152409165457
+# Num Counters:
+18
+# Counter Values:
+909074
+895168
+1
+13905
+13905
+13905
+13905
+13905
+13905
+0
+13905
+13905
+13905
+13905
+13905
+13905
+0
+13802
+
+_ZN4ssne2gx19gpu_record_efb_copyEj
+# Func Hash:
+732552642623172912
+# Num Counters:
+32
+# Counter Values:
+25263
+11461
+5950
+5950
+13802
+13802
+13802
+0
+0
+25689
+25689
+0
+0
+0
+0
+5950
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+13802
+17411
+11461
+
+_ZN4ssne2gx19invalidate_texturesEv
+# Func Hash:
+337
+# Num Counters:
+2
+# Counter Values:
+4682922
+37463376
+
+_ZN4ssne2gx19texture_cache_clearEv
+# Func Hash:
+337
+# Num Counters:
+2
+# Counter Values:
+3
+24
+
+_ZN4ssne2gx20decode_vertices_fastEiPKhjRSt6vectorINS0_3VtxESaIS4_EE
+# Func Hash:
+603874573939232480
+# Num Counters:
+70
+# Counter Values:
+16861363
+134890904
+67445452
+16861363
+16861363
+16861363
+15486219
+0
+0
+0
+0
+15486219
+0
+33722726
+16861363
+134890904
+104655954
+30234950
+25978471
+25581079
+4009651
+20871014
+41742028
+27971954
+7166449
+222101439
+14715272
+0
+0
+0
+222101439
+222101439
+666304317
+0
+208628389
+208628389
+625885167
+0
+444202878
+167117953
+277084925
+1776811512
+1374378508
+402433004
+804866008
+0
+59576281
+178728843
+58847161
+176541483
+4312944
+100695007
+444202878
+277084925
+668471812
+1776811512
+1432320821
+15954704
+10897402
+317638585
+317638585
+317638585
+317638585
+344490691
+0
+0
+344490691
+0
+0
+0
+
+_ZN4ssne2gx21prompt_candidate_sizeEii
+# Func Hash:
+106599469082591
+# Num Counters:
+6
+# Counter Values:
+896144
+870976
+204906
+25168
+287616
+26974
+
+_ZN4ssne2gx23gpu_load_captured_frameERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS6_
+# Func Hash:
+251558570208738545
+# Num Counters:
+28
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx3VtxC2Ev
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+80831157
+
+_ZN4ssne2gx4drawEhRKSt6vectorINS0_3VtxESaIS2_EE
+# Func Hash:
+10625045372085644
+# Num Counters:
+15
+# Counter Values:
+16861363
+0
+0
+0
+0
+0
+0
+0
+0
+3776
+16860335
+16857587
+16860335
+16860335
+0
+
+_ZN4ssne2gx4xf_fEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+10177215005
+
+_ZN4ssne2gx5xfr_fEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+104344588
+
+_ZN4ssne2gx8efb_copyEj
+# Func Hash:
+684669603889429534
+# Num Counters:
+21
+# Counter Values:
+25263
+11461
+0
+0
+0
+0
+0
+0
+25263
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+_ZN4ssne2gx9build_cfgERNS0_7DrawCfgE
+# Func Hash:
+307942787023952658
+# Num Counters:
+89
+# Counter Values:
+528143
+2112572
+1160275
+395046
+526506
+0
+0
+0
+395046
+395046
+4641100
+0
+6650
+1584429
+1160275
+1153625
+1153625
+1153625
+1153625
+1153625
+1153625
+1160275
+1153625
+6650
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+4225144
+2112572
+1160275
+941381
+941381
+941381
+6650
+6650
+4225144
+13084
+515059
+515059
+515059
+515059
+13084
+13084
+13084
+309090
+309090
+309090
+85665
+85665
+85665
+217731
+85665
+219053
+217731
+28644
+117164
+28644
+132066
+117164
+133388
+132066
+528143
+528143
+528143
+528143
+0
+0
+0
+0
+0
+1160275
+526506
+633769
+633769
+941381
+941381
+941381
+218894
+218894
+6650
+6650
+
+_ZN4ssne2gx9build_cfgEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne2gx9load_tlutEj
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne30gpu_renderer_take_max_frame_msEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne3fovEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne4aramEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+52269503
+
+_ZN4ssne4bootER10PPCContextRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS7_
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+4
+0
+
+_ZN4ssne5fatalEPKc
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne6pausedEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne7get_padEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne7is_mmioEj
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+2190608894
+
+_ZN4ssne7set_fovEf
+# Func Hash:
+861
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+_ZN4ssne7set_padEiRKNS_8PadStateE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4276
+
+_ZN4ssne7si_pollEv
+# Func Hash:
+49553950026865478
+# Num Counters:
+6
+# Counter Values:
+12948
+51792
+38844
+0
+0
+0
+
+_ZN4ssne8audio_hqEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne8gx_statsEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne8host_ptrEj
+# Func Hash:
+11262329944
+# Num Counters:
+2
+# Counter Values:
+2173448014
+0
+
+_ZN4ssne8hw_statsEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne9disc_openERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS5_
+# Func Hash:
+830982992916126247
+# Num Counters:
+11
+# Counter Values:
+4
+0
+4
+4
+536
+536
+536
+16
+476
+16
+20
+
+_ZN4ssne9disc_readEmPhj
+# Func Hash:
+669110784416900454
+# Num Counters:
+6
+# Counter Values:
+4459
+4459
+4503
+8453
+4503
+0
+
+_ZN4ssne9load_gameERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS5_
+# Func Hash:
+36137186734632844
+# Num Counters:
+7
+# Counter Values:
+4
+0
+0
+4
+4
+4
+0
+
+_ZN4ssne9mmio_readEji
+# Func Hash:
+291827058273280
+# Num Counters:
+4
+# Counter Values:
+52831781
+52204649
+627132
+0
+
+_ZN4ssne9pad_motorEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+_ZN4ssne9reset_cpuER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+_ZN4ssne9safepointER10PPCContext
+# Func Hash:
+399473073422410765
+# Num Counters:
+8
+# Counter Values:
+23321192
+23233153
+6712844
+88039
+0
+88039
+0
+88039
+
+_ZN4ssne9si_read16Ej
+# Func Hash:
+19458874217560
+# Num Counters:
+3
+# Counter Values:
+652904
+2611616
+12917
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_110sinc_tableEi
+# Func Hash:
+975965681519392165
+# Num Counters:
+7
+# Counter Values:
+635359
+35
+8995
+575680
+70
+70
+575680
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_113process_voiceEPtjPKPii
+# Func Hash:
+852400657991611689
+# Num Counters:
+17
+# Counter Values:
+13772800
+12318556
+0
+872375
+0
+46535808
+0
+0
+964934
+964934
+232277
+490992
+490992
+226637
+335829
+335829
+226637
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_114is_music_voiceEPKt
+# Func Hash:
+6354911
+# Num Counters:
+3
+# Counter Values:
+1454244
+635359
+581869
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_115process_pb_listEj
+# Func Hash:
+145866782823479488
+# Num Counters:
+17
+# Counter Values:
+43040
+2754560
+2754560
+2754560
+336056320
+291065
+0
+0
+0
+24791040
+13772800
+0
+0
+0
+0
+123955200
+269946880
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_117get_input_samplesEPtjPsi
+# Func Hash:
+952482807494894527
+# Num Counters:
+28
+# Counter Values:
+1454244
+635359
+635359
+635359
+1300161
+818885
+2540791
+2540991
+2540791
+200
+800
+286795
+20331488
+20547052
+4782495
+995135552
+2541436
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+26204320
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_14hiloEPKti
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+11326096
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_14rd16Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+338425440
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_14rd32Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6886400
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_14wr16Ejt
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+283719680
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_14wr32Ejj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+6886400
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_15Accel4readEv
+# Func Hash:
+86844387858610541
+# Num Counters:
+23
+# Counter Values:
+46751372
+8705
+46742667
+44385895
+22192785
+0
+2356772
+0
+44385895
+20214925
+0
+0
+0
+0
+0
+0
+3170064
+0
+0
+2356772
+1524
+996
+192
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_15aram8Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+52269503
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_15poly4Ev
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_16uploadEjPKi
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+43040
+6886400
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_17clamp16El
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+256853448
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_17mix_addEPiPKsiPtPsb
+# Func Hash:
+3426001
+# Num Counters:
+3
+# Counter Values:
+4269061
+134130
+136609952
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_17mix_auxEijj
+# Func Hash:
+793816008474138582
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+audio.cpp:_ZN4ssne12_GLOBAL__N_19bessel_i0Ed
+# Func Hash:
+1160280
+# Num Counters:
+2
+# Counter Values:
+575645
+16693705
+
+audio.cpp:_ZZN4ssne12_GLOBAL__N_113process_voiceEPtjPKPiiENK3$_0clEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4269061
+
+audio.cpp:_ZZN4ssne12_GLOBAL__N_113process_voiceEPtjPKPiiENK3$_1clEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4269061
+
+audio.cpp:_ZZN4ssne12_GLOBAL__N_15poly4EvENK3$_0clEv
+# Func Hash:
+571145970655248014
+# Num Counters:
+7
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+
+audio.cpp:_ZZN4ssne18ax_process_cmdlistEjtENK3$_0clEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+903840
+
+audio.cpp:_ZZN4ssne18ax_process_cmdlistEjtENK3$_1clEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+258240
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_111format_cardERSt6vectorIhSaIhEEjiRKNS0_3IplE
+# Func Hash:
+7890873966643212
+# Num Counters:
+5
+# Counter Values:
+4
+48
+32
+8
+8
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_111init_lockedEv
+# Func Hash:
+1070929785232939270
+# Num Counters:
+6
+# Counter Values:
+170052
+170048
+4
+4
+4
+4
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_112set_flash_idERNS0_3IplEiPKh
+# Func Hash:
+4752426705
+# Num Counters:
+3
+# Counter Values:
+4
+32
+48
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_113card_checksumEPKhjRtS3_
+# Func Hash:
+1152026787801029051
+# Num Counters:
+4
+# Counter Values:
+20
+66520
+0
+4
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_114start_transferEi
+# Func Hash:
+50602027261715311
+# Num Counters:
+22
+# Counter Values:
+8050
+8
+8050
+8
+4
+0
+0
+4
+16
+256
+0
+256
+8042
+6346
+605
+617
+5741
+14826
+1120
+576
+0
+0
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_117update_interruptsEi
+# Func Hash:
+225083043783622227
+# Num Counters:
+19
+# Counter Values:
+36397
+15733
+15733
+1755
+15929
+1696
+36
+0
+31781
+36
+1170
+1755
+1170
+1696
+1696
+1696
+0
+0
+0
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_13Ipl12fix_checksumEv
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+4
+16
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_13Ipl13transfer_byteERh
+# Func Hash:
+800900999815804856
+# Num Counters:
+8
+# Counter Values:
+272
+16
+4
+256
+256
+256
+0
+0
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_13Ipl4initEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_13Ipl6selectEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_13Ipl7rtc_nowEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+8
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_15put16EPht
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+100
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_15put32EPhj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+8
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_17MemCard13transfer_byteERh
+# Func Hash:
+1023757809861579433
+# Num Counters:
+33
+# Counter Values:
+15443
+2925
+601
+12518
+20
+4
+8960
+8960
+1120
+1120
+1120
+1120
+7840
+0
+1202
+0
+0
+0
+18
+9
+9
+14
+14
+0
+2304
+2304
+576
+576
+576
+576
+0
+0
+0
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_17MemCard5flushEjj
+# Func Hash:
+2696721
+# Num Counters:
+2
+# Counter Values:
+588
+0
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_17MemCard5writeEjjPKh
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+576
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_17MemCard8deselectEv
+# Func Hash:
+657568856827263072
+# Num Counters:
+10
+# Counter Values:
+2925
+2340
+9
+9
+0
+0
+576
+576
+0
+2340
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_17card_onEi
+# Func Hash:
+184491061488747359
+# Num Counters:
+5
+# Counter Values:
+8050
+0
+8050
+8050
+8042
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_19csr_valueEi
+# Func Hash:
+2878197344048216
+# Num Counters:
+5
+# Counter Values:
+137844
+119364
+119388
+119364
+29250
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_19load_cardERNS0_7MemCardERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEj
+# Func Hash:
+87096540770519243
+# Num Counters:
+12
+# Counter Values:
+4
+4
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+exi.cpp:_ZN4ssne12_GLOBAL__N_19write_csrEij
+# Func Hash:
+270333421492444194
+# Num Counters:
+20
+# Counter Values:
+28347
+595
+3392
+23731
+4
+23723
+4
+4
+4
+23723
+4
+23723
+23731
+23723
+2925
+11089
+2925
+2925
+12634
+2925
+
+exi.cpp:_ZNK4ssne12_GLOBAL__N_13Ipl4sramEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4
+
+exi.cpp:_ZNK4ssne12_GLOBAL__N_17MemCard4maskEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+581865
+
+exi.cpp:_ZNK4ssne12_GLOBAL__N_17MemCard4readEjjPh
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+8960
+581280
+
+exi.cpp:_ZNK4ssne12_GLOBAL__N_17MemCard9interruptEv
+# Func Hash:
+1550
+# Num Counters:
+3
+# Counter Values:
+119364
+118692
+29250
+
+exi.cpp:_ZZN4ssne12_GLOBAL__N_19load_cardERNS0_7MemCardERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEjENK3$_0clEh
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_117call_display_listEjji
+# Func Hash:
+1048593731596050976
+# Num Counters:
+16
+# Counter Values:
+1234168
+0
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+1234168
+0
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_14rd32EPKh
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+74165721
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_15parseEPKhmi
+# Func Hash:
+874570352422737499
+# Num Counters:
+32
+# Counter Values:
+65774222
+101456649
+74313051
+21598470
+11986392
+22725597
+7575199
+0
+0
+0
+0
+3702504
+0
+11455
+21863832
+19568399
+19568399
+19568399
+19568399
+1353518
+1353518
+28966379
+45346672
+3995464
+7575199
+0
+0
+0
+0
+1234168
+10931916
+21609925
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_17load_bpEj
+# Func Hash:
+115322260089698908
+# Num Counters:
+10
+# Counter Values:
+10931916
+4
+6600315
+10931912
+23715
+0
+0
+25263
+0
+10882934
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_17load_xfEPKh
+# Func Hash:
+882794518103978069
+# Num Counters:
+6
+# Counter Values:
+7575199
+26469209
+20009086
+1072178
+6460123
+1072178
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_18raise_peEb
+# Func Hash:
+185255770666378321
+# Num Counters:
+4
+# Counter Values:
+23715
+23715
+23715
+0
+
+gx_fifo.cpp:_ZN4ssne12_GLOBAL__N_19head_needEPKhm
+# Func Hash:
+627203145919752822
+# Num Counters:
+8
+# Counter Values:
+64540054
+25291440
+15150398
+7575199
+2707036
+2707036
+2707036
+1353518
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110cache_fileB5cxx11Em
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110create_efbEv
+# Func Hash:
+1129194952077414137
+# Num Counters:
+5
+# Counter Values:
+4
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110dump_depthERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+56281414490421983
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110pass_stateEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+31210
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110prof_frameERKNS_2gx8GpuFrameE
+# Func Hash:
+1057569720759234563
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110prof_stampEv
+# Func Hash:
+850179670059152128
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110rt_acquireEii
+# Func Hash:
+148690252938428469
+# Num Counters:
+5
+# Counter Values:
+27600
+48954
+27482
+27482
+27482
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110rt_releaseERKNS0_2RTE
+# Func Hash:
+2737297
+# Num Counters:
+2
+# Counter Values:
+27500
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110sc_programEj
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+1012109
+795342
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110sc_samplerEij
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+7957597
+312445
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110sc_scissorEiiii
+# Func Hash:
+1135629172031028345
+# Num Counters:
+8
+# Counter Values:
+1009641
+995059
+995063
+995059
+995063
+995063
+995782
+995063
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_110sc_textureEij
+# Func Hash:
+175973905
+# Num Counters:
+2
+# Counter Values:
+7969058
+6971687
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111apply_stateERKNS_2gx8GpuStateE
+# Func Hash:
+63428269976852360
+# Num Counters:
+16
+# Counter Values:
+992231
+231684
+1322
+1322
+1322
+222046
+0
+992231
+992231
+992231
+58437
+926382
+7412
+0
+992231
+992231
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111konst_alphaB5cxx11Ej
+# Func Hash:
+562900141727986020
+# Num Counters:
+6
+# Counter Values:
+4
+4
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111konst_colorB5cxx11Ej
+# Func Hash:
+562900141727986020
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111make_ms_texEiij
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111program_forERKNS_2gx7DrawCfgEib
+# Func Hash:
+118661429911456559
+# Num Counters:
+7
+# Counter Values:
+992231
+992102
+992102
+0
+129
+129
+129
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111program_keyERNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKNS_2gx7DrawCfgEib
+# Func Hash:
+79676884561015885
+# Num Counters:
+5
+# Counter Values:
+992231
+2529949
+10119796
+6649
+978765
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111sampler_forEjbjji
+# Func Hash:
+1096743976815024730
+# Num Counters:
+13
+# Counter Values:
+7937848
+7937824
+24
+4
+0
+0
+0
+6
+14
+20
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111sc_blend_eqEjj
+# Func Hash:
+702755448337
+# Num Counters:
+4
+# Counter Values:
+231684
+217643
+217643
+217643
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_111texture_forEPKNS_2gx7TextureE
+# Func Hash:
+107092212635831406
+# Num Counters:
+21
+# Counter Values:
+1949622
+0
+1949622
+1949622
+13903
+0
+0
+7954
+7954
+7954
+0
+0
+0
+0
+0
+0
+0
+0
+1934732
+226
+1199
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_112blend_factorEjbb
+# Func Hash:
+174544746798744323
+# Num Counters:
+14
+# Counter Values:
+460724
+0
+9035
+144936
+11898
+5949
+9035
+0
+99274
+186546
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_112plane_depthsERKNS_2gx8GpuStateEPf
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+992231
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_112release_copyERNS0_9PooledTexE
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_112run_copy_texERKNS_2gx6GpuCmdE
+# Func Hash:
+946216602489042849
+# Num Counters:
+27
+# Counter Values:
+13800
+0
+0
+0
+0
+5949
+5949
+13800
+7851
+7851
+7851
+13800
+7851
+13800
+13800
+0
+0
+0
+0
+7851
+0
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_112run_copy_xfbERKNS_2gx6GpuCmdE
+# Func Hash:
+269640165121168068
+# Num Counters:
+13
+# Counter Values:
+11461
+4
+11457
+11457
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_112save_programEjm
+# Func Hash:
+54384165404073017
+# Num Counters:
+17
+# Counter Values:
+129
+129
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_113sc_blend_funcEjjjj
+# Func Hash:
+1135629172031028345
+# Num Counters:
+8
+# Counter Values:
+239535
+99360
+99360
+99360
+99360
+99360
+124123
+99360
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_113sc_color_maskEbbbb
+# Func Hash:
+175973905
+# Num Counters:
+2
+# Counter Values:
+1063777
+1029390
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_113sc_depth_funcEj
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+992231
+21232
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_113sc_depth_maskEb
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+1034906
+57831
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_113sc_invalidateEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+11465
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_115natural_tex_fmtEj
+# Func Hash:
+99163
+# Num Counters:
+2
+# Counter Values:
+13800
+13800
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_116flat_plane_depthERKNS_2gx8GpuFrameERKNS1_6GpuCmdERKNS1_8GpuStateEPKf
+# Func Hash:
+689411082876716306
+# Num Counters:
+13
+# Counter Values:
+460724
+0
+4639667
+4737127
+123297
+97460
+202603
+4422104
+4308860
+283958
+30744
+155754
+4907
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_117init_shader_cacheEv
+# Func Hash:
+274374192550972477
+# Num Counters:
+11
+# Counter Values:
+4
+4
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_117sc_delete_textureEj
+# Func Hash:
+5544682577
+# Num Counters:
+3
+# Counter Values:
+732
+5856
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_118efb_color_for_readEiiii
+# Func Hash:
+11228775512
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_118poll_timer_queriesEv
+# Func Hash:
+23074671112511376
+# Num Counters:
+8
+# Counter Values:
+11461
+22904
+22913
+22904
+11452
+11452
+11452
+11452
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_119load_cached_programEm
+# Func Hash:
+340590271722695631
+# Num Counters:
+20
+# Counter Values:
+129
+129
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_12SXEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+3133585
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_12SYEi
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+3133585
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_14linkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_b
+# Func Hash:
+324552697387681466
+# Num Counters:
+5
+# Counter Values:
+145
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_15evictEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+11461
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_15fnv1aEPKvmm
+# Func Hash:
+1160280
+# Num Counters:
+2
+# Counter Values:
+258
+463338
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_16gen_fsB5cxx11ERKNS_2gx7DrawCfgEib
+# Func Hash:
+667011898909218936
+# Num Counters:
+71
+# Counter Values:
+129
+239
+50
+4
+4
+291
+4
+4
+0
+12
+12
+12
+4
+4
+4
+0
+0
+0
+0
+0
+0
+4
+0
+0
+4
+235
+4
+231
+231
+0
+0
+125
+125
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+2
+2
+0
+2
+95
+0
+0
+291
+0
+0
+0
+0
+0
+0
+0
+0
+4
+291
+7
+0
+0
+0
+0
+0
+0
+0
+0
+117
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_16gen_vsB5cxx11Ei
+# Func Hash:
+79732489355113560
+# Num Counters:
+4
+# Counter Values:
+129
+239
+239
+239
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_16sc_capEjb
+# Func Hash:
+1064670434482290089
+# Num Counters:
+6
+# Counter Values:
+8268196
+7841247
+8268196
+7841247
+216069
+426949
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm16EfEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+13298
+10490
+13290
+10490
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm16EiEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+1984462
+1984198
+1984204
+1984198
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm24EiEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+6649
+5245
+6645
+5245
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm2EfEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+1984462
+1963902
+1984204
+1963902
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm32EfEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+992231
+989566
+992102
+989566
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm4EfEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+1984462
+1936406
+1984204
+1936406
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17changedILm4EiEEbRAT__T0_PKS2_b
+# Func Hash:
+44970979984472
+# Num Counters:
+4
+# Counter Values:
+992231
+992102
+992102
+992102
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17compileEjRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS6_
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+290
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17executeERNS_2gx8GpuFrameE
+# Func Hash:
+757899793133407208
+# Num Counters:
+56
+# Counter Values:
+11461
+11461
+11460
+11460
+0
+0
+1034902
+11461
+0
+0
+0
+0
+0
+0
+1034902
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+992231
+17410
+13800
+0
+1034902
+992231
+17410
+13800
+0
+11461
+0
+0
+0
+0
+0
+0
+0
+0
+0
+91688
+11460
+98
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17fbo_forEjj
+# Func Hash:
+45235845538904
+# Num Counters:
+3
+# Counter Values:
+126
+4
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17prof_msERKNS0_9ProfEventE
+# Func Hash:
+184482265395725148
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_17sc_cullEj
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+933794
+13042
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18alpha_inB5cxx11EjRKNS_2gx8StageCfgE
+# Func Hash:
+179624572712074787
+# Num Counters:
+10
+# Counter Values:
+1164
+0
+128
+0
+0
+0
+180
+85
+4
+767
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18color_inB5cxx11EjRKNS_2gx8StageCfgE
+# Func Hash:
+992035101006167270
+# Num Counters:
+18
+# Counter Values:
+1164
+0
+119
+11
+7
+7
+36
+0
+0
+0
+235
+8
+110
+12
+45
+10
+0
+564
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18dump_fboEjiiRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+347119844721206323
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18make_texEiijjjPKvb
+# Func Hash:
+54104
+# Num Counters:
+3
+# Counter Values:
+1121
+8
+8
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18run_drawERKNS_2gx8GpuFrameERKNS1_6GpuCmdE
+# Func Hash:
+622478001024880719
+# Num Counters:
+70
+# Counter Values:
+992231
+460724
+460724
+460724
+692168
+692168
+460724
+300063
+0
+7937848
+20239592
+15543784
+1942973
+53192
+1949622
+7937848
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+129
+24028
+24028
+129
+3968924
+15875696
+135
+129
+129
+15875696
+2529949
+2524094
+2524094
+2524094
+2665
+983915
+135
+983798
+983780
+6649
+19947
+1404
+6649
+53192
+13298
+13298
+13298
+13298
+13298
+13298
+1404
+6649
+53192
+1404
+0
+0
+0
+20431
+7937848
+1949622
+160661
+160661
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18sc_frontEj
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+933794
+11424
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_18sc_logicEj
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_19cap_indexEj
+# Func Hash:
+65597923829288112
+# Num Counters:
+12
+# Counter Values:
+8268196
+0
+1040855
+1023441
+1040851
+1023441
+1023441
+1034902
+1034902
+1034902
+11461
+0
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_19run_clearERKNS_2gx6GpuCmdE
+# Func Hash:
+184446453857690769
+# Num Counters:
+6
+# Counter Values:
+17410
+17410
+0
+0
+11461
+17410
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_19sc_activeEi
+# Func Hash:
+2753681
+# Num Counters:
+2
+# Counter Values:
+997371
+736426
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_19sc_attribEib
+# Func Hash:
+2952352217244881
+# Num Counters:
+3
+# Counter Values:
+7972231
+7639453
+157236
+
+gx_gpu.cpp:_ZN4ssne12_GLOBAL__N_19write_bmpERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEiiRKSt6vectorIjSaIjEE
+# Func Hash:
+454864723443138188
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_111program_keyERNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKNS_2gx7DrawCfgEibENK3$_0clEj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+21139729
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_112plane_depthsERKNS_2gx8GpuStateEPfENK3$_0clEd
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+1984462
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_15evictEvENK3$_0clISt13unordered_mapImNS0_5GlTexESt4hashImESt8equal_toImESaISt4pairIKmS4_EEEEEDaRT_m
+# Func Hash:
+286089884753
+# Num Counters:
+3
+# Counter Values:
+11461
+818182
+732
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_15evictEvENK3$_1clISt13unordered_mapImNS0_9PooledTexESt4hashImESt8equal_toImESaISt4pairIKmS4_EEEEEDaRT_m
+# Func Hash:
+74996737101870161
+# Num Counters:
+4
+# Counter Values:
+22922
+139984
+19677
+7823
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_16gen_fsB5cxx11ERKNS_2gx7DrawCfgEibENK3$_0clB5cxx11Ei
+# Func Hash:
+11245552728
+# Num Counters:
+2
+# Counter Values:
+8
+0
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_16gen_fsB5cxx11ERKNS_2gx7DrawCfgEibENK3$_1clERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEj
+# Func Hash:
+500794423219048175
+# Num Counters:
+5
+# Counter Values:
+8
+8
+0
+0
+0
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_16gen_fsB5cxx11ERKNS_2gx7DrawCfgEibENK3$_2clENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPKc
+# Func Hash:
+309524038744
+# Num Counters:
+3
+# Counter Values:
+14
+14
+14
+
+gx_gpu.cpp:_ZZN4ssne12_GLOBAL__N_19write_bmpERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEiiRKSt6vectorIjSaIjEEENK3$_0clEij
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13getIfEEbP8_IO_FILERT_
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13getIhEEbP8_IO_FILERT_
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13getIiEEbP8_IO_FILERT_
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13getIjEEbP8_IO_FILERT_
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13getIlEEbP8_IO_FILERT_
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13getImEEbP8_IO_FILERT_
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13putIfEEvP8_IO_FILERKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13putIhEEvP8_IO_FILERKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13putIiEEvP8_IO_FILERKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13putIjEEvP8_IO_FILERKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13putIlEEvP8_IO_FILERKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_13putImEEvP8_IO_FILERKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_19get_vec32EP8_IO_FILERSt6vectorIjSaIjEE
+# Func Hash:
+2930361988347871
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_gpu_capture.cpp:_ZN4ssne2gx12_GLOBAL__N_19put_vec32EP8_IO_FILERKSt6vectorIjSaIjEE
+# Func Hash:
+2729105
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_gpu_capture.cpp:_ZZN4ssne2gx23gpu_load_captured_frameERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS6_ENK3$_0clEPKc
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_record.cpp:_ZN4ssne2gx12_GLOBAL__N_112submit_frameEv
+# Func Hash:
+187543167022191761
+# Num Counters:
+4
+# Counter Values:
+11461
+0
+0
+11461
+
+gx_gpu_record.cpp:_ZN4ssne2gx12_GLOBAL__N_13curEv
+# Func Hash:
+793034944617470288
+# Num Counters:
+4
+# Counter Values:
+16886626
+11462
+11447
+15
+
+gx_gpu_record.cpp:_ZN4ssne2gx12_GLOBAL__N_14keepERNS0_8GpuFrameEPKNS0_7TextureE
+# Func Hash:
+45786906010769
+# Num Counters:
+3
+# Counter Values:
+4193704
+3250940
+347928
+
+gx_gpu_record.cpp:_ZN4ssne2gx12_GLOBAL__N_17tex_bppEj
+# Func Hash:
+694977011799364554
+# Num Counters:
+10
+# Counter Values:
+27810
+0
+0
+0
+0
+11900
+12004
+3906
+0
+0
+
+gx_gpu_record.cpp:_ZN4ssne2gx12_GLOBAL__N_18copy_bppEj
+# Func Hash:
+999969523906520606
+# Num Counters:
+16
+# Counter Values:
+27707
+0
+0
+0
+0
+0
+0
+0
+0
+0
+11952
+3855
+0
+11900
+0
+0
+
+gx_gpu_record.cpp:_ZZN4ssne2gx12_GLOBAL__N_112submit_frameEvENK3$_0clEv
+# Func Hash:
+1563
+# Num Counters:
+1
+# Counter Values:
+11467
+
+gx_gpu_record.cpp:_ZZN4ssne2gx14gpu_wait_frameEiENK3$_0clEv
+# Func Hash:
+1562
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_gpu_record.cpp:_ZZN4ssne2gx15gpu_record_drawEhRKSt6vectorINS0_3VtxESaIS2_EEENK3$_0clEmmm
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+136744220
+
+gx_prompts.cpp:_ZN4ssne2gx12_GLOBAL__N_111current_mapEv
+# Func Hash:
+99150
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_prompts.cpp:_ZN4ssne2gx12_GLOBAL__N_111find_layoutERKNS0_7TextureE
+# Func Hash:
+151440974398828184
+# Num Counters:
+9
+# Counter Values:
+23
+0
+50
+18
+32
+32
+23
+23
+23
+
+gx_prompts.cpp:_ZN4ssne2gx12_GLOBAL__N_15paintERSt6vectorIjSaIjEEiRKNS1_4RectEi
+# Func Hash:
+467295546408573472
+# Num Counters:
+30
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_prompts.cpp:_ZN4ssne2gx12_GLOBAL__N_16is_redEj
+# Func Hash:
+26008471324
+# Num Counters:
+5
+# Counter Values:
+19125
+11373
+11373
+13112
+11373
+
+gx_prompts.cpp:_ZN4ssne2gx12_GLOBAL__N_18count_inERKNS0_7TextureERKNS1_4RectEPFbjE
+# Func Hash:
+303943193688
+# Num Counters:
+3
+# Counter Values:
+55
+1596
+46089
+
+gx_prompts.cpp:_ZN4ssne2gx12_GLOBAL__N_18is_greenEj
+# Func Hash:
+26008471324
+# Num Counters:
+5
+# Counter Values:
+26964
+12863
+12863
+20597
+12863
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_110alpha_testEji
+# Func Hash:
+311245245192145168
+# Num Counters:
+10
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_110clear_rectEiiii
+# Func Hash:
+325344201286978527
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_110flush_trisEv
+# Func Hash:
+2729105
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_110wrap_coordEiij
+# Func Hash:
+363265011501410917
+# Num Counters:
+9
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_111raster_bandERKNS1_3TriEiiRNS1_9BandStatsE
+# Func Hash:
+999392056779270521
+# Num Counters:
+33
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_111tev_combineEiiiijjj
+# Func Hash:
+967792680831167003
+# Num Counters:
+10
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_112blend_factorEjbRKNS1_3PixES4_i
+# Func Hash:
+1080188852421049720
+# Num Counters:
+18
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_114encode_textureEjiiii
+# Func Hash:
+896637616643986376
+# Num Counters:
+34
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_115clip_and_submitERKNS0_7DrawCfgEPKNS0_3VtxE
+# Func Hash:
+112635030629926036
+# Num Counters:
+18
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_115submit_triangleERKNS0_7DrawCfgERKNS1_2SVES7_S7_
+# Func Hash:
+780941675943736529
+# Num Counters:
+14
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_14Pool5flushEv
+# Func Hash:
+490871699663039647
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_14Pool5startEv
+# Func Hash:
+82253146512466512
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_14Pool6workerEi
+# Func Hash:
+4470940753
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_14Pool8run_bandEi
+# Func Hash:
+337
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_14packERKNS1_3PixE
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_15blendERKNS0_7DrawCfgERKNS1_3PixEj
+# Func Hash:
+175983132310756881
+# Num Counters:
+36
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_16clamp8Ei
+# Func Hash:
+406172508
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_16div255Ei
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_16ifloorEf
+# Func Hash:
+99163
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_16sampleERKNS0_7DrawCfgEiff
+# Func Hash:
+297984600499674811
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_16sext11Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_16unpackEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_17compareEjii
+# Func Hash:
+114897382391090362
+# Num Counters:
+10
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_17konst_cERKNS0_7DrawCfgEji
+# Func Hash:
+562900141727986020
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_17run_tevERKNS0_7DrawCfgEPA4_KfPA3_S5_
+# Func Hash:
+470107534649972975
+# Num Counters:
+48
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_17tracingEv
+# Func Hash:
+6350751
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_18fixed_uvERKNS0_7DrawCfgEPA3_KfiRiS8_
+# Func Hash:
+864
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_18ind_wrapEij
+# Func Hash:
+500794423219048175
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_19apply_fogERKNS0_7DrawCfgERNS1_3PixEj
+# Func Hash:
+840301076722188521
+# Num Counters:
+10
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZN4ssne2gx12_GLOBAL__N_19ind_stageERKNS0_7DrawCfgERKNS0_8StageCfgEPA3_KiPA3_KfPiRi
+# Func Hash:
+788571486638220534
+# Num Counters:
+19
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZZN4ssne2gx10draw_primsEhRKSt6vectorINS0_3VtxESaIS2_EEENK3$_0clEmmm
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_111raster_bandERKNS1_3TriEiiRNS1_9BandStatsEEN6CommitD2Ev
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_111raster_bandERKNS1_3TriEiiRNS1_9BandStatsEENK3$_0clEff
+# Func Hash:
+263207401943998410
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_114encode_textureEjiiiiENK3$_0clEii
+# Func Hash:
+1014790384337059329
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_114encode_textureEjiiiiENK3$_1clERKNS1_3PixE
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_115clip_and_submitERKNS0_7DrawCfgEPKNS0_3VtxEENK3$_0clEi
+# Func Hash:
+873710723307464932
+# Num Counters:
+16
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_14Pool5flushEvENKUlvE_clEv
+# Func Hash:
+1567
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_14Pool5startEvENKUlvE_clEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_14Pool6workerEiENKUlvE_clEv
+# Func Hash:
+1568
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_16sampleERKNS0_7DrawCfgEiffENKUljjjE_clEjjj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_raster.cpp:_ZZN4ssne2gx12_GLOBAL__N_17run_tevERKNS0_7DrawCfgEPA4_KfPA3_S5_ENK3$_0clEj
+# Func Hash:
+663539233065905934
+# Num Counters:
+19
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_raster.cpp:_ZZN4ssne2gx19expand_points_linesEhRKSt6vectorINS0_3VtxESaIS2_EERS4_ENK3$_0clEPKS2_PKfSC_SC_SC_j
+# Func Hash:
+49314279225424483
+# Num Counters:
+5
+# Counter Values:
+672903
+2691612
+2691612
+2691612
+2691612
+
+gx_raster.cpp:_ZZN4ssne2gx9build_cfgERNS0_7DrawCfgEENK3$_0clEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+9506574
+
+gx_raster.cpp:_ZZN4ssne2gx9build_cfgERNS0_7DrawCfgEENK3$_1clEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+1056286
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_110block_dimsEjRiS2_
+# Func Hash:
+865319823599733643
+# Num Counters:
+9
+# Counter Values:
+3544787
+3544787
+0
+0
+3093839
+0
+45263
+0
+405685
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_110tlut_colorEjj
+# Func Hash:
+406188895
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_111fingerprintERKNS1_6SourceEjjj
+# Func Hash:
+630343929382781241
+# Num Counters:
+8
+# Counter Values:
+895169
+57891699
+0
+895169
+895169
+895169
+895169
+0
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_14exp3Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4780711
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_14exp4Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+14583029
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_14exp5Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+19559787
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_14exp6Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6552696
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_14rgbaEjjjj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+203628386
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_16decodeERKNS1_6SourceEjiijRSt6vectorIjSaIjEE
+# Func Hash:
+414578360394294913
+# Num Counters:
+39
+# Counter Values:
+2118
+93102
+12769445
+12769445
+0
+0
+0
+0
+0
+0
+3764
+15056
+120448
+0
+0
+0
+387
+1548
+6192
+433261
+1733044
+6932176
+11513720
+184219520
+0
+0
+0
+0
+0
+0
+0
+0
+0
+818313
+3273252
+2530294
+13093008
+52372032
+0
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_17from565Et
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+6552696
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_17from5a3Et
+# Func Hash:
+172590168
+# Num Counters:
+2
+# Counter Values:
+6932176
+2151465
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_17fromIA8Et
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+0
+
+gx_texture.cpp:_ZN4ssne2gx12_GLOBAL__N_19data_sizeEjii
+# Func Hash:
+99167
+# Num Counters:
+2
+# Counter Values:
+3542669
+29830
+
+gx_texture.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Source1bEj
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+1008628076
+0
+
+gx_texture.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Source1hEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+13484872
+
+gx_texture.cpp:_ZNK4ssne2gx12_GLOBAL__N_17KeyHashclERKNS1_8CacheKeyE
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+896144
+
+gx_texture.cpp:_ZNK4ssne2gx12_GLOBAL__N_18CacheKeyeqERKS2_
+# Func Hash:
+584187376181818977
+# Num Counters:
+13
+# Counter Values:
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+894194
+
+gx_texture.cpp:_ZZN4ssne2gx12_GLOBAL__N_16decodeERKNS1_6SourceEjiijRSt6vectorIjSaIjEEENK3$_0clEiij
+# Func Hash:
+10979488913
+# Num Counters:
+4
+# Counter Values:
+243650368
+243640846
+243644804
+243640846
+
+gx_texture.cpp:_ZZN4ssne2gx12_GLOBAL__N_16decodeERKNS1_6SourceEjiijRSt6vectorIjSaIjEEENK3$_1clEji
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+34821276
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_110color_sizeEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+39180050
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_110index_sizeEj
+# Func Hash:
+406188895
+# Num Counters:
+3
+# Counter Values:
+184953468
+25577578
+130965430
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_110light_partILi0ELi3EEEvRKNS1_9LightPartEPKNS1_10LightConstEPKNS1_8LightGeoEPKfSD_bPf
+# Func Hash:
+318110392870191441
+# Num Counters:
+19
+# Counter Values:
+277084925
+831254775
+420016245
+420016245
+497266152
+497266152
+85021929
+255065787
+576188988
+100695007
+0
+0
+100695007
+100695007
+100695007
+0
+0
+302085021
+576188988
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_110light_partILi3ELi4EEEvRKNS1_9LightPartEPKNS1_10LightConstEPKNS1_8LightGeoEPKfSD_bPf
+# Func Hash:
+318110392870191441
+# Num Counters:
+19
+# Counter Values:
+277084925
+277084925
+140005415
+140005415
+165755384
+165755384
+85021929
+85021929
+192062996
+100695007
+0
+0
+100695007
+100695007
+100695007
+0
+0
+100695007
+192062996
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_113light_channelEiPKfS3_PA4_S2_PbPf
+# Func Hash:
+665655106898745961
+# Num Counters:
+25
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_116setup_light_partEiiRNS1_9LightPartE
+# Func Hash:
+3426001
+# Num Counters:
+3
+# Counter Values:
+41742028
+20871014
+166968112
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_117setup_light_constEiRNS1_10LightConstE
+# Func Hash:
+4752426705
+# Num Counters:
+3
+# Counter Values:
+7166449
+21499347
+28665796
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_15mul34EjPKfPf
+# Func Hash:
+18129
+# Num Counters:
+2
+# Counter Values:
+566592130
+1699776390
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_17clamp01Ef
+# Func Hash:
+406172508
+# Num Counters:
+3
+# Counter Values:
+768251984
+0
+62349389
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_17comp_atEPKhjjf
+# Func Hash:
+1033009899248524141
+# Num Counters:
+7
+# Counter Values:
+2097055492
+0
+0
+0
+116608908
+0
+1980446584
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_17indexedEij
+# Func Hash:
+702688601176
+# Num Counters:
+4
+# Counter Values:
+0
+0
+0
+0
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_17vat_regEii
+# Func Hash:
+406188895
+# Num Counters:
+3
+# Counter Values:
+153115962
+106579166
+45734605
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_18attr_ptrERKNS1_8AttrDescEPKhRjRNS1_6ReaderE
+# Func Hash:
+814029106698522614
+# Num Counters:
+7
+# Counter Values:
+1110247757
+36853483
+180752561
+180752561
+1073394274
+1073394274
+1073394274
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_19comp_sizeEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+77766872
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_19light_geoERKNS1_10LightConstEPKfS6_RNS1_8LightGeoE
+# Func Hash:
+11211920465
+# Num Counters:
+3
+# Counter Values:
+100695007
+100693063
+302079189
+
+gx_vertex.cpp:_ZN4ssne2gx12_GLOBAL__N_19tex_shiftEii
+# Func Hash:
+11262329944
+# Num Counters:
+2
+# Counter Values:
+4256479
+61707
+
+gx_vertex.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Reader2u8Ej
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+1079779700
+0
+
+gx_vertex.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Reader3u16Ej
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+7140000
+7140000
+
+gx_vertex.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Reader3u32Ej
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+gx_vertex.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Reader4compEjjf
+# Func Hash:
+1033009899248524141
+# Num Counters:
+7
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+
+gx_vertex.cpp:_ZNK4ssne2gx12_GLOBAL__N_16Reader5colorEjPf
+# Func Hash:
+748019638318923311
+# Num Counters:
+8
+# Counter Values:
+277084925
+277084925
+0
+0
+0
+7140000
+0
+269944925
+
+gx_vertex.cpp:_ZZN4ssne2gx19decode_vertices_refEiPKhjRSt6vectorINS0_3VtxESaIS4_EEENK3$_0clEjij
+# Func Hash:
+478022793135353648
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_110adjust_fovEjf
+# Func Hash:
+184434101733393496
+# Num Counters:
+6
+# Counter Values:
+50926
+50926
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_110in_vehicleEv
+# Func Hash:
+1563
+# Num Counters:
+1
+# Counter Values:
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_110sda2_floatER10PPCContexti
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+254630
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111hle_OSPanicER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi0EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi1EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi2EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi3EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi4EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi5EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi6EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111trace_trampILi7EEEvR10PPCContext
+# Func Hash:
+737240590402788947
+# Num Counters:
+15
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_111weapon_keysER10PPCContextj
+# Func Hash:
+343037819321214353
+# Num Counters:
+32
+# Counter Values:
+4411
+0
+4411
+4411
+4411
+4411
+4411
+4411
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_112code_matchesEjPKj
+# Func Hash:
+1245369025500248
+# Num Counters:
+3
+# Counter Values:
+8
+48
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_112guest_formatB5cxx11ER10PPCContextji
+# Func Hash:
+166108744629420006
+# Num Counters:
+40
+# Counter Values:
+810
+25130
+24295
+0
+835
+0
+0
+835
+0
+0
+835
+0
+0
+835
+0
+0
+0
+0
+0
+835
+0
+0
+835
+0
+49
+4
+0
+8
+0
+0
+0
+0
+774
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_112guest_stringB5cxx11Ejm
+# Func Hash:
+183131494861913801
+# Num Counters:
+4
+# Counter Values:
+1584
+0
+49003
+1584
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_112hle_OSReportER10PPCContext
+# Func Hash:
+2687050833
+# Num Counters:
+3
+# Counter Values:
+810
+826
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_113address_hooksEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_113hle_pad_clampER10PPCContext
+# Func Hash:
+395818188710180401
+# Num Counters:
+9
+# Counter Values:
+12917
+0
+12917
+12917
+51668
+206672
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_114select_versionEv
+# Func Hash:
+79732539975631953
+# Num Counters:
+4
+# Counter Values:
+4
+24
+4
+4
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_115hle_look_updateER10PPCContext
+# Func Hash:
+467967375374374159
+# Num Counters:
+15
+# Counter Values:
+4411
+4411
+4411
+4411
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_115hle_pad_processER10PPCContext
+# Func Hash:
+2894218547500113
+# Num Counters:
+4
+# Counter Values:
+11438
+11438
+45752
+183008
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_115install_pad_fixEv
+# Func Hash:
+130556492829696135
+# Num Counters:
+9
+# Counter Values:
+4
+0
+0
+4
+4
+4
+4
+4
+4
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_116flip_wait_returnEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+10488
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_116weapon_availableER10PPCContextji
+# Func Hash:
+34532361304
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_117hle_player_updateER10PPCContext
+# Func Hash:
+700241809203914813
+# Num Counters:
+10
+# Counter Values:
+5951
+0
+5951
+5951
+1540
+1540
+1540
+4411
+4411
+4411
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_117install_mouse_aimEv
+# Func Hash:
+374079933668609459
+# Num Counters:
+4
+# Counter Values:
+4
+0
+24
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_118hle_MTXPerspectiveER10PPCContext
+# Func Hash:
+185256665061541585
+# Num Counters:
+4
+# Counter Values:
+39682
+0
+0
+634912
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_118hle_OSGetSoundModeER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_118install_savestatesEv
+# Func Hash:
+76119139699729937
+# Num Counters:
+5
+# Counter Values:
+4
+24
+24
+24
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_119install_call_tracerEv
+# Func Hash:
+612497326672149806
+# Num Counters:
+9
+# Counter Values:
+4
+4
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_119scene_camera_callerEj
+# Func Hash:
+106600274458591
+# Num Counters:
+7
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_120effective_widescreenEj
+# Func Hash:
+720787265240
+# Num Counters:
+3
+# Counter Values:
+50926
+5950
+29738
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_120hle_VIWaitForRetraceER10PPCContext
+# Func Hash:
+44958098728465
+# Num Counters:
+6
+# Counter Values:
+10488
+0
+10484
+0
+10488
+10484
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_121effective_frame_limitEv
+# Func Hash:
+825472070621480294
+# Num Counters:
+7
+# Counter Values:
+21945
+21945
+21945
+21945
+0
+0
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_121install_frame_limiterEv
+# Func Hash:
+138117206927014804
+# Num Counters:
+9
+# Counter Values:
+4
+0
+4
+4
+4
+4
+4
+4
+0
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_123hle_MTXLightPerspectiveER10PPCContext
+# Func Hash:
+185256665061541585
+# Num Counters:
+4
+# Counter Values:
+11244
+0
+0
+134928
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_124install_vehicle_detectorEv
+# Func Hash:
+100189887626495651
+# Num Counters:
+13
+# Counter Values:
+4
+24
+24
+24
+0
+4
+4
+24
+24
+24
+24
+24
+4
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_15put_fEjf
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+769840
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_16now_msEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+62827
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_17hle_nopER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+396527
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_18hle_flipER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+11449
+
+hle.cpp:_ZN4ssne12_GLOBAL__N_19game_tanfER10PPCContextf
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+50926
+0
+
+hle.cpp:_ZN4ssneL5slurpERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+16
+
+hle.cpp:_ZZN4ssne12_GLOBAL__N_112guest_formatB5cxx11ER10PPCContextjiENK3$_0clEc
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+835
+
+hle.cpp:_ZZN4ssne12_GLOBAL__N_112guest_formatB5cxx11ER10PPCContextjiENK3$_1clEv
+# Func Hash:
+99165
+# Num Counters:
+2
+# Counter Values:
+835
+835
+
+hle.cpp:_ZZN4ssne12_GLOBAL__N_112guest_formatB5cxx11ER10PPCContextjiENK3$_2clEv
+# Func Hash:
+99165
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+hle.cpp:_ZZN4ssne12_GLOBAL__N_119install_call_tracerEvENK3$_0clEv
+# Func Hash:
+68269137
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+hle.cpp:_ZZN4ssne12_GLOBAL__N_19game_tanfER10PPCContextfENK3$_0clEv
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+4
+4
+
+hw.cpp:_ZN4ssne11StateReader3podINS_12_GLOBAL__N_15AiDmaEEEbRT_
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+3
+
+hw.cpp:_ZN4ssne11StateWriter3podINS_12_GLOBAL__N_15AiDmaEEEvRKT_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_110ai_write16Ejt
+# Func Hash:
+528788354834268718
+# Num Counters:
+6
+# Counter Values:
+296
+104
+20
+0
+192
+192
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_110di_executeEv
+# Func Hash:
+496793302456823592
+# Num Counters:
+17
+# Counter Values:
+4467
+4467
+4459
+0
+0
+4459
+81572480
+4
+128
+0
+0
+4
+0
+0
+0
+0
+4467
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_110di_write16Ejt
+# Func Hash:
+189953259847495489
+# Num Counters:
+6
+# Counter Values:
+89308
+4471
+8938
+4467
+4467
+4467
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_110dsp_read16Ej
+# Func Hash:
+517943879733618369
+# Num Counters:
+15
+# Counter Values:
+506560
+0
+129160
+86096
+4
+4
+4
+0
+43048
+0
+90288
+4
+0
+0
+157964
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_111ai_dsp_rateEv
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+227444
+227444
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_111dsp_write16Ejt
+# Func Hash:
+250037166406181858
+# Num Counters:
+10
+# Counter Values:
+506508
+0
+90228
+4116
+43044
+43044
+43044
+43048
+129160
+153868
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_111dspcr_raiseEtti
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+90206
+90206
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_113ai_dma_threadEv
+# Func Hash:
+914555459048906606
+# Num Counters:
+14
+# Counter Values:
+4
+0
+227444
+194857
+0
+0
+860874
+893461
+860874
+0
+860874
+43042
+227440
+43042
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_114ai_dma_controlEt
+# Func Hash:
+63370401457297
+# Num Counters:
+5
+# Counter Values:
+43048
+8
+4
+4
+4
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_117dsp_mail_from_cpuEj
+# Func Hash:
+505222292738568943
+# Num Counters:
+13
+# Counter Values:
+129160
+0
+129160
+4
+36
+4
+86080
+43040
+0
+0
+43040
+43040
+43040
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_120dsp_signal_if_neededEv
+# Func Hash:
+10995967505
+# Num Counters:
+4
+# Counter Values:
+172208
+129164
+43044
+43044
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_13regEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+106650481
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_15reg32Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+77729
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_15set32Ejj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+8922
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_17ai_rateEv
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+14534
+5816
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_18ai_countEv
+# Func Hash:
+11178443864
+# Num Counters:
+2
+# Counter Values:
+14606
+72
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_18aram_dmaEv
+# Func Hash:
+304041505873
+# Num Counters:
+3
+# Counter Values:
+4116
+1878412
+94205
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_18dsp_pushEjb
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+43048
+0
+
+hw.cpp:_ZN4ssne12_GLOBAL__N_19ai_rebaseEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+104
+
+hw.cpp:_ZN4ssneL6read16Ej
+# Func Hash:
+141541790626148082
+# Num Counters:
+20
+# Counter Values:
+105036430
+652904
+746750
+652904
+0
+23735
+104383526
+23735
+7251
+7251
+506560
+625406
+506560
+39502
+118846
+39502
+4467
+78968
+79344
+78968
+
+hw.cpp:_ZN4ssneL7write16Ejt
+# Func Hash:
+326423806421974842
+# Num Counters:
+23
+# Counter Values:
+1149163
+366354
+457734
+366354
+92
+23751
+782717
+23751
+506508
+687196
+506508
+89308
+180688
+89308
+296
+296
+296
+91084
+91084
+91084
+71666
+71770
+71666
+
+hw.cpp:_ZZN4ssne12_GLOBAL__N_113ai_dma_threadEvENK3$_0clEv
+# Func Hash:
+99296
+# Num Counters:
+3
+# Counter Values:
+86080
+43041
+43041
+
+hw.cpp:_ZZN4ssne12_GLOBAL__N_114ai_dma_controlEtENK3$_0clEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+4
+
+hw.cpp:_ZZN4ssne13hw_state_loadERNS_11StateReaderEENK3$_0clEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+hw.cpp:_ZZN4ssne9disc_openERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS5_ENK3$_0clINS_12_GLOBAL__N_16ExtentESC_EEDaRT_RT0_
+# Func Hash:
+1563
+# Num Counters:
+1
+# Counter Values:
+3200
+
+hw.cpp:_ZZN4ssne9disc_openERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS5_ENK3$_1clERKNSt10filesystem7__cxx114pathE
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+8
+
+hw.cpp:_ZZN4ssne9disc_openERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERS5_ENK3$_2clEmRKNSt10filesystem7__cxx114pathE
+# Func Hash:
+2729105
+# Num Counters:
+2
+# Counter Values:
+536
+536
+
+hw.cpp:_ZZN4ssne9disc_readEmPhjENK3$_0clEmRKNS_12_GLOBAL__N_16ExtentE
+# Func Hash:
+1563
+# Num Counters:
+1
+# Counter Values:
+31225
+
+memory.cpp:_ZL4pow2i
+# Func Hash:
+406120349
+# Num Counters:
+4
+# Counter Values:
+1178012015
+1178012015
+1178012015
+1178012015
+
+memory.cpp:_ZZ13ssne_quantizejdjiPiENK3$_0clEddd
+# Func Hash:
+406172508
+# Num Counters:
+3
+# Counter Values:
+1475473
+413
+35
+
+runtime.cpp:_ZZ13ssne_timebasevENK3$_0clEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4
+
+runtime.cpp:_ZZ14ssne_find_funcjENK3$_0clERK13SSNEFuncEntryj
+# Func Hash:
+1563
+# Num Counters:
+1
+# Counter Values:
+211540842
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_110call_chainERK10PPCContext
+# Func Hash:
+632413087463686711
+# Num Counters:
+11
+# Counter Values:
+3
+9
+9
+9
+9
+9
+3
+6
+6
+9
+6
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_110write_fileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEERKSt6vectorIhSaIhEERS6_
+# Func Hash:
+437506365992615888
+# Num Counters:
+6
+# Counter Values:
+0
+0
+0
+0
+0
+0
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_15crc32EPKhm
+# Func Hash:
+1160280
+# Num Counters:
+2
+# Counter Values:
+3
+91443457
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_16finishEbbRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES8_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+3
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_17do_loadER10PPCContextRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+588593011242324006
+# Num Counters:
+33
+# Counter Values:
+3
+0
+0
+3
+3
+0
+0
+0
+9
+0
+3
+3
+3
+3
+0
+0
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+3
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_17do_saveER10PPCContextRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+# Func Hash:
+362025657873
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+savestate.cpp:_ZN4ssne12_GLOBAL__N_17game_idB5cxx11Ev
+# Func Hash:
+1160280
+# Num Counters:
+2
+# Counter Values:
+3
+18
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_110rescheduleEb
+# Func Hash:
+85212459014029181
+# Num Counters:
+10
+# Counter Values:
+124761
+10486
+114275
+114275
+26150
+0
+0
+0
+88125
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_110timer_loopEv
+# Func Hash:
+1006840884478644294
+# Num Counters:
+17
+# Counter Values:
+4
+28724
+33458
+13641
+28724
+0
+0
+0
+12948
+28720
+12948
+0
+12948
+33504
+11107
+11107
+11107
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_111write_stateEPNS0_7GThreadE
+# Func Hash:
+751776172045140273
+# Num Counters:
+5
+# Counter Values:
+31460
+0
+10486
+10486
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_112self_or_mainEv
+# Func Hash:
+10979189848
+# Num Counters:
+4
+# Counter Values:
+121435
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_114hle_OSSetAlarmER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+5052
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_114run_in_irq_ctxERK10PPCContextRKSt8functionIFvRS1_EE
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+178958
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_114wait_for_batonERSt11unique_lockISt5mutexEPNS0_7GThreadE
+# Func Hash:
+10997278289
+# Num Counters:
+4
+# Counter Values:
+10488
+0
+10486
+10486
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_115deliverable_nowEj
+# Func Hash:
+1568
+# Num Counters:
+1
+# Counter Values:
+128794
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_115start_if_neededEPNS0_7GThreadE
+# Func Hash:
+2729105
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_116hle_OSExitThreadER10PPCContext
+# Func Hash:
+25
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_116hle_OSRescheduleER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_116hle_SelectThreadER10PPCContext
+# Func Hash:
+32
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_116host_thread_mainEPNS0_7GThreadE
+# Func Hash:
+201611686011540561
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_117hle_OSCancelAlarmER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+6789
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_117hle_OSSleepThreadER10PPCContext
+# Func Hash:
+10995967505
+# Num Counters:
+4
+# Counter Values:
+10488
+0
+10488
+10488
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_117hle_OSYieldThreadER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_118hle_OSCancelThreadER10PPCContext
+# Func Hash:
+187543167023523409
+# Num Counters:
+3
+# Counter Values:
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_118hle_OSCreateThreadER10PPCContext
+# Func Hash:
+42129
+# Num Counters:
+2
+# Counter Values:
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_118hle_OSResumeThreadER10PPCContext
+# Func Hash:
+90581193946077964
+# Num Counters:
+7
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_118hle_OSWakeupThreadER10PPCContext
+# Func Hash:
+22692988003409
+# Num Counters:
+5
+# Counter Values:
+36722
+36722
+10486
+10486
+10486
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_119hle_OSSuspendThreadER10PPCContext
+# Func Hash:
+450870759427454060
+# Num Counters:
+10
+# Counter Values:
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_121hle_OSEnableSchedulerER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_122hle_OSDisableSchedulerER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_122hle_OSGetCurrentThreadER10PPCContext
+# Func Hash:
+13
+# Num Counters:
+2
+# Counter Values:
+22908
+22908
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_122hle_OSSetPeriodicAlarmER10PPCContext
+# Func Hash:
+171562129
+# Num Counters:
+4
+# Counter Values:
+8
+8
+8
+8
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_14findEj
+# Func Hash:
+92950479937541208
+# Num Counters:
+5
+# Counter Values:
+0
+0
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_14pickEPNS0_7GThreadEb
+# Func Hash:
+486757639789367236
+# Num Counters:
+18
+# Counter Values:
+139368
+139368
+40757
+98611
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_17hand_toEPNS0_7GThreadE
+# Func Hash:
+2696401
+# Num Counters:
+2
+# Counter Values:
+51243
+10486
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_17serviceER10PPCContext
+# Func Hash:
+616011613179146781
+# Num Counters:
+8
+# Counter Values:
+128794
+307714
+11082
+11082
+128756
+167876
+128794
+128756
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_18runnableEPNS0_7GThreadE
+# Func Hash:
+6354911
+# Num Counters:
+3
+# Counter Values:
+139372
+128886
+40759
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_19bind_mainEv
+# Func Hash:
+44970759758929
+# Num Counters:
+5
+# Counter Values:
+121435
+4
+121435
+4
+4
+
+scheduler.cpp:_ZN4ssne12_GLOBAL__N_19idle_loopEv
+# Func Hash:
+1049329545455266877
+# Num Counters:
+6
+# Counter Values:
+4
+64931
+0
+24172
+51168
+40755
+
+scheduler.cpp:_ZZN4ssne12_GLOBAL__N_110timer_loopEvENK3$_0clER10PPCContext
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+11082
+
+scheduler.cpp:_ZZN4ssne12_GLOBAL__N_114wait_for_batonERSt11unique_lockISt5mutexEPNS0_7GThreadEENK3$_0clEv
+# Func Hash:
+406648799
+# Num Counters:
+5
+# Counter Values:
+20974
+10488
+10488
+10488
+10488
+
+scheduler.cpp:_ZZN4ssne12_GLOBAL__N_115start_if_neededEPNS0_7GThreadEENK3$_0clEv
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+0
+
+scheduler.cpp:_ZZN4ssne12_GLOBAL__N_17serviceER10PPCContextENK3$_0clES2_
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+167876
+
+scheduler.cpp:_ZZN4ssne12_GLOBAL__N_19idle_loopEvENK3$_0clEv
+# Func Hash:
+6353818
+# Num Counters:
+4
+# Counter Values:
+230243
+230243
+102248
+40754
+
+si.cpp:_ZN4ssne12_GLOBAL__N_112set_buf_byteEih
+# Func Hash:
+13
+# Num Counters:
+2
+# Counter Values:
+52
+24
+
+si.cpp:_ZN4ssne12_GLOBAL__N_118intro_skip_buttonsEv
+# Func Hash:
+662169783296146297
+# Num Counters:
+7
+# Counter Values:
+12948
+12636
+7553
+312
+274
+35
+0
+
+si.cpp:_ZN4ssne12_GLOBAL__N_13regEj
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+1741573
+
+si.cpp:_ZN4ssne12_GLOBAL__N_15reg32Ej
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+120445
+
+si.cpp:_ZN4ssne12_GLOBAL__N_15set32Ejj
+# Func Hash:
+0
+# Num Counters:
+1
+# Counter Values:
+120445
+
+si.cpp:_ZN4ssne12_GLOBAL__N_16now_msEv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+13264
+
+si.cpp:_ZN4ssne12_GLOBAL__N_16reportEiPj
+# Func Hash:
+188950053421692049
+# Num Counters:
+5
+# Counter Values:
+12948
+12948
+0
+12948
+0
+
+si.cpp:_ZN4ssne12_GLOBAL__N_18buf_byteEi
+# Func Hash:
+1549
+# Num Counters:
+2
+# Counter Values:
+34346
+0
+
+si.cpp:_ZN4ssne12_GLOBAL__N_18sisr_bitEij
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+60203
+
+si.cpp:_ZN4ssne12_GLOBAL__N_18transferEj
+# Func Hash:
+889416132319033832
+# Num Counters:
+18
+# Counter Values:
+34346
+0
+0
+34338
+8
+4
+0
+0
+0
+4
+0
+40
+0
+52
+52
+52
+52
+34346
+
+thread_util.cpp:_ZN4ssne12_GLOBAL__N_110trampolineEPv
+# Func Hash:
+24
+# Num Counters:
+1
+# Counter Values:
+4
+

@@ -365,6 +365,13 @@ the replay tool; where the time goes decides what helps on weaker PCs.
 * What's left on the GPU is pixel shading of a few large draws (the 5-stage terrain, sky layers, the indirect redraw)
   plus ~0.7 ms of copies and clears per 2x frame. No draw has an alpha test that can never fail (which would cost
   early depth testing for nothing).
+* **Profile-guided optimization of the runtime** (release packages; docs/BUILDING.md): trained on boot, menus,
+  Arena and jeep gameplay, the game thread needs ~7% less CPU per frame (2.9 vs 3.1 ms in uncapped 1x gameplay, host
+  clang 23; the game's own code, compiled on the player's PC, is not profiled). Frontend profiles don't move between
+  compilers as-is: llvm-mingw's libc++ mangles `std::vector` as `std::__1::vector` and `size_t` as `unsigned long long`
+  (so `decode_vertices_fast`, 19% of the profile, found no data), and clang 19 / 14 set the top 4 bits of the 64-bit
+  function hash differently from clang 23 (the low 60 bits, the control flow, are equal). Retargeting by demangled
+  signature + low hash bits against the release compiler's own names matches ~98% of the counts for both.
 * **Software renderer**: ~180 ns per written pixel, split between the rasterizer/TEV loop and bilinear sampling
   (memory bound: branch-free sampling and wrap fast paths measured no gain). It stays the fallback; the top bar now
   says when it is running and why (the log records which OpenGL version the driver offered).
