@@ -399,9 +399,11 @@ inline void light_geo(const LightConst& c, const float view_pos[3], const float 
     o.ndl = nrm[0] * L[0] + nrm[1] * L[1] + nrm[2] * L[2];
 }
 
-// One part of light_channel for one vertex: writes out[k0..k1) (rgb: 0..3, alpha: 3..4).
+// One part of light_channel for one vertex: writes out[k0..k1) (rgb: 0..3, alpha: 3..4). The range is a template
+// parameter: with a runtime range the compiler turned the short copy loops into memcpy calls.
+template <int k0, int k1>
 inline void light_part(const LightPart& lp, const LightConst* lc, const LightGeo* geo, const float nrm[3],
-                       const float* vcol, bool has_vcol, int k0, int k1, float out[4]) {
+                       const float* vcol, bool has_vcol, float out[4]) {
     float mat[4], amb[4];
     for (int k = k0; k < k1; k++) {
         mat[k] = lp.mat_vc ? (has_vcol ? vcol[k] : 255.f) : lp.mat[k];
@@ -575,8 +577,8 @@ void decode_vertices_fast(int vat, const uint8_t* data, uint32_t count, std::vec
         }
         for (uint32_t c = 0; c < 2; c++) {
             if (c < lchans) {
-                light_part(lparts[c][0], lconst, geo, vn, vcol[c], has_vcol[c], 0, 3, o.color[c]);
-                light_part(lparts[c][1], lconst, geo, vn, vcol[c], has_vcol[c], 3, 4, o.color[c]);
+                light_part<0, 3>(lparts[c][0], lconst, geo, vn, vcol[c], has_vcol[c], o.color[c]);
+                light_part<3, 4>(lparts[c][1], lconst, geo, vn, vcol[c], has_vcol[c], o.color[c]);
             } else for (int k = 0; k < 4; k++) o.color[c][k] = 0;
         }
 

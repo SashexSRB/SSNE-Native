@@ -193,17 +193,20 @@ std::shared_ptr<const Texture> texture_ref(const Texture* t) {
 
 void invalidate_textures() {
     for (auto& b : g_bound) b = nullptr;
+    g_cfg_dirty = true;
 }
 
 void texture_cache_clear() {
     g_cache.clear();
     for (auto& b : g_bound) b = nullptr;
+    g_cfg_dirty = true;
 }
 
 void texture_cache_trim() {
     if (g_cache.size() > 2048) {
         g_cache.clear();
         for (auto& b : g_bound) b = nullptr;
+        g_cfg_dirty = true;
     }
 }
 

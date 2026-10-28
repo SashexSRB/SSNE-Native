@@ -8,6 +8,7 @@
 // resolved to the GPU copy (and a CPU overwrite of the memory invalidates it).
 #include <algorithm>
 #include <atomic>
+#include <cstdlib>
 #include <cstring>
 #include <chrono>
 #include <condition_variable>
@@ -24,7 +25,6 @@
 #include "ssne/ppc_context.h"
 
 namespace ssne::gx {
-
 namespace {
 
 bool g_enabled = false;
@@ -53,6 +53,12 @@ constexpr uint32_t kMarker0 = 0x5353454E, kMarker1 = 0x45464221;  // "SSNEEFB!"
 // recording a frame doesn't allocate (and page-fault in) a few MB of fresh memory 60 times a second.
 std::mutex g_pool_mutex;
 std::vector<std::unique_ptr<GpuFrame>> g_pool;
+
+// Draw state snapshot, rebuilt only when g_cfg_dirty says its inputs changed (most draws repeat the previous
+// draw's state, and building + comparing the ~1.4 KB snapshot for each of ~2,000 draws per frame was a large share
+// of the game thread). g_state_index: entry of the current frame's `states` equal to g_state (none: ~0u).
+GpuState g_state;
+uint32_t g_state_index = ~0u;
 
 GpuFrame& cur() {
     if (!g_cur) {
@@ -99,6 +105,7 @@ void submit_frame() {
     g_cur->seq = ++g_frame_seq;
     g_cur->wide = widescreen_frame_factor();
     gpu_capture_frame(*g_cur);
+    g_state_index = ~0u;
     std::unique_lock<std::mutex> lk(g_q_mutex);
     // Pace the game to the renderer (2 frames in flight). If nothing consumes frames (no renderer running),
     // don't stall the game: drop the oldest.
@@ -117,12 +124,29 @@ bool gpu_enabled() { return g_enabled; }
 void gpu_record_draw(uint8_t prim, const std::vector<Vtx>& v) {
     if (prim == PRIM_LINES || prim == PRIM_LINESTRIP || prim == PRIM_POINTS) { counters.lines_skipped++; return; }
     GpuFrame& f = cur();
-    GpuState st;
-    memset(&st, 0, sizeof(st));
-    DrawCfg cfg = build_cfg();
-    memcpy(&st.cfg, &cfg, sizeof(cfg));
-    for (int i = 0; i < 6; i++) st.vp[i] = xfr_f(0x1A + i);
-    st.cull = (g.bp[0x00] >> 14) & 3;
+    GpuState& st = g_state;
+    if (g_cfg_dirty) {
+        // build_cfg clears st.cfg; vp and cull follow it, so only the tail padding needs clearing here.
+        build_cfg(st.cfg);
+        memset(reinterpret_cast<uint8_t*>(&st) + sizeof(st.cfg), 0, sizeof(st) - sizeof(st.cfg));
+        for (int i = 0; i < 6; i++) st.vp[i] = xfr_f(0x1A + i);
+        st.cull = (g.bp[0x00] >> 14) & 3;
+        g_cfg_dirty = false;
+        g_state_index = ~0u;
+    }
+    static const bool check = getenv("SSNE_CHECK_STATE") != nullptr;
+    if (check) {  // debugging: compare the reused snapshot with a fresh one
+        static GpuState fresh;
+        static uint64_t checked = 0, bad = 0;
+        memset(&fresh, 0, sizeof(fresh));
+        build_cfg(fresh.cfg);
+        for (int i = 0; i < 6; i++) fresh.vp[i] = xfr_f(0x1A + i);
+        fresh.cull = (g.bp[0x00] >> 14) & 3;
+        if (memcmp(&fresh, &st, sizeof(st)) && bad++ < 10) fprintf(stderr, "[gpu] stale draw state (draw %llu)\n", (unsigned long long)checked);
+        if ((++checked & 0x3FFFF) == 0)
+            fprintf(stderr, "[gpu] draw state check: %llu draws, %llu stale\n", (unsigned long long)checked, (unsigned long long)bad);
+    }
+    const DrawCfg& cfg = st.cfg;
     int ntex = std::clamp(cfg.ntex, 0, 8);
     // Triangulate (same winding rules as the software rasterizer).
     size_t n = v.size();
@@ -157,15 +181,19 @@ void gpu_record_draw(uint8_t prim, const std::vector<Vtx>& v) {
     bool merge = false;
     if (!f.cmds.empty() && f.cmds.back().type == GpuCmd::DRAW) {
         const GpuCmd& last = f.cmds.back();
-        merge = last.ntex == uint32_t(ntex) && last.zsnap == zsnap && memcmp(&f.states[last.state], &st, sizeof(st)) == 0 &&
+        if (g_state_index == ~0u && memcmp(&f.states[last.state], &st, sizeof(st)) == 0) g_state_index = last.state;
+        merge = last.ntex == uint32_t(ntex) && last.zsnap == zsnap && last.state == g_state_index &&
                 last.vcount + n < (1u << 30);
     }
     if (!merge) {
-        for (int m = 0; m < 8; m++) keep(f, cfg.tex[m]);
-        f.states.push_back(st);
+        if (g_state_index == ~0u) {
+            for (int m = 0; m < 8; m++) keep(f, cfg.tex[m]);
+            f.states.push_back(st);
+            g_state_index = uint32_t(f.states.size() - 1);
+        }
         GpuCmd c{};
         c.type = GpuCmd::DRAW;
-        c.state = uint32_t(f.states.size() - 1);
+        c.state = g_state_index;
         c.ntex = uint32_t(ntex);
         c.stride = 16 + 8 + 12 * uint32_t(ntex);
         c.zsnap = zsnap;
@@ -189,8 +217,11 @@ void gpu_record_draw(uint8_t prim, const std::vector<Vtx>& v) {
         if (ntex) memcpy(p + 24, s.tex, size_t(ntex) * 12);
     }
     c.vcount += uint32_t(n);
+    size_t first = f.idx.size();
+    f.idx.resize(first + size_t(tris) * 3);  // tris is the number of tri() calls below
+    uint32_t* ip = f.idx.data() + first;
     auto tri = [&](size_t a, size_t b, size_t cc) {
-        f.idx.push_back(base + uint32_t(a)); f.idx.push_back(base + uint32_t(b)); f.idx.push_back(base + uint32_t(cc));
+        ip[0] = base + uint32_t(a); ip[1] = base + uint32_t(b); ip[2] = base + uint32_t(cc); ip += 3;
     };
     switch (prim) {
     case PRIM_QUADS: case PRIM_QUADS2:

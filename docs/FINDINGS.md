@@ -341,6 +341,15 @@ the replay tool; where the time goes decides what helps on weaker PCs.
   effect is modest: game thread 8.5 -> 8.1 ms/frame. `-march=native` (with `-ffp-contract=off`, required: the
   translator emits fmadd as `a * c + b`, and contraction would change the game's float results) measured no gain.
   What remains is spread thin (vertex array reads, the game's code, per-draw TEV snapshots in the GPU recorder).
+* **Game thread, second pass** (same machine; SIGPROF sampling of uncapped 1x gameplay, where the game thread is the
+  limit): the GPU recorder built, cleared, copied and compared the ~1.4 KB draw snapshot for every one of ~2,000 draws
+  per frame, but only ~7% of draws follow a change to its inputs. The snapshot is now kept and rebuilt only when a BP
+  or XF register changes value, the TEV color registers are restored, or bound textures are invalidated
+  (`g_cfg_dirty`); `SSNE_CHECK_STATE=1` compares it with a fresh snapshot on every draw (0 stale over ~11 M draws of
+  boot, menus, intro, gameplay and the jeep). Also: the lighting helper took its component range as runtime
+  arguments, and the compiler turned its 1-3 float loops into `memcpy` calls (~5% of the thread); decoded vertices
+  are no longer zeroed before being overwritten; indices are written in place. Libc time on the game thread fell
+  from ~10% to ~3%; game thread ~9-20% less CPU per frame (measured on a busy machine).
 * **Software renderer**: ~180 ns per written pixel, split between the rasterizer/TEV loop and bilinear sampling
   (memory bound: branch-free sampling and wrap fast paths measured no gain). It stays the fallback; the top bar now
   says when it is running and why (the log records which OpenGL version the driver offered).

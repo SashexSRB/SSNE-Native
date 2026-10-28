@@ -48,8 +48,10 @@ void raise_pe(bool finish) {
 void load_bp(uint32_t v) {
     uint32_t reg = v >> 24, val = v & 0xFFFFFF;
     if (reg == 0xFE) { g.bp_mask = val; return; }
-    g.bp[reg] = (g.bp[reg] & ~g.bp_mask) | (val & g.bp_mask);
+    uint32_t old = g.bp[reg];
+    g.bp[reg] = (old & ~g.bp_mask) | (val & g.bp_mask);
     g.bp_mask = 0xFFFFFF;
+    if (g.bp[reg] != old) g_cfg_dirty = true;  // (writes with side effects on textures invalidate them, which also sets it)
     switch (reg) {
     case 0x45: raise_pe(true); break;                                       // PE_DONE
     case 0x47: g_pe[0x0E >> 1] = uint16_t(val); s_tokens++; s_last_token = val & 0xFFFF; break;
@@ -68,7 +70,7 @@ void load_xf(const uint8_t* p) {
     for (uint32_t k = 0; k < count; k++, addr++) {
         uint32_t v = rd32(p + 4 + 4 * k);
         if (addr < 0x1000) g.xf_mem[addr] = v;
-        else if (addr < 0x1100) g.xf_reg[addr - 0x1000] = v;
+        else if (addr < 0x1100 && g.xf_reg[addr - 0x1000] != v) { g.xf_reg[addr - 0x1000] = v; g_cfg_dirty = true; }
     }
 }
 
@@ -213,6 +215,7 @@ bool gx_state_load(StateReader& r) {
     if (!r.ok) return false;
     tev_regs_access(regs, konst, true);
     texture_cache_clear();
+    g_cfg_dirty = true;
     return true;
 }
 

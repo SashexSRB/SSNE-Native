@@ -63,6 +63,11 @@ inline bool compare(uint32_t func, int a, int b) {
 
 DrawCfg build_cfg() {
     DrawCfg c;
+    build_cfg(c);
+    return c;
+}
+
+void build_cfg(DrawCfg& c) {
     memset(&c, 0, sizeof(c));  // padding too: GPU batches compare configs with memcmp
     uint32_t genmode = g.bp[0x00];
     c.stages = int((genmode >> 10) & 0xF) + 1;
@@ -208,7 +213,6 @@ DrawCfg build_cfg() {
     }
     for (int i = 0; i < c.nind; i++)
         if (c.ind_coord[i] < c.ntex) c.need_tex |= uint8_t(1u << c.ind_coord[i]);
-    return c;
 }
 
 namespace {
@@ -909,8 +913,10 @@ void draw(uint8_t prim, const std::vector<Vtx>& v_in) {
         counters.lines_skipped++;  // counted as point/line primitives now
         uint32_t gm = g.bp[0x00];
         g.bp[0x00] = gm & ~(3u << 14);  // no culling for points/lines
+        g_cfg_dirty = true;
         draw_prims(PRIM_QUADS, quads);
         g.bp[0x00] = gm;
+        g_cfg_dirty = true;
         return;
     }
     draw_prims(prim, v_in);
@@ -1122,7 +1128,7 @@ void efb_copy(uint32_t cmd) {
 
 // Save states: TEV color / konst registers (set by BP writes, kept here).
 void tev_regs_access(int16_t regs[4][4], int16_t konst[4][4], bool write) {
-    if (write) { memcpy(g_tev_reg, regs, sizeof(g_tev_reg)); memcpy(g_konst, konst, sizeof(g_konst)); }
+    if (write) { memcpy(g_tev_reg, regs, sizeof(g_tev_reg)); memcpy(g_konst, konst, sizeof(g_konst)); g_cfg_dirty = true; }
     else { memcpy(regs, g_tev_reg, sizeof(g_tev_reg)); memcpy(konst, g_konst, sizeof(g_konst)); }
 }
 

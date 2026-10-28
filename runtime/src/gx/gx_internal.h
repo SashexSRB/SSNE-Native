@@ -21,6 +21,10 @@ struct State {
 
 extern State g;
 
+// Set whenever something a draw's TEV / pixel engine snapshot reads may have changed (BP and XF registers, TEV
+// color registers, bound textures). The GPU recorder rebuilds its snapshot only then.
+inline bool g_cfg_dirty = true;
+
 inline float xf_f(uint32_t addr) { float f; memcpy(&f, &g.xf_mem[addr & 0xFFF], 4); return f; }
 inline float xfr_f(uint32_t reg) { float f; memcpy(&f, &g.xf_reg[reg & 0xFF], 4); return f; }
 
@@ -30,6 +34,9 @@ struct Vtx {
     float sx, sy, sz;        // screen (EFB) space after divide + viewport; sz = depth 0..1
     float color[2][4];       // rasterized color channels 0..255
     float tex[8][3];         // texture coordinates (s, t, q)
+    // Left uninitialized: the decoders write every field the renderers read, and zeroing ~150 bytes per vertex on
+    // each vector resize showed up in profiles.
+    Vtx() {}
 };
 
 // Primitive types (opcode & 0xF8)
@@ -124,6 +131,7 @@ struct DrawCfg {
     uint8_t need_tex;   // bitmask of texcoord slots read by TEV stages
 };
 DrawCfg build_cfg();
+void build_cfg(DrawCfg& c);  // the same, in place (c is cleared first, padding included)
 
 // ---- GPU renderer (gx_gpu_record.cpp): when enabled, draws and EFB copies are recorded for the GPU
 bool gpu_enabled();
