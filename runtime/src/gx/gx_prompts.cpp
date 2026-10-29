@@ -27,13 +27,17 @@ constexpr int kIconCount = int(sizeof(kPromptIcons) / sizeof(kPromptIcons[0]));
 
 // Glyph rectangles in the two font atlases, in GameCube button order A, B, X, Y, Z, L, R.
 struct Rect { int x, y, w, h; };
-struct Layout { int tw, th; Rect slot[7]; };  // texture size; slots with w = 0 are absent
+// Icons are painted one height per atlas, whichever GameCube button they replace, so they look alike (fitted to each
+// button's rectangle instead, a keycap on A's 30 x 30 was half again as big as one on X's 22 x 32 or Y's 32 x 22):
+// 20 in the menus (the lowest rectangle there), 26 in the large font of the gameplay hints. Where a rectangle is too
+// narrow the icon is narrowed by up to 15%; where it is too low the icon is as high as it allows.
+struct Layout { int tw, th; Rect slot[7]; int icon_h; };  // texture size; slots with w = 0 are absent; icon height
 const Layout kLayouts[3] = {
     {512, 256, {{480, 2, 30, 30}, {2, 2, 30, 30}, {87, 2, 22, 32}, {203, 7, 32, 22}, {35, 4, 46, 17}, {160, 4, 40, 25},
-      {117, 4, 40, 25}}},  // menu / HUD font
+      {117, 4, 40, 25}}, 20},  // menu / HUD font
     {512, 256, {{242, 121, 28, 29}, {88, 122, 29, 29}, {32, 136, 22, 32}, {134, 186, 30, 21}, {1, 175, 44, 15},
-      {210, 188, 38, 23}, {67, 190, 38, 23}}},  // large font
-    {256, 128, {{48, 18, 28, 28}, {80, 17, 28, 28}, {6, 46, 20, 31}, {69, 51, 30, 20}, {1, 20, 44, 17}, {}, {}}},
+      {210, 188, 38, 23}, {67, 190, 38, 23}}, 26},  // large font
+    {256, 128, {{48, 18, 28, 28}, {80, 17, 28, 28}, {6, 46, 20, 31}, {69, 51, 30, 20}, {1, 20, 44, 17}, {}, {}}, 20},
     // front-end sprite sheet (menu button bar)
 };
 
@@ -66,14 +70,8 @@ int find_layout(const Texture& t) {
     return -1;
 }
 
-// Icons are painted 24 pixels high whichever GameCube button they replace, so they look alike: fitted to each
-// button's rectangle instead, a keycap in A's 30 x 30 was half again as big as one in X's 22 x 32 or Y's 32 x 22.
-// Where the rectangle is too narrow the icon is narrowed by up to 15% (X: 20-22 wide); where it is too low (Y: 20-22,
-// Z: 15-17) the icon is as high as the rectangle allows.
-constexpr int kIconHeight = 24;
-
-// Paints icon `id` into rectangle r of a 512-wide RGBA atlas (box-filtered resample).
-void paint(std::vector<uint32_t>& px, int stride, const Rect& r, int id) {
+// Paints icon `id` into rectangle r of a 512-wide RGBA atlas, `height` high (see Layout; box-filtered resample).
+void paint(std::vector<uint32_t>& px, int stride, const Rect& r, int id, int height) {
     // clear the GameCube glyph (and the faint antialiasing pixels around it)
     for (int y = r.y - 1; y <= r.y + r.h; y++)
         for (int x = r.x - 1; x <= r.x + r.w; x++) {
@@ -84,7 +82,7 @@ void paint(std::vector<uint32_t>& px, int stride, const Rect& r, int id) {
         }
     if (id <= 0 || id >= kIconCount) return;
     const PromptIcon& ic = kPromptIcons[id];
-    double s = std::min(double(r.h), double(kIconHeight)) / ic.h, sw = s;  // vertical / horizontal scale
+    double s = std::min(r.h, height) / double(ic.h), sw = s;  // vertical / horizontal scale
     if (ic.w * sw > r.w) {
         sw = double(r.w) / ic.w;
         if (sw < s * 0.85) s = sw / 0.85;
@@ -140,7 +138,8 @@ uint32_t prompt_apply(Texture& t, uint32_t sample) {
         gen = g_generation.load();
     }
     for (int s = 0; s < 7; s++)
-        if (map[s] && kLayouts[layout].slot[s].w) paint(t.rgba, t.w, kLayouts[layout].slot[s], map[s]);
+        if (map[s] && kLayouts[layout].slot[s].w)
+            paint(t.rgba, t.w, kLayouts[layout].slot[s], map[s], kLayouts[layout].icon_h);
     return (gen << 1 | uint32_t(m)) + 1;
 }
 
