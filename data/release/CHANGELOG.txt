@@ -4,6 +4,16 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.2
+  Fixes for frame rate limits above 60 (github.com/SashexSRB/SSNE-Native/issues/6):
+  - Jump presses were often ignored: the game moves Sam in steps of 1/120 s, and a press in a frame without such a
+    step was lost (1 in 10 at 144 fps, half of them at ~280 fps). Every press jumps now.
+  - Jumping out of water (e.g. the pool in the Temple of Neptune) didn't work: Sam fell back into the water before
+    he could rise. It works as at 60 fps now.
+  - Swimming sounds played several times as often as they should, loud and distorted. They're right now.
+  - Controller, keyboard and mouse button icons in menus and hints are now all the same size (20 pixels in the
+    menus, larger in the gameplay hints) instead of depending on the GameCube button they replace.
+
 SSNE-NATIVE 1.2.1
   - Fix (HUD at the screen edges): an ammo count of 1000 or more (e.g. picking up bullets at 999) moved the ammo
     number inwards, away from the weapon's ammo icon, until the weapon was selected again.
