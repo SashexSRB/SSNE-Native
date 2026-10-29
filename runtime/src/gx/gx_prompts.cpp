@@ -66,7 +66,13 @@ int find_layout(const Texture& t) {
     return -1;
 }
 
-// Paints icon `id` into rectangle r of a 512-wide RGBA atlas, keeping its aspect ratio (box-filtered resample).
+// Icons are painted 24 pixels high whichever GameCube button they replace, so they look alike: fitted to each
+// button's rectangle instead, a keycap in A's 30 x 30 was half again as big as one in X's 22 x 32 or Y's 32 x 22.
+// Where the rectangle is too narrow the icon is narrowed by up to 15% (X: 20-22 wide); where it is too low (Y: 20-22,
+// Z: 15-17) the icon is as high as the rectangle allows.
+constexpr int kIconHeight = 24;
+
+// Paints icon `id` into rectangle r of a 512-wide RGBA atlas (box-filtered resample).
 void paint(std::vector<uint32_t>& px, int stride, const Rect& r, int id) {
     // clear the GameCube glyph (and the faint antialiasing pixels around it)
     for (int y = r.y - 1; y <= r.y + r.h; y++)
@@ -78,13 +84,17 @@ void paint(std::vector<uint32_t>& px, int stride, const Rect& r, int id) {
         }
     if (id <= 0 || id >= kIconCount) return;
     const PromptIcon& ic = kPromptIcons[id];
-    double s = std::min(double(r.w) / ic.w, double(r.h) / ic.h);
-    int dw = std::max(1, int(std::lround(ic.w * s))), dh = std::max(1, int(std::lround(ic.h * s)));
+    double s = std::min(double(r.h), double(kIconHeight)) / ic.h, sw = s;  // vertical / horizontal scale
+    if (ic.w * sw > r.w) {
+        sw = double(r.w) / ic.w;
+        if (sw < s * 0.85) s = sw / 0.85;
+    }
+    int dw = std::max(1, int(std::lround(ic.w * sw))), dh = std::max(1, int(std::lround(ic.h * s)));
     int ox = r.x + (r.w - dw) / 2, oy = r.y + (r.h - dh) / 2;
     for (int y = 0; y < dh; y++)
         for (int x = 0; x < dw; x++) {
             // source area covered by this destination pixel
-            double sx0 = x / s, sx1 = (x + 1) / s, sy0 = y / s, sy1 = (y + 1) / s;
+            double sx0 = x / sw, sx1 = (x + 1) / sw, sy0 = y / s, sy1 = (y + 1) / s;
             double acc[4] = {}, wsum = 0;
             for (int sy = int(sy0); sy < std::min(ic.h, int(std::ceil(sy1))); sy++)
                 for (int sx = int(sx0); sx < std::min(ic.w, int(std::ceil(sx1))); sx++) {

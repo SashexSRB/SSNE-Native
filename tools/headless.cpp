@@ -112,6 +112,12 @@ int main(int argc, char** argv) {
             const uint8_t ctl[7] = {ssne::PS_SQUARE, ssne::PS_CIRCLE, ssne::PS_R1, ssne::PS_L1, ssne::PS_TRIANGLE, ssne::PS_CROSS, ssne::PS_R2};
             ssne::set_button_prompts(menu, ctl);
         }
+        else if (a == "--kb-prompts") {  // keyboard / mouse prompts of the port's default bindings
+            auto key = [](const char* n) { return ssne::prompt_key_glyph(n); };
+            const uint8_t menu[7] = {key("Space"), key("Escape"), key("Q"), key("F"), key("Tab"), key("Space"), key("Left Ctrl")};
+            const uint8_t ctl[7] = {key("E"), key("R"), key("Q"), ssne::MS_WHEEL_UP, key("Tab"), key("Space"), ssne::MS_LEFT};
+            ssne::set_button_prompts(menu, ctl);
+        }
         else if (a == "--xbox-prompts") {  // Xbox layout button prompts (jump on A, use on X)
             const uint8_t menu[7] = {ssne::XB_A, ssne::XB_B, ssne::XB_RB, ssne::XB_LB, ssne::XB_Y, ssne::XB_A, ssne::XB_RT};
             const uint8_t ctl[7] = {ssne::XB_X, ssne::XB_B, ssne::XB_RB, ssne::XB_LB, ssne::XB_Y, ssne::XB_A, ssne::XB_RT};
