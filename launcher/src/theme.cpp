@@ -127,7 +127,10 @@ void rotate_verts(ImDrawList* dl, int v0, ImVec2 c, float ang) {
 } // namespace
 
 void load_fonts(float scale) {
+    static const bool boink = find_boink();
     ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Clear();
+    io.FontGlobalScale = 1 / scale;  // sizes stay in window points, the glyphs have the pixels they're shown with
     ImFontConfig cfg;
     cfg.FontDataOwnedByAtlas = false;  // static arrays
     cfg.OversampleH = 2;
@@ -137,7 +140,7 @@ void load_fonts(float scale) {
     fonts.body = add(font_Outfit_Regular, sizeof(font_Outfit_Regular), 18);  // first = default font
     fonts.bold = add(font_Outfit_Bold, sizeof(font_Outfit_Bold), 18);
     fonts.small = add(font_Outfit_Regular, sizeof(font_Outfit_Regular), 15);
-    if (find_boink()) fonts.display = add(g_boink.data(), g_boink.size(), 80);
+    if (boink) fonts.display = add(g_boink.data(), g_boink.size(), 80);
     else fonts.display = add(font_EricaOne_Regular, sizeof(font_EricaOne_Regular), 80);
 }
 

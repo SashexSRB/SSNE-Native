@@ -258,6 +258,26 @@ void draw_game_view() {
     dl->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 }
 
+// Pixels per window point (display scaling on Windows, Wayland): the menu font is rasterized at the size it's shown
+// so its text stays sharp, and rebuilt when the scale changes (the window moves to a screen with another scale).
+float g_ui_scale = 0;
+void update_ui_scale(SDL_Window* win) {
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(win, &ww, &wh);
+    SDL_GL_GetDrawableSize(win, &dw, &dh);
+    float s = ww > 0 ? std::clamp(std::round(float(dw) / ww * 4) / 4, 1.f, 3.f) : 1.f;
+    if (s == g_ui_scale) return;
+    bool rebuild = g_ui_scale != 0;
+    g_ui_scale = s;
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Clear();
+    ImFontConfig cfg;
+    cfg.SizePixels = std::round(13 * s);
+    io.Fonts->AddFontDefault(&cfg);
+    io.FontGlobalScale = 13 / cfg.SizePixels;
+    if (rebuild) { ImGui_ImplOpenGL3_DestroyFontsTexture(); ImGui_ImplOpenGL3_CreateFontsTexture(); }
+}
+
 // ---------------------------------------------------------------- input
 // Keyboard/mouse and gamepad bindings come from g_set (defaults in settings.cpp; rebind in the F12 menu).
 SDL_GameController* g_pad = nullptr;
@@ -1048,6 +1068,11 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+#ifdef _WIN32
+    // Windows display scaling: SDL works in scaled points and the window gets all its pixels. Unaware of it, the game
+    // was rendered into a window of 1/scale the size and stretched (1280x720 on a 4K screen at 300%, issue #7).
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
+#endif
     // Rumble on PlayStation controllers goes through SDL's HIDAPI drivers, which keep it off unless asked.
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
@@ -1127,6 +1152,7 @@ int main(int argc, char** argv) {
     ImGui::GetIO().IniFilename = nullptr;
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // the settings menu works with a controller
     ImGui::StyleColorsDark();
+    update_ui_scale(win);
     ImGui_ImplSDL2_InitForOpenGL(win, gl);
     ImGui_ImplOpenGL3_Init(core ? "#version 330 core" : "#version 130");
 
@@ -1297,6 +1323,7 @@ int main(int argc, char** argv) {
             if (!new_frame && swap_ms < 2.0) { SDL_Delay(1); new_frame = update_game_texture(); }
         }
         g_loop_phase = "UI";
+        update_ui_scale(win);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -1320,9 +1347,9 @@ int main(int argc, char** argv) {
             mi.settings_path = g_settings_path;
             for (int d = 0; d < SDL_GetNumVideoDisplays(); d++) {
                 const char* n = SDL_GetDisplayName(d);
-                SDL_Rect b{};
-                SDL_GetDisplayBounds(d, &b);
-                mi.displays.push_back(std::string(n ? n : "Display") + "  (" + std::to_string(b.w) + "x" + std::to_string(b.h) + ")");
+                SDL_DisplayMode m{};  // in pixels (the bounds are in scaled points with display scaling)
+                SDL_GetDesktopDisplayMode(d, &m);
+                mi.displays.push_back(std::string(n ? n : "Display") + "  (" + std::to_string(m.w) + "x" + std::to_string(m.h) + ")");
             }
             fill_state_slots(mi);
             bool was_open = port::menu_open();

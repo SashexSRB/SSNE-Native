@@ -4,6 +4,13 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.3
+  - Windows display scaling (github.com/SashexSRB/SSNE-Native/issues/7): with scaling above 100% (e.g. a 4K screen
+    at 200% or 300%), Windows gave the game and the launcher a window of 1/scale the screen's pixels and stretched
+    it, so even the highest internal resolution looked like 1080p or 720p, jagged and blurry. Both now use every
+    pixel of the screen; the settings menu, the info bar and the launcher keep their size, with sharp text.
+  - The settings menu lists the screens with their real resolution (it showed the scaled size).
+
 SSNE-NATIVE 1.2.2
   Fixes for frame rate limits above 60 (github.com/SashexSRB/SSNE-Native/issues/6):
   - Jump presses were often ignored: the game moves Sam in steps of 1/120 s, and a press in a frame without such a

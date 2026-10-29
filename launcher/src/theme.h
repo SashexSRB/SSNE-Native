@@ -26,7 +26,9 @@ constexpr ImU32 kShadow = IM_COL32(0, 0, 20, 170);
 const ImVec4 kText(0.92f, 0.93f, 1.00f, 1), kDim(0.62f, 0.66f, 0.86f, 1), kGood(0.55f, 0.95f, 0.45f, 1),
     kWarn(1.00f, 0.80f, 0.25f, 1), kBad(1.00f, 0.42f, 0.32f, 1), kGold(1.00f, 0.80f, 0.20f, 1);
 
-void load_fonts(float scale);  // call once after ImGui::CreateContext
+// Fonts rasterized at `scale` pixels per window point (display scaling). Call after ImGui::CreateContext and again
+// when the scale changes (then recreate the font texture).
+void load_fonts(float scale);
 void apply_style();
 
 // Full-window animated backdrop (drawn into the background draw list).

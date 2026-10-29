@@ -706,3 +706,18 @@ glyphs that followed the group so far). A group moves to a side only in
   (+0x24 height, +0x6E8/+0x6F0 ground flags, +0x344 controller), the action records and AX voice starts did the rest.
 * Headless: loading a save state crashes with the software renderer (fine with --gpu); not investigated yet.
 
+
+## Windows display scaling (issue #7)
+
+* Symptom: on a 4K screen with Windows scaling above 100%, the image stayed jagged at any internal resolution (the
+  reporter's screenshot: 1280x720 window, 8x = 5120x3584 internal, so 300%).
+* Cause: SDL2 doesn't declare the process DPI-aware on Windows (SDL_WINDOW_ALLOW_HIGHDPI does nothing there), so
+  Windows virtualizes it: the window and drawable are 1/scale of the screen and Windows stretches the result.
+* Fix: `SDL_HINT_WINDOWS_DPI_SCALING = 1` in the game and the launcher, before SDL_Init. SDL then works in scaled
+  points (window sizes, positions, saved window_w/h, ImGui coordinates: unchanged from before) and the GL drawable
+  has the real pixels (game image, native resolution, auto scale). Relative mouse motion is raw input: unaffected.
+* Dear ImGui: DisplayFramebufferScale = drawable / window. The fonts are rasterized at that scale (rounded to 1/4,
+  1 - 3) with FontGlobalScale = 1 / scale, rebuilt when it changes (window moved to another screen). Also sharpens
+  the menus on Wayland with scaling.
+* SDL_GetDisplayBounds is in points then; display modes (SDL_GetDesktopDisplayMode) are pixels, used for the
+  display list in the settings menu.

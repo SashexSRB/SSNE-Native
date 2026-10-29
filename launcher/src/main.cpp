@@ -6,6 +6,8 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl2.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -28,9 +30,29 @@ static void save_screenshot(SDL_Window* win, const char* path) {
     }
 }
 
+// Pixels per window point (display scaling on Windows, Wayland): the fonts are rebuilt when it changes, e.g. when the
+// window moves to a screen with another scale.
+static float g_ui_scale = 0;
+static void update_ui_scale(SDL_Window* win) {
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(win, &ww, &wh);
+    SDL_GL_GetDrawableSize(win, &dw, &dh);
+    float s = ww > 0 ? std::clamp(std::round(float(dw) / ww * 4) / 4, 1.0f, 3.0f) : 1.0f;
+    if (s == g_ui_scale) return;
+    bool rebuild = g_ui_scale != 0;
+    g_ui_scale = s;
+    theme::load_fonts(s);
+    if (rebuild) { ImGui_ImplOpenGL3_DestroyFontsTexture(); ImGui_ImplOpenGL3_CreateFontsTexture(); }
+}
+
 int main(int argc, char** argv) {
     bool updated = false;  // started by the self-update
     for (int i = 1; i < argc; i++) updated |= strcmp(argv[i], "--updated") == 0;
+#ifdef _WIN32
+    // Windows display scaling: SDL works in scaled points and the window gets all its pixels (unaware of it, the
+    // window is rendered at 1/scale of its size and stretched, blurry).
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
+#endif
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return 1;
@@ -57,7 +79,7 @@ int main(int argc, char** argv) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::GetIO().IniFilename = nullptr;
-    theme::load_fonts(1.0f);
+    update_ui_scale(win);
     theme::apply_style();
     const char* shot = getenv("SSNE_SCREENSHOT");
     int frames = 0;
@@ -77,6 +99,7 @@ int main(int argc, char** argv) {
                     SDL_free(e.drop.file);
                 }
             }
+            update_ui_scale(win);
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL2_NewFrame();
             ImGui::NewFrame();
