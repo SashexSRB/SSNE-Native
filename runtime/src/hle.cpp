@@ -689,6 +689,55 @@ bool code_matches(uint32_t addr, const uint32_t sig[6]) {
     return true;
 }
 
+// ---- swim strokes / steps at high frame rates. 800B78BC(counter, f1 = distance moved this frame) adds the distance
+// up and plays the next stroke sound (alternating sides) per stroke length; in a frame that moved less than a
+// threshold (0.02, a constant at 80212748) it resets the counter to a full stroke, so the next frame that moves plays
+// a stroke at once. Above 120 fps many frames don't move Sam at all (his position changes in the 120 Hz physics
+// steps), and the rest move little, so the counter kept being reset and the strokes came several times as often (the
+// loud, doubled water sounds: 34 strokes in 10 s instead of 5). So the threshold is scaled to the frame time (0.02
+// per 1/60 s, the same speed), and a frame under it within 50 ms of the last movement doesn't touch the counter (no
+// reset; its movement is counted with the next frame's); a real stop still resets it.
+const uint32_t kStepCounterSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xDBE10010u, 0x93E1000Cu, 0x9001001Cu, 0x7C7F1B78u};
+constexpr uint32_t kStepCounter = 0x800B78BC;
+PPCFunc g_orig_step_counter = nullptr;
+uint32_t g_step_threshold = 0;  // address of the threshold constant (from the function's lis / lfs)
+uint32_t g_step_counter_obj = 0;  // the counter that last moved, and when
+int64_t g_step_moved_ms = 0;
+
+void hle_step_counter(PPCContext& ctx) {
+    float dt = u2f(mem_read32(ctx.r[13] + 0xFFFF85F8u));
+    uint32_t saved = mem_read32(g_step_threshold);
+    bool scale = dt > 0 && dt < 1.0f / 60;
+    if (scale) {
+        float threshold = u2f(saved) * dt * 60;
+        if (ctx.ps0[1] > threshold) {
+            g_step_counter_obj = ctx.r[3];
+            g_step_moved_ms = now_ms();
+        } else if (ctx.r[3] == g_step_counter_obj && now_ms() - g_step_moved_ms < 50) {
+            return;
+        }
+        mem_write32(g_step_threshold, f2u(threshold));
+    }
+    PPCFunc* slot = ssne_hook_slot(kStepCounter);
+    *slot = nullptr;
+    g_orig_step_counter(ctx);
+    *slot = &hle_step_counter;
+    if (scale) mem_write32(g_step_threshold, saved);
+}
+
+void install_step_counter_fix() {
+    const SSNEFuncEntry* f = ssne_find_func(kStepCounter);
+    uint32_t lis = mem_read32(kStepCounter + 0x18), lfs = mem_read32(kStepCounter + 0x20);
+    if (!f || !code_matches(kStepCounter, kStepCounterSig) || (lis & 0xFFFF0000u) != 0x3D200000u ||
+        (lfs & 0xFFFF0000u) != 0xC1A90000u) {
+        fprintf(stdout, "[ssne] swim stroke fix: step counter not found (different game build?)\n");
+        return;
+    }
+    g_step_threshold = ((lis & 0xFFFFu) << 16) + uint32_t(int32_t(int16_t(lfs & 0xFFFFu)));
+    g_orig_step_counter = f->func;
+    ssne_install_hook(kStepCounter, hle_step_counter);
+}
+
 // ---- save states: the request is carried out at the start of the game's frame flip (savestate.cpp).
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
@@ -787,6 +836,7 @@ void install_sdk_hooks() {
         install_vehicle_detector();
         install_mouse_aim();
         install_pad_fix();
+        install_step_counter_fix();
         install_savestates();
     }
     install_call_tracer();

@@ -30,8 +30,16 @@ const SSNEFuncEntry* ssne_find_func(uint32_t addr);
         if (ssne::g_irq_pending.load(std::memory_order_relaxed)) ssne::safepoint(ctx);  \
     } while (0)
 
+#ifdef SSNE_COUNT_CALLS  // diagnostics build: calls per function (headless --count-calls)
+extern uint32_t g_ssne_call_counts[];
+#define SSNE_COUNT_CALL(addr) (g_ssne_call_counts[((addr) - 0x80000000u) >> 2 & 0x7FFFF]++)
+#else
+#define SSNE_COUNT_CALL(addr) ((void)0)
+#endif
+
 #define SSNE_HOOK(addr)                                              \
     do {                                                             \
+        SSNE_COUNT_CALL(addr);                                       \
         static PPCFunc* hook_slot_ = ssne_hook_slot(addr);           \
         if (*hook_slot_) { (*hook_slot_)(ctx); return; }             \
         SSNE_POLL();                                                 \

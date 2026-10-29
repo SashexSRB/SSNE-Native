@@ -66,6 +66,10 @@ static bool egl_init(std::string& err) {
 }
 #endif
 
+#ifdef SSNE_COUNT_CALLS
+uint32_t g_ssne_call_counts[1u << 19];
+#endif
+
 int main(int argc, char** argv) {
     std::string data = "game_data";
     int seconds = 10;
@@ -79,6 +83,8 @@ int main(int argc, char** argv) {
     std::vector<Press> presses;
     double pause_at = -1, pause_len = 0;
     std::vector<double> ram_dumps;
+    double count_from = -1, count_to = -1;
+    std::string count_path;
     struct Aim { double t, yaw, pitch; };
     std::vector<Aim> aims;
     struct StateOp { double t; bool save; std::string path; };
@@ -118,6 +124,13 @@ int main(int argc, char** argv) {
             sscanf(argv[++i], "%lf:%lf:%lf", &t, &y, &p);
             aims.push_back({t, y, p});
         }
+#ifdef SSNE_COUNT_CALLS
+        else if (a == "--count-calls" && i + 1 < argc) {  // --count-calls FROM:TO:file  calls per function in [FROM, TO) s
+            char path[512] = {};
+            sscanf(argv[++i], "%lf:%lf:%511s", &count_from, &count_to, path);
+            count_path = path;
+        }
+#endif
         else if (a == "--dump-ram" && i + 1 < argc) {
             std::string v = argv[++i];
             for (size_t pos = 0; pos < v.size();) {
@@ -275,6 +288,17 @@ int main(int argc, char** argv) {
                     ssne::mouse_aim_add(a.yaw, a.pitch);
                     a.t = -1;
                 }
+#ifdef SSNE_COUNT_CALLS
+            if (count_from >= 0 && el >= count_from) { memset(g_ssne_call_counts, 0, 4u << 19); count_from = -1; }
+            if (count_to >= 0 && el >= count_to) {
+                if (FILE* f = fopen(count_path.c_str(), "w")) {
+                    for (uint32_t k = 0; k < (1u << 19); k++)
+                        if (g_ssne_call_counts[k]) fprintf(f, "%08X %u\n", 0x80000000u + k * 4, g_ssne_call_counts[k]);
+                    fclose(f);
+                }
+                count_to = -1;
+            }
+#endif
             for (double& t : ram_dumps)
                 if (t >= 0 && el >= t) {
                     char fn[64];
