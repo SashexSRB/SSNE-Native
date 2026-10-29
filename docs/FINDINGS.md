@@ -672,3 +672,37 @@ glyphs that followed the group so far). A group moves to a side only in
   version was raised (the game was rebuilt as SSNE-Native-Game and the old SillyReEncounter-Game removed).
 * A version string patched into a copy of the binary isn't a valid test: the compiler builds the short version string
   from immediates, so the comparison kept the old version.
+
+## Jumping, leaving water and swim sounds above 60 fps (issue #6)
+* The player's update (800BEEC8) runs the movement controller (player+0x344: walking 805CBA84-style objects, the swim
+  controller with method table 80211030, ...) in fixed steps of 1/120 s when player+0x238 -> +0x1C is set (always, in
+  play): the frame time goes into an accumulator at player+0x140, the step comes from player+0x23C -> +0x24, and per
+  frame it calls method slot 0x2C, then slot 0x34 once per whole step (the physics), then slot 0x3C. The other mode
+  splits the frame into steps of at most a maximum and always steps. At 60 fps that is two steps per frame; above
+  120 fps most frames have none.
+* Controller input: the processing (8014F83C) fills action records (28 bytes at controller + 12 + 28 * n: value float,
+  pressed this pass +4, held +8, ..., held time +0x14, increased by the frame time). Jump is action 0 (L also sets 1
+  and 30). "Pressed" lasts one pass, i.e. one frame, and the walking physics takes the jump from it in a step: a press
+  in a frame without a step was lost (headless, 10 presses: 10 jumps at 60, 9 at 144, 5 at ~280 fps; every jump that
+  happened was 3.20 high). Fix: the flag is kept until the update ran a step (detected as the accumulator not ending
+  at exactly old + frame time), player control only, at most 50 ms: 15/15 at 60, 144 and uncapped.
+* Leaving water: a jump at the edge switches to the walking controller; its next frame sets the upward speed, the one
+  after moves Sam up, and a per-frame water check switches back to swimming while he is still too deep (between
+  -0.65 and -0.50 in the Temple of Neptune pool). At 60 fps that second frame has two steps and clears it; above
+  120 fps it had none or one and every attempt failed (max height -0.19 against the edge at 1.00). Fix: after a
+  controller switch at frame times under 3/4 of 1/60 s, the next two updates run two steps each (accumulator raised;
+  it goes negative and keeps the average rate). Scripted exits (swim in, turn, swim back, jump) now succeed uncapped
+  like at 60 fps.
+* Swim sounds: the step counter 800B78BC(counter, f1 = distance moved this frame) adds the distance up and plays a
+  stroke (alternating sides) per stroke length (10), but resets to a full stroke in a frame that moved less than 0.02
+  (constant at 80212748, loaded with lis/lfs at +0x18/+0x20), so the next moving frame plays one at once. Above 120
+  fps Sam's position changes only in the physics steps: distances per frame came as 0, 0.034, 0, 0.034, ... and the
+  counter was reset all the time (34 strokes in 10 s uncapped against 5 at 60, all on one side; louder, clipping).
+  Fix: the threshold is scaled to the frame time and a frame under it within 50 ms of the last movement leaves the
+  counter alone: 5 strokes at 60, 144 and ~380 fps, same loudness; footsteps (the same counter) unchanged.
+* Found with a call-count build: `-DSSNE_COUNT_CALLS` makes every translated function count its calls and headless
+  `--count-calls FROM:TO:file` writes them for a time window; comparing 60 fps with uncapped pointed at the sound start
+  (801CA294, 5 vs 34 calls) and the counter's reset path (800B77E8, 5 vs 849). Temporary traces of the player
+  (+0x24 height, +0x6E8/+0x6F0 ground flags, +0x344 controller), the action records and AX voice starts did the rest.
+* Headless: loading a save state crashes with the software renderer (fine with --gpu); not investigated yet.
+
