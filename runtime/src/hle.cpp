@@ -200,6 +200,8 @@ void select_version() {
 // first frame of a menu still is: the game opens it in that frame's update).
 // Without both hooks (another game build), gameplay is detected by the weapon alone.
 std::atomic<bool> g_player_seen{false}, g_player_control{false};
+int64_t g_jump_latched_ms = -1;  // a jump press not yet seen by a physics step (when it was pressed; see latch_jump)
+int g_switch_boost = 0;          // player updates left to run like 60 fps frames after a controller switch
 std::atomic<int> g_control_hooks{0};  // player update and flip hooks installed (2: player control is known)
 void end_player_frame() { g_player_control = g_player_seen.exchange(false); }
 
@@ -460,11 +462,35 @@ void weapon_keys(PPCContext& ctx, uint32_t player) {
 
 void hle_player_update(PPCContext& ctx) {
     uint32_t player = ctx.r[3];
+    bool valid = player >= 0x80000000u && player < 0x81800000u;
+    // A physics step runs in this update (see latch_jump) unless its accumulator ends up at exactly its old value
+    // plus the frame time (fixed-step mode without a whole step; the variable-step mode always steps).
+    float acc = valid ? u2f(mem_read32(player + 0x140)) : 0.f, dt = u2f(mem_read32(ctx.r[13] + 0xFFFF85F8u));
+    uint32_t controller = valid ? mem_read32(player + 0x344) : 0;
+    float step = 0;
+    if (valid) {
+        uint32_t step_src = mem_read32(player + 0x23C);
+        if (step_src >= 0x80000000u && step_src < 0x81800000u) step = u2f(mem_read32(step_src + 0x24));
+        if (!(step > 0 && step < 0.1f)) step = 0;
+    }
+    if (g_switch_boost > 0 && step > 0) {  // the frames after a controller switch step like 60 fps frames (below)
+        g_switch_boost--;
+        if (acc + dt < 2 * step) { acc = 2 * step - dt; mem_write32(player + 0x140, f2u(acc)); }
+    }
     PPCFunc* slot = ssne_hook_slot(g_ver->player_update);
     *slot = nullptr;
     g_orig_player_update(ctx);
     *slot = &hle_player_update;
-    if (player < 0x80000000u || player >= 0x81800000u) return;
+    if (!valid) return;
+    bool stepped = mem_read32(player + 0x140) != f2u(acc + dt);
+    if (stepped) g_jump_latched_ms = -1;
+    // Jumping out of water switches from the swim controller to the walking one: in the next frame it sets Sam's
+    // upward speed, in the one after his physics steps move him up, and after every frame a water check switches
+    // back to swimming while he is still too deep. At 60 fps that second frame runs two steps (1/60 s) and clears the
+    // depth; above 120 fps it ran none or one, the check switched back, and every attempt failed. So after a switch
+    // at frame times shorter than 3/4 of 1/60 s, the next two frames run two steps each, as at 60 fps (brought
+    // forward: the accumulator goes negative and keeps the average rate).
+    if (step > 0 && dt < 0.75f / 60 && mem_read32(player + 0x344) != controller) g_switch_boost = 2;
     g_player_seen = true;
     uint32_t vehicle = mem_read32(player + 0x6C4);
     if (vehicle >= 0x80000000u && vehicle < 0x81800000u) g_vehicle_last_ms = now_ms();
@@ -607,6 +633,27 @@ uint8_t g_pad_sticks[4][4];   // its stick bytes (x, y, sub x, sub y) right afte
 bool g_pad_fix_trace = false;
 int g_pad_passes = 0;         // processing passes since the last PADClamp (trace)
 
+// ---- jump at high frame rates. The controller processing turns the pads into actions, records of 28 bytes at
+// controller + 12 + 28 * n: value (float), pressed this pass (+4), held (+8), ..., held time (+0x14); jump is action
+// 0. The player's update (800BEEC8) runs the movement controller (player+0x344) in fixed steps of 1/120 s
+// (player+0x23C -> +0x24): the frame time goes into an accumulator (player+0x140), and the physics method (slot 0x34)
+// runs once per whole step, i.e. twice per game frame at 60 fps but only every second to fourth frame above 120 fps.
+// The jump is taken there, from the "pressed" flag, which lasts one processing pass, i.e. one game frame: a press in
+// a frame without a physics step was lost (1 in 10 at 144 fps, 5 in 10 at ~280 fps), and jumping out of water, which
+// takes a press at the edge, failed. The flag is kept set until the player update has run a physics step, in frames
+// the player controls Sam only (no physics runs in the menus), and never longer than 50 ms. (Leaving the water also
+// needed the first step after a controller switch to come early: hle_player_update.)
+constexpr uint32_t kJumpAction = 0;
+
+void latch_jump(uint32_t controller) {
+    if (controller < 0x80000000u || controller >= 0x817FF000u) return;
+    uint32_t pressed = controller + 12 + kJumpAction * 28 + 4;
+    if (mem_read32(pressed)) { g_jump_latched_ms = now_ms(); return; }
+    if (g_jump_latched_ms < 0) return;
+    if (!g_player_control.load() || now_ms() - g_jump_latched_ms > 50) { g_jump_latched_ms = -1; return; }
+    mem_write32(pressed, 1);
+}
+
 void hle_pad_clamp(PPCContext& ctx) {
     uint32_t status = ctx.r[3];
     PPCFunc* slot = ssne_hook_slot(g_ver->pad_clamp);
@@ -628,10 +675,12 @@ void hle_pad_process(PPCContext& ctx) {
             for (uint32_t k = 0; k < 4; k++) mem_write8(g_pad_status + 12 * ch + 2 + k, g_pad_sticks[ch][k]);
         g_pad_passes++;
     }
+    uint32_t controller = ctx.r[3];
     PPCFunc* slot = ssne_hook_slot(g_ver->pad_process);
     *slot = nullptr;
     g_orig_pad_process(ctx);
     *slot = &hle_pad_process;
+    latch_jump(controller);
 }
 
 bool code_matches(uint32_t addr, const uint32_t sig[6]) {
