@@ -756,3 +756,5 @@ glyphs that followed the group so far). A group moves to a side only in
   threads and its draws are skipped until COMPLETION_STATUS (cold cache after a state load: one frame without the
   scene); without it, first use compiles as before and pre-warming waits for non-gameplay frames.
   SSNE_SYNC_SHADERS=1 turns background compiling off; headless `--shader-cache DIR` uses a cache folder.
+* 1.2.4 ships with pre-warming and background compiling off (setups are only recorded) until the shipped list is
+  gathered by a play-through; SSNE_SHADER_PREWARM=1 turns both on.

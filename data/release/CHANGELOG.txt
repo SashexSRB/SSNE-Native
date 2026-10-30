@@ -4,6 +4,19 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.4
+  - Vehicles above 120 fps: a vehicle nobody was driving didn't move at all at frame rates above 120 (the game
+    steps vehicles 60 times a second, and rounded every shorter frame to no step). The jeep in Splashdown in
+    Xifengkou appeared with only its wheels and couldn't be entered until a menu was opened. Vehicles now get every
+    step they are due at any frame rate; between 60 and 120 fps they no longer run too fast either.
+  - Frame rate readout (github.com/SashexSRB/SSNE-Native/issues/10): it counted the frames the game produced, not
+    the ones shown, so it stayed at 120 when the graphics card fell behind. It now counts frames shown, and the full
+    info bar also shows the slowest frame of the last second. The window is only presented when there is something
+    new to show, so frame rate tools (MSI Afterburner, Steam, ...) measure the real rate as well.
+  - Preparation for shader pre-warming (github.com/SashexSRB/SSNE-Native/issues/9): the game remembers the shader
+    setups it meets (shadercache/setups.txt). A coming update builds them, and a list from a play-through, ahead of
+    time, so new effects don't freeze the game for a moment the first time they appear.
+
 SSNE-NATIVE 1.2.3
   - Windows display scaling (github.com/SashexSRB/SSNE-Native/issues/7): with scaling above 100% (e.g. a 4K screen
     at 200% or 300%), Windows gave the game and the launcher a window of 1/scale the screen's pixels and stretched

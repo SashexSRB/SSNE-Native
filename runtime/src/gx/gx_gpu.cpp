@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <unordered_map>
@@ -1161,6 +1162,8 @@ bool decode_program_key(const std::string& k, DrawCfg& c, int& ntex, bool& zsnap
 // 2. With KHR / ARB_parallel_shader_compile, a program that isn't ready is compiled by the driver's threads while
 //    the game goes on, and its draws are skipped until it is (usually a frame or a few). Without it, the first use
 //    waits as before (pre-warming then only compiles outside of gameplay).
+// Both are off until the shipped list is filled (1.2.4 only records setups); SSNE_SHADER_PREWARM=1 turns them on.
+const bool g_prewarm_on = getenv("SSNE_SHADER_PREWARM") != nullptr;
 constexpr const char* kSetupsHeader = "ssne-shader-setups 1";  // bump with program_key's format
 #include "shader_setups.inc"                                  // kShippedSetups: header line + one key per line
 
@@ -1253,6 +1256,12 @@ void init_setups() {
         }
         if (g_parallel && MaxShaderCompilerThreadsKHR) MaxShaderCompilerThreadsKHR(0xFFFFFFFFu);
         else if (g_parallel && MaxShaderCompilerThreadsARB) MaxShaderCompilerThreadsARB(0xFFFFFFFFu);
+    }
+    if (!g_prewarm_on) {
+        g_prewarm.clear();
+        g_parallel = false;
+        log_message("[gpu] shaders: " + std::to_string(mine.size()) + " setups recorded, pre-warming off");
+        return;
     }
     char line[160];
     snprintf(line, sizeof(line), "[gpu] shaders: %zu setups to prepare (%zu from earlier sessions), %s", g_prewarm.size(),
