@@ -866,14 +866,34 @@ void fill_state_slots(port::MenuInfo& mi) {
     for (int i = 0; i < 5; i++) mi.slots[i] = cache[i];
 }
 
+// The frame rate shown is that of new game images on screen, not of frames the game produced: when the GPU falls
+// behind, a pass renders two queued frames and shows only the last (the game is paced to 2 frames in flight), and the
+// window is also presented for the menus without a new image (issue #10: 120 fps shown during visible slowdowns). The
+// slowest frame is the longest time between two new images in the last second.
+uint64_t g_shown_frames = 0;
+uint32_t g_last_shown_ms = 0, g_slowest_ms = 0;
+void note_shown_frame() {
+    uint32_t now = SDL_GetTicks();
+    if (g_last_shown_ms) g_slowest_ms = std::max(g_slowest_ms, now - g_last_shown_ms);
+    g_last_shown_ms = now;
+    g_shown_frames++;
+}
+
 void draw_overlay(const std::string& data_dir, float dt) {
-    static uint64_t last_copies = 0;
+    static uint64_t last_shown = 0;
     static float fps_timer = 0, fps = 0;
+    static uint32_t slowest = 0;
     auto rs = ssne::gx_render_stats();
     auto hw = ssne::hw_stats();
     auto st = ssne::scheduler_stats();
     fps_timer += dt;
-    if (fps_timer >= 1.0f) { fps = float(rs.display_copies - last_copies) / fps_timer; last_copies = rs.display_copies; fps_timer = 0; }
+    if (fps_timer >= 1.0f) {
+        fps = float(g_shown_frames - last_shown) / fps_timer;
+        last_shown = g_shown_frames;
+        slowest = g_slowest_ms;
+        g_slowest_ms = 0;
+        fps_timer = 0;
+    }
 
     if (g_set.top_bar == 1) {  // frame rate only
         ImGui::SetNextWindowPos(ImVec2(8, 8), ImGuiCond_Always);
@@ -888,8 +908,8 @@ void draw_overlay(const std::string& data_dir, float dt) {
         ImGui::SetNextWindowBgAlpha(0.45f);
         ImGui::Begin("##fps", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoInputs |
                                        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
-        ImGui::Text("%.0f fps (limit %s)   F12: settings & hotkeys   F1: log/stats   Shift+F1: smaller bar%s", fps,
-                    fps_mode_name(ssne::frame_limit()).c_str(), ssne::paused() ? "   [paused]" : "");
+        ImGui::Text("%.0f fps (limit %s, slowest frame %u ms)   F12: settings & hotkeys   F1: log/stats   Shift+F1: smaller bar%s",
+                    fps, fps_mode_name(ssne::frame_limit()).c_str(), slowest, ssne::paused() ? "   [paused]" : "");
         if (!g_gpu)  // make the (much slower) CPU renderer obvious: it explains low frame rates in bug reports
             ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1), "Software renderer (CPU): %s",
                                g_set.renderer == "software" ? "selected in F12 > Graphics" : "the GPU renderer could not start, see F1");
@@ -1322,6 +1342,7 @@ int main(int argc, char** argv) {
             new_frame = update_game_texture();
             if (!new_frame && swap_ms < 2.0) { SDL_Delay(1); new_frame = update_game_texture(); }
         }
+        if (new_frame) note_shown_frame();
         g_loop_phase = "UI";
         update_ui_scale(win);
         ImGui_ImplOpenGL3_NewFrame();
@@ -1360,6 +1381,18 @@ int main(int argc, char** argv) {
         }
         if (changed) { apply_settings(win); save_now(); }
         ImGui::Render();
+        // Present a new game image, the menus / log / messages, and every vblank in display sync (the game ticks with
+        // it); otherwise only every 100 ms (the info bar), so that frame rate tools see the game's real rate.
+        static uint32_t last_present = 0;
+        bool present = new_frame || port::menu_open() || ssne::paused() || g_show_overlay || SDL_GetTicks() < g_toast_until ||
+                       !have_game_image() || ssne::vi_host_sync() || (g_set.sync_display && g_set.vsync && g_set.fps_limit == 60) ||
+                       SDL_GetTicks() - last_present >= 100;
+        if (!present) {
+            swap_ms = 0;  // nothing waited: the next pass waits for a game frame instead
+            g_loop_phase = "events";
+            continue;
+        }
+        last_present = SDL_GetTicks();
         int w, h;
         SDL_GL_GetDrawableSize(win, &w, &h);
         glViewport(0, 0, w, h);

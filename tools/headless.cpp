@@ -101,6 +101,7 @@ int main(int argc, char** argv) {
         else if (a == "--audio-original") ssne::audio_set_hq(false);
         else if (a == "--mix" && i + 1 < argc) { int m = 100, x = 100; sscanf(argv[++i], "%d:%d", &m, &x); ssne::audio_set_mix(m, x); }
         else if (a == "--gpu") gpu = true;
+        else if (a == "--shader-cache" && i + 1 < argc) ssne::gpu_renderer_set_shader_cache(argv[++i]);  // dir (exists)
         else if (a == "--skip-intros") ssne::set_skip_intros(true);
         else if ((a == "--save-state" || a == "--load-state") && i + 1 < argc) {  // --save-state T:path
             std::string v = argv[++i];

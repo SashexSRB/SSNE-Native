@@ -63,6 +63,8 @@ enum : GLenum {
     TEXTURE_2D_MULTISAMPLE = 0x9100, MAX_SAMPLES = 0x8D57, MULTISAMPLE = 0x809D,
     TIME_ELAPSED = 0x88BF, TIMESTAMP = 0x8E28, QUERY_RESULT = 0x8866, QUERY_RESULT_AVAILABLE = 0x8867,
     PROGRAM_BINARY_RETRIEVABLE_HINT = 0x8257, PROGRAM_BINARY_LENGTH = 0x8741, NUM_PROGRAM_BINARY_FORMATS = 0x87FE,
+    EXTENSIONS = 0x1F03, NUM_EXTENSIONS = 0x821D,
+    COMPLETION_STATUS = 0x91B1,  // KHR / ARB_parallel_shader_compile
 };
 
 #define SSNE_GL_FUNCS(X)                                                                                        \
@@ -140,7 +142,8 @@ enum : GLenum {
     X(void, GenerateMipmap, (GLenum target))
 
 // Optional entry points: timer queries (GPU time per frame, for automatic resolution; core in 3.3 but not required)
-// and ARB_get_program_binary (core in 4.1, the shader cache). Null when the driver doesn't have them.
+// ARB_get_program_binary (core in 4.1, the shader cache) and KHR / ARB_parallel_shader_compile (shaders compiled on
+// the driver's threads). Null when the driver doesn't have them.
 #define SSNE_GL_OPTIONAL_FUNCS(X)                                                                               \
     X(void, SamplerParameterf, (GLuint s, GLenum pname, GLfloat v))                                             \
     X(void, TexImage2DMultisample, (GLenum target, GLsizei samples, GLenum ifmt, GLsizei w, GLsizei h,           \
@@ -153,7 +156,10 @@ enum : GLenum {
     X(void, GetQueryObjectui64v, (GLuint q, GLenum pname, uint64_t* v))                                         \
     X(void, GetProgramBinary, (GLuint p, GLsizei max, GLsizei* len, GLenum* fmt, void* bin))                    \
     X(void, ProgramBinary, (GLuint p, GLenum fmt, const void* bin, GLsizei len))                                \
-    X(void, ProgramParameteri, (GLuint p, GLenum pname, GLint v))
+    X(void, ProgramParameteri, (GLuint p, GLenum pname, GLint v))                                               \
+    X(const GLubyte*, GetStringi, (GLenum name, GLuint index))                                                  \
+    X(void, MaxShaderCompilerThreadsKHR, (GLuint count))                                                        \
+    X(void, MaxShaderCompilerThreadsARB, (GLuint count))
 
 #define SSNE_GL_DECLARE(ret, name, args) \
     typedef ret(SSNE_GLAPI* PFN_##name) args;  \

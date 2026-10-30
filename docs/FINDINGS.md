@@ -721,3 +721,38 @@ glyphs that followed the group so far). A group moves to a side only in
   the menus on Wayland with scaling.
 * SDL_GetDisplayBounds is in points then; display modes (SDL_GetDesktopDisplayMode) are pixels, used for the
   display list in the settings menu.
+
+## Vehicles that never land above 120 fps (Splashdown in Xifengkou)
+
+* Symptom: the jeep dropped in after the first fight showed only its wheels and couldn't be entered, until a menu was
+  opened (or the game paused); loading a save state of that moment showed it complete at once.
+* Cause: GenericVehicle's update (801709A0, method table 80223CAC: the jeeps) runs int(frame time / (1/60) + 0.5)
+  physics steps (constants at 802235BC / 802235C0, fctiw truncating): none in frames shorter than 1/120 s, one per
+  frame between 60 and 120 fps. Driving is held at 60 fps (in_vehicle), but a vehicle nobody drives updates at any
+  rate, so above 120 fps it never simulated. Menus run at 60 fps, unpausing gives a long frame, a state load too.
+* Found by capping the game's frame time (its median of 5, 8015544C) in a test build: the loaded state stays broken
+  at 1/125 s and completes at 1/111 s; a call-count diff of the two showed the vehicle physics running only in the
+  second. A first round of logging (disc, ARAM, textures, threads) showed nothing happening when it got fixed.
+* Fix: each vehicle carries the time it hasn't stepped yet (in steps, -0.5 .. 0.5) and its update sees a frame time
+  of the whole steps due (0 in most frames above 120 fps, one step per frame at 60 fps as before).
+
+## Frame rate readout (issue #10)
+
+* The readout counted the game's display copies: frames produced, not shown. With the GPU behind, a pass of the main
+  loop renders two queued frames and shows the last (the game is paced to 2 in flight), and the window was presented
+  every pass for the UI, so external tools counted presents (120 on a 120 Hz display) while fewer images changed.
+* Now: frames shown (a new game image presented) per second, plus the slowest frame of the last second in the full
+  info bar; the window is presented for a new image, the menus / log / messages, every vblank in display sync, and
+  otherwise every 100 ms.
+
+## Shader compile freezes (issue #9)
+
+* New TEV / vertex setups compile on first use: 5-30 ms per program, several at once in a new area (550 ms and
+  200 ms worst frames in a first session on Iris Xe, 4 ms once the binary cache had them).
+* Every setup with a program is recorded in <shadercache>/setups.txt (program key, hex). At startup that list and
+  the shipped one (runtime/src/gx/shader_setups.inc, tools/make_shader_setups.py from play-through lists) are built
+  a few ms per frame (decode_program_key: the generators only read fields in the key, checked by re-encoding).
+* With KHR / ARB_parallel_shader_compile (desktop drivers, Mesa), a program not ready is compiled by the driver's
+  threads and its draws are skipped until COMPLETION_STATUS (cold cache after a state load: one frame without the
+  scene); without it, first use compiles as before and pre-warming waits for non-gameplay frames.
+  SSNE_SYNC_SHADERS=1 turns background compiling off; headless `--shader-cache DIR` uses a cache folder.

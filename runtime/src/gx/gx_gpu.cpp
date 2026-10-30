@@ -621,6 +621,7 @@ struct UniformShadow {
 };
 struct Program {
     GLuint prog = 0;
+    bool pending = false;  // being compiled in the background (draws skipped meanwhile)
     GLint u_vp0, u_vp1, u_efb, u_reg, u_konst, u_aref, u_stscale, u_calpha, u_zrange, u_fog, u_fogcolor;
     GLint u_indmtx, u_texsz, u_su;
     GLint u_tm, u_pm, u_mat, u_amb, u_lpos, u_ldir, u_lcol, u_latt, u_lmask;  // GPU vertex processing (-1 in mode 0)
@@ -1095,11 +1096,222 @@ void init_shader_cache() {
     g_cache_ok = true;
 }
 
-Program* program_for(const DrawCfg& c, int ntex, bool zsnap, const GpuVcfg& vc) {
-    static std::string key;  // render thread only; reused so a lookup doesn't allocate
-    program_key(key, c, ntex, zsnap, vc);
-    auto it = g_programs.find(key);
-    if (it != g_programs.end()) return it->second.prog ? &it->second : nullptr;
+// Inverse of program_key: the setup a key was made from (the fields the shader generators read; the rest zero).
+// False when the key doesn't decode to exactly itself (another key format).
+bool decode_program_key(const std::string& k, DrawCfg& c, int& ntex, bool& zsnap, GpuVcfg& vc) {
+    size_t pos = 0;
+    bool ok = true;
+    auto get = [&]() -> uint32_t {
+        uint32_t v = 0;
+        if (pos + 4 > k.size()) { ok = false; return 0; }
+        memcpy(&v, k.data() + pos, 4);
+        pos += 4;
+        return v;
+    };
+    c = DrawCfg{};
+    vc = GpuVcfg{};
+    vc.mode = get();
+    if (vc.mode > 1) return false;
+    if (vc.mode == 1) {
+        vc.attrs = get(); vc.ntg = get(); vc.dual = get(); vc.lchans = get();
+        if (vc.ntg > 8 || vc.lchans > 2) return false;
+        for (uint32_t t = 0; t < vc.ntg; t++) vc.tg[t] = get();
+        for (int ch = 0; ch < 2; ch++)
+            for (int part = 0; part < 2; part++) vc.lp[ch][part] = get();
+    }
+    c.stages = int(get());
+    ntex = int(get());
+    if (c.stages < 1 || c.stages > 16 || ntex < 0 || ntex > 8) return false;
+    for (int i = 0; i < c.stages && ok; i++) {
+        StageCfg& st = c.st[i];
+        st.cenv = get(); st.aenv = get();
+        uint32_t w = get();
+        st.texmap = int(w & 0xF); st.texcoord = int(w >> 4 & 0xF); st.tex_enabled = w >> 8 & 1; st.ras_chan = int(w >> 9) - 1;
+        w = get();
+        st.kcsel = w & 0xFF; st.kasel = w >> 8;
+        w = get();
+        for (int j = 0; j < 4; j++) { st.swap_ras[j] = int(w >> (j * 2) & 3); st.swap_tex[j] = int(w >> (8 + j * 2) & 3); }
+        st.ind = get();
+    }
+    c.nind = int(get());
+    if (c.nind < 0 || c.nind > 4) return false;
+    for (int i = 0; i < c.nind; i++) {
+        uint32_t w = get();
+        c.ind_map[i] = uint8_t(w & 0xF); c.ind_coord[i] = uint8_t(w >> 4 & 0xF);
+        c.ind_ss[i] = uint8_t(w >> 8 & 0xF); c.ind_ts[i] = uint8_t(w >> 12 & 0xF);
+    }
+    uint32_t a = get();
+    c.atest_always = a == 0xFFFFFFFFu;
+    c.alpha_cmp = c.atest_always ? 0 : a << 16;
+    c.const_alpha_en = get() != 0;
+    uint32_t f = get();
+    c.fog_sel = uint8_t(f & 0xFF); c.fog_proj = uint8_t(f >> 8 & 0xFF); zsnap = f >> 16 & 1;
+    if (!ok || pos != k.size()) return false;
+    std::string again;
+    program_key(again, c, ntex, zsnap, vc);
+    return again == k;
+}
+
+// ------------------------------------------------------------------ shader setups: pre-warming, background compiles
+// A TEV / vertex setup met for the first time needs its program compiled, and the frame waited for it: 5-30 ms per
+// program on desktop drivers, a visible freeze above 60 fps when a new area or effect came into view (issue #9).
+// 1. Every setup a program was made for is remembered (its key in hex, <shadercache>/setups.txt). At startup the
+//    setups of earlier sessions and the list shipped with the game (shader_setups.inc, gathered by playing through)
+//    are built in the background, from the binary cache when it has them, before the game needs them.
+// 2. With KHR / ARB_parallel_shader_compile, a program that isn't ready is compiled by the driver's threads while
+//    the game goes on, and its draws are skipped until it is (usually a frame or a few). Without it, the first use
+//    waits as before (pre-warming then only compiles outside of gameplay).
+constexpr const char* kSetupsHeader = "ssne-shader-setups 1";  // bump with program_key's format
+#include "shader_setups.inc"                                  // kShippedSetups: header line + one key per line
+
+struct PendingProgram { std::string key; uint64_t hash; };
+std::vector<PendingProgram> g_pending;      // programs the driver is compiling
+std::vector<std::string> g_prewarm;         // setups still to build (back = next)
+std::unordered_map<std::string, bool> g_known_setups;  // recorded in setups.txt
+FILE* g_setups_file = nullptr;
+bool g_parallel = false;
+
+std::string to_hex(const std::string& b) {
+    static const char* d = "0123456789abcdef";
+    std::string h;
+    h.reserve(b.size() * 2);
+    for (unsigned char ch : b) { h += d[ch >> 4]; h += d[ch & 15]; }
+    return h;
+}
+
+bool from_hex(const std::string& h, std::string& b) {
+    if (h.size() % 2) return false;
+    b.clear();
+    auto nib = [](char ch) { return ch >= '0' && ch <= '9' ? ch - '0' : ch >= 'a' && ch <= 'f' ? ch - 'a' + 10 : -1; };
+    for (size_t i = 0; i < h.size(); i += 2) {
+        int hi = nib(h[i]), lo = nib(h[i + 1]);
+        if (hi < 0 || lo < 0) return false;
+        b += char(hi << 4 | lo);
+    }
+    return true;
+}
+
+// Adds the setups of a list (header line, then a key per line) to the pre-warm queue; returns the keys read.
+std::vector<std::string> read_setups(const std::string& text) {
+    std::vector<std::string> keys;
+    size_t pos = 0;
+    bool header = true;
+    while (pos < text.size()) {
+        size_t nl = text.find('\n', pos);
+        std::string line = text.substr(pos, nl == std::string::npos ? std::string::npos : nl - pos);
+        pos = nl == std::string::npos ? text.size() : nl + 1;
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (header) { if (line != kSetupsHeader) return {}; header = false; continue; }
+        std::string key;
+        if (!line.empty() && from_hex(line, key)) keys.push_back(std::move(key));
+    }
+    return keys;
+}
+
+void record_setup(const std::string& key) {
+    if (!g_setups_file || !g_known_setups.emplace(key, true).second) return;
+    fprintf(g_setups_file, "%s\n", to_hex(key).c_str());
+    fflush(g_setups_file);
+}
+
+void init_setups() {
+    g_pending.clear();
+    g_prewarm.clear();
+    g_known_setups.clear();
+    if (g_setups_file) { fclose(g_setups_file); g_setups_file = nullptr; }
+    std::vector<std::string> mine;
+    std::string path = g_cache_dir.empty() ? std::string() : g_cache_dir + "/setups.txt";
+    if (!path.empty()) {
+        if (FILE* f = fopen(path.c_str(), "rb")) {
+            std::string text;
+            char buf[65536];
+            for (size_t n; (n = fread(buf, 1, sizeof(buf), f)) > 0;) text.append(buf, n);
+            fclose(f);
+            mine = read_setups(text);
+        }
+        // Rewritten without duplicates (or started over in another format), then appended to.
+        if ((g_setups_file = fopen(path.c_str(), "wb"))) {
+            fprintf(g_setups_file, "%s\n", kSetupsHeader);
+            for (const auto& k : mine)
+                if (g_known_setups.emplace(k, true).second) fprintf(g_setups_file, "%s\n", to_hex(k).c_str());
+            fflush(g_setups_file);
+        }
+    }
+    std::unordered_map<std::string, bool> queued;
+    for (auto* list : {&mine})
+        for (const auto& k : *list) if (queued.emplace(k, true).second) g_prewarm.push_back(k);
+    for (auto& k : read_setups(kShippedSetups)) if (queued.emplace(k, true).second) g_prewarm.push_back(std::move(k));
+    std::reverse(g_prewarm.begin(), g_prewarm.end());  // the player's own setups first
+    // Parallel compiles: the extension in the list, and its threads unlimited (the driver's choice).
+    g_parallel = false;
+    if (GetStringi && !getenv("SSNE_SYNC_SHADERS")) {
+        GLint n = 0;
+        GetIntegerv(NUM_EXTENSIONS, &n);
+        for (GLint i = 0; i < n && !g_parallel; i++) {
+            const char* e = reinterpret_cast<const char*>(GetStringi(EXTENSIONS, GLuint(i)));
+            g_parallel = e && (!strcmp(e, "GL_KHR_parallel_shader_compile") || !strcmp(e, "GL_ARB_parallel_shader_compile"));
+        }
+        if (g_parallel && MaxShaderCompilerThreadsKHR) MaxShaderCompilerThreadsKHR(0xFFFFFFFFu);
+        else if (g_parallel && MaxShaderCompilerThreadsARB) MaxShaderCompilerThreadsARB(0xFFFFFFFFu);
+    }
+    char line[160];
+    snprintf(line, sizeof(line), "[gpu] shaders: %zu setups to prepare (%zu from earlier sessions), %s", g_prewarm.size(),
+             mine.size(), g_parallel ? "compiled in the background" : "background compiling not supported by the driver");
+    log_message(line);
+}
+
+// Uniform locations of a linked program.
+void finalize_program(Program& p) {
+    sc_program(p.prog);
+    GLint units[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    Uniform1iv(GetUniformLocation(p.prog, "u_samp"), 8, units);
+    p.u_vp0 = GetUniformLocation(p.prog, "u_vp0");
+    p.u_vp1 = GetUniformLocation(p.prog, "u_vp1");
+    p.u_efb = GetUniformLocation(p.prog, "u_efb");
+    p.u_reg = GetUniformLocation(p.prog, "u_reg");
+    p.u_konst = GetUniformLocation(p.prog, "u_konst");
+    p.u_aref = GetUniformLocation(p.prog, "u_aref");
+    p.u_stscale = GetUniformLocation(p.prog, "u_stscale");
+    p.u_calpha = GetUniformLocation(p.prog, "u_calpha");
+    p.u_zrange = GetUniformLocation(p.prog, "u_zrange");
+    p.u_fog = GetUniformLocation(p.prog, "u_fog");
+    p.u_fogcolor = GetUniformLocation(p.prog, "u_fogcolor");
+    p.u_indmtx = GetUniformLocation(p.prog, "u_indmtx");
+    p.u_texsz = GetUniformLocation(p.prog, "u_texsz");
+    p.u_su = GetUniformLocation(p.prog, "u_su");
+    p.u_tm = GetUniformLocation(p.prog, "u_tm");
+    p.u_pm = GetUniformLocation(p.prog, "u_pm");
+    p.u_mat = GetUniformLocation(p.prog, "u_mat");
+    p.u_amb = GetUniformLocation(p.prog, "u_amb");
+    p.u_lpos = GetUniformLocation(p.prog, "u_lpos");
+    p.u_ldir = GetUniformLocation(p.prog, "u_ldir");
+    p.u_lcol = GetUniformLocation(p.prog, "u_lcol");
+    p.u_latt = GetUniformLocation(p.prog, "u_latt");
+    p.u_lmask = GetUniformLocation(p.prog, "u_lmask");
+}
+
+// Compile + link without waiting for the result (checked when COMPLETION_STATUS says it's done).
+GLuint start_link(const std::string& vs, const std::string& fs) {
+    GLuint v = CreateShader(VERTEX_SHADER), f = CreateShader(FRAGMENT_SHADER);
+    const char* sv = vs.c_str();
+    const char* sf = fs.c_str();
+    ShaderSource(v, 1, &sv, nullptr);
+    ShaderSource(f, 1, &sf, nullptr);
+    CompileShader(v);
+    CompileShader(f);
+    GLuint p = CreateProgram();
+    AttachShader(p, v);
+    AttachShader(p, f);
+    if (g_cache_ok) ProgramParameteri(p, PROGRAM_BINARY_RETRIEVABLE_HINT, 1);
+    LinkProgram(p);
+    DeleteShader(v);
+    DeleteShader(f);
+    return p;
+}
+
+// Makes the program of a setup: from the binary cache, compiling in the background (async: the draw is skipped
+// meanwhile), or compiling now. Returns the program once it can be drawn with, else nullptr.
+Program* make_program(const std::string& key, const DrawCfg& c, int ntex, bool zsnap, const GpuVcfg& vc, bool async) {
     Program p;
     const char* prev_phase = g_phase;
     g_phase = "compile shader";
@@ -1107,45 +1319,83 @@ Program* program_for(const DrawCfg& c, int ntex, bool zsnap, const GpuVcfg& vc) 
     std::string vs = vc.mode == 1 ? gen_vs_tl(vc) : gen_vs(ntex), fs = gen_fs(c, ntex, zsnap);
     uint64_t h = fnv1a(fs.data(), fs.size(), fnv1a(vs.data(), vs.size()));
     p.prog = load_cached_program(h);
-    if (p.prog) g_stats.cached_programs++;
-    else {
+    bool ready = p.prog != 0;
+    if (ready) g_stats.cached_programs++;
+    else if (async && g_parallel) {
+        p.prog = start_link(vs, fs);
+        p.pending = true;
+        g_pending.push_back({key, h});
+    } else {
         p.prog = link(vs, fs, g_cache_ok);
         if (p.prog) save_program(p.prog, h);
+        ready = p.prog != 0;
     }
+    if (ready) { finalize_program(p); record_setup(key); }
     g_stats.shader_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     g_stats.programs++;
-    if (p.prog) {
-        sc_program(p.prog);
-        GLint units[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-        Uniform1iv(GetUniformLocation(p.prog, "u_samp"), 8, units);
-        p.u_vp0 = GetUniformLocation(p.prog, "u_vp0");
-        p.u_vp1 = GetUniformLocation(p.prog, "u_vp1");
-        p.u_efb = GetUniformLocation(p.prog, "u_efb");
-        p.u_reg = GetUniformLocation(p.prog, "u_reg");
-        p.u_konst = GetUniformLocation(p.prog, "u_konst");
-        p.u_aref = GetUniformLocation(p.prog, "u_aref");
-        p.u_stscale = GetUniformLocation(p.prog, "u_stscale");
-        p.u_calpha = GetUniformLocation(p.prog, "u_calpha");
-        p.u_zrange = GetUniformLocation(p.prog, "u_zrange");
-        p.u_fog = GetUniformLocation(p.prog, "u_fog");
-        p.u_fogcolor = GetUniformLocation(p.prog, "u_fogcolor");
-        p.u_indmtx = GetUniformLocation(p.prog, "u_indmtx");
-        p.u_texsz = GetUniformLocation(p.prog, "u_texsz");
-        p.u_su = GetUniformLocation(p.prog, "u_su");
-        p.u_tm = GetUniformLocation(p.prog, "u_tm");
-        p.u_pm = GetUniformLocation(p.prog, "u_pm");
-        p.u_mat = GetUniformLocation(p.prog, "u_mat");
-        p.u_amb = GetUniformLocation(p.prog, "u_amb");
-        p.u_lpos = GetUniformLocation(p.prog, "u_lpos");
-        p.u_ldir = GetUniformLocation(p.prog, "u_ldir");
-        p.u_lcol = GetUniformLocation(p.prog, "u_lcol");
-        p.u_latt = GetUniformLocation(p.prog, "u_latt");
-        p.u_lmask = GetUniformLocation(p.prog, "u_lmask");
-    }
     g_phase = prev_phase;
     auto& slot = g_programs[key];
     slot = p;
-    return slot.prog ? &slot : nullptr;
+    return ready ? &slot : nullptr;
+}
+
+// Background compiles that finished: checked, saved to the binary cache and made usable.
+void poll_pending() {
+    for (size_t i = 0; i < g_pending.size();) {
+        auto it = g_programs.find(g_pending[i].key);
+        if (it == g_programs.end()) { g_pending.erase(g_pending.begin() + long(i)); continue; }
+        Program& p = it->second;
+        GLint done = 0;
+        GetProgramiv(p.prog, COMPLETION_STATUS, &done);
+        if (!done) { i++; continue; }
+        GLint ok = 0;
+        GetProgramiv(p.prog, LINK_STATUS, &ok);
+        if (ok) {
+            save_program(p.prog, g_pending[i].hash);
+            finalize_program(p);
+            record_setup(g_pending[i].key);
+        } else {
+            char buf[4096];
+            GLsizei n = 0;
+            GetProgramInfoLog(p.prog, sizeof(buf), &n, buf);
+            log_message("[gpu] shader link error: " + std::string(buf, size_t(n)));
+            DeleteProgram(p.prog);
+            p.prog = 0;
+        }
+        p.pending = false;
+        g_pending.erase(g_pending.begin() + long(i));
+    }
+}
+
+// Builds remembered setups ahead of use, for at most budget_ms (and a limited number compiling at once).
+void prewarm(double budget_ms) {
+    if (g_prewarm.empty()) return;
+    if (!g_parallel && player_control_active()) return;  // compiling would hold up gameplay frames
+    auto t0 = std::chrono::steady_clock::now();
+    DrawCfg c;
+    GpuVcfg vc;
+    while (!g_prewarm.empty() && g_pending.size() < 16 &&
+           std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() < budget_ms) {
+        std::string key = std::move(g_prewarm.back());
+        g_prewarm.pop_back();
+        int ntex = 0;
+        bool zsnap = false;
+        if (g_programs.count(key) || !decode_program_key(key, c, ntex, zsnap, vc)) continue;
+        make_program(key, c, ntex, zsnap, vc, true);
+    }
+    if (g_prewarm.empty()) {
+        char line[96];
+        snprintf(line, sizeof(line), "[gpu] shaders: prepared (%zu programs)", g_programs.size());
+        log_message(line);
+    }
+}
+
+Program* program_for(const DrawCfg& c, int ntex, bool zsnap, const GpuVcfg& vc) {
+    static std::string key;  // render thread only; reused so a lookup doesn't allocate
+    program_key(key, c, ntex, zsnap, vc);
+    auto it = g_programs.find(key);
+    if (it != g_programs.end()) return it->second.prog && !it->second.pending ? &it->second : nullptr;
+    return make_program(key, c, ntex, zsnap, vc, true);
 }
 
 // ------------------------------------------------------------------ fixed programs (copies, reinterpretation)
@@ -1913,6 +2163,7 @@ bool gpu_renderer_init(void* (*getproc)(const char*), int scale, std::string& er
     GenFramebuffers(1, &g_tmp_fbo);
     g_tq_ok = GenQueries && BeginQuery && EndQuery && GetQueryObjectiv && GetQueryObjectui64v;
     init_shader_cache();
+    init_setups();
     if (g_tq_ok) GenQueries(kTimerQueries, g_tq);
     sc_invalidate();
     create_efb();
@@ -1924,6 +2175,8 @@ bool gpu_renderer_init(void* (*getproc)(const char*), int scale, std::string& er
 
 bool gpu_renderer_run(int max_frames) {
     if (!g_ready) return false;
+    poll_pending();
+    prewarm(g_parallel ? 2.0 : 4.0);
     uint64_t before = g_out_seq;
     for (int i = 0; i < max_frames; i++) {
         g_phase = "take frame";

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <unordered_map>
 #include <map>
 #include <vector>
 #include <set>
@@ -738,6 +739,51 @@ void install_step_counter_fix() {
     ssne_install_hook(kStepCounter, hle_step_counter);
 }
 
+// ---- vehicle physics at frame rates other than 60. The update of the drivable vehicles (801709A0, GenericVehicle:
+// the jeeps) runs int(frame time / (1/60) + 0.5) physics steps of 1/60 s per frame: none in frames shorter than
+// 1/120 s, one per frame between 60 and 120 fps (time running fast). While driving, the frame rate is held at 60
+// (in_vehicle), but a vehicle nobody drives is updated at any rate: above 120 fps the jeep dropped in after the first
+// fight of Splashdown in Xifengkou never landed (only its wheels were drawn, and it couldn't be entered) until a menu
+// (60 fps) or a long frame ran a step. Each vehicle now runs the steps its accumulated time is due, rounded with the
+// remainder carried: the frame time it sees is that many steps (0 in most frames above 120 fps). At 60 fps that is
+// one step per frame, as before.
+const uint32_t kVehicleUpdateSig[6] = {0x9421FF08u, 0x7C0802A6u, 0xDBE100F0u, 0xBDE100ACu, 0x900100FCu, 0x7C7F1B78u};
+constexpr uint32_t kVehicleUpdate = 0x801709A0, kVehicleStep = 0x802235BC, kVehicleRound = 0x802235C0;
+PPCFunc g_orig_vehicle_update = nullptr;
+std::unordered_map<uint32_t, float> g_vehicle_time;  // per vehicle: time not yet stepped (in steps, -0.5 .. 0.5)
+
+void hle_vehicle_update(PPCContext& ctx) {
+    uint32_t dt_addr = ctx.r[13] + 0xFFFF85F8u, dt_bits = mem_read32(dt_addr);
+    float step = u2f(mem_read32(kVehicleStep)), dt = u2f(dt_bits);
+    bool adjust = dt > 0 && dt < 0.25f;
+    uint32_t steps_bits = 0;
+    if (adjust) {
+        if (g_vehicle_time.size() > 64) g_vehicle_time.clear();  // vehicles of earlier levels
+        float& due = g_vehicle_time[ctx.r[3]];
+        due += dt / step;
+        float n = std::floor(due + 0.5f);
+        due -= n;
+        steps_bits = f2u(n * step);
+        mem_write32(dt_addr, steps_bits);
+    }
+    PPCFunc* slot = ssne_hook_slot(kVehicleUpdate);
+    *slot = nullptr;
+    g_orig_vehicle_update(ctx);
+    *slot = &hle_vehicle_update;
+    if (adjust && mem_read32(dt_addr) == steps_bits) mem_write32(dt_addr, dt_bits);
+}
+
+void install_vehicle_step_fix() {
+    const SSNEFuncEntry* f = ssne_find_func(kVehicleUpdate);
+    if (!f || !code_matches(kVehicleUpdate, kVehicleUpdateSig) || u2f(mem_read32(kVehicleStep)) != 1.0f / 60 ||
+        u2f(mem_read32(kVehicleRound)) != 0.5f) {
+        fprintf(stdout, "[ssne] vehicle step fix: vehicle update not found (different game build?)\n");
+        return;
+    }
+    g_orig_vehicle_update = f->func;
+    ssne_install_hook(kVehicleUpdate, hle_vehicle_update);
+}
+
 // ---- save states: the request is carried out at the start of the game's frame flip (savestate.cpp).
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
@@ -837,6 +883,7 @@ void install_sdk_hooks() {
         install_mouse_aim();
         install_pad_fix();
         install_step_counter_fix();
+        install_vehicle_step_fix();
         install_savestates();
     }
     install_call_tracer();
