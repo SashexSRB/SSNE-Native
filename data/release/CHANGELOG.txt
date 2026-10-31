@@ -4,6 +4,10 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.5.1
+  - Shader stutter (github.com/SashexSRB/SSNE-Native/issues/9): the list of shaders built ahead of time at startup
+    now also covers all levels of China (683 setups with Ancient Rome). Atlantis follows in 1.2.5.2.
+
 SSNE-NATIVE 1.2.5
   - Shader stutter (github.com/SashexSRB/SSNE-Native/issues/9): the short freezes when a new area, enemy or effect
     appeared for the first time were the graphics driver compiling a shader while the game waited. The game now
