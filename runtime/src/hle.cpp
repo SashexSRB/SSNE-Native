@@ -784,6 +784,54 @@ void install_vehicle_step_fix() {
     ssne_install_hook(kVehicleUpdate, hle_vehicle_update);
 }
 
+// ---- landing above 60 fps. An object's physics update (800914D0, enemies and other objects, not the player) sets
+// its "on the ground" flag (+0x1AC) in the frames it touches the ground and clears it in the others. Enemy AI thinks
+// on timers (8009C5B0: intervals of 1/60, 0.1, 0.15 s) and reads the flag when it does: a body knocked back by
+// gunfire (the cThrow directive, 8000B0F4) ends when it has landed. Above 60 fps there are more physics frames
+// between two thinks, and a knocked-back body that pressed into the ground at each think touched it in the frames
+// right after and not in the one before the next think: the check never saw it, and the enemy stood frozen until a
+// long frame (a menu, a hitch) let one through (frogs in the Temple of Neptune; any enemy that is knocked back). Above
+// 60 fps the flag now stays set for 1/60 s plus a frame after the last contact: at most a 60 fps frame later, so the
+// next think sees the contact as it would at 60 fps (knock-backs end after ~1.5 s at any frame rate).
+const uint32_t kObjectPhysicsSig[6] = {0x9421FFA0u, 0x7C0802A6u, 0xDBE10058u, 0xBF610044u, 0x90010064u, 0x7C7F1B78u};
+constexpr uint32_t kObjectPhysics = 0x800914D0;
+PPCFunc g_orig_object_physics = nullptr;
+std::unordered_map<uint32_t, float> g_since_landed;  // per object: time since it last touched the ground
+
+void hle_object_physics(PPCContext& ctx) {
+    uint32_t obj = ctx.r[3];
+    float dt = u2f(mem_read32(ctx.r[13] + 0xFFFF85F8u));
+    uint32_t before = mem_read32(obj + 0x1AC);
+    PPCFunc* slot = ssne_hook_slot(kObjectPhysics);
+    *slot = nullptr;
+    g_orig_object_physics(ctx);
+    *slot = &hle_object_physics;
+    if (!(dt > 0 && dt < 0.95f / 60)) {  // 60 fps or slower: as the game does
+        if (!g_since_landed.empty()) g_since_landed.clear();
+        return;
+    }
+    if (mem_read32(obj + 0x1AC) == 1) {
+        if (g_since_landed.size() > 4096) g_since_landed.clear();
+        g_since_landed[obj] = 0;
+        return;
+    }
+    auto it = g_since_landed.find(obj);
+    if (it == g_since_landed.end()) return;
+    it->second += dt;
+    if (before == 1 && mem_read32(obj + 0x1AC) == 0 && it->second < 1.0f / 60 + dt) mem_write32(obj + 0x1AC, 1);
+    else if (it->second > 1.0f) g_since_landed.erase(it);
+}
+
+void install_landing_fix() {
+    const SSNEFuncEntry* f = ssne_find_func(kObjectPhysics);
+    if (!f || !code_matches(kObjectPhysics, kObjectPhysicsSig)) {
+        fprintf(stdout, "[ssne] landing fix: object physics not found (different game build?)\n");
+        return;
+    }
+    g_orig_object_physics = f->func;
+    ssne_install_hook(kObjectPhysics, hle_object_physics);
+}
+
 // ---- save states: the request is carried out at the start of the game's frame flip (savestate.cpp).
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
@@ -884,6 +932,7 @@ void install_sdk_hooks() {
         install_pad_fix();
         install_step_counter_fix();
         install_vehicle_step_fix();
+        install_landing_fix();
         install_savestates();
     }
     install_call_tracer();
