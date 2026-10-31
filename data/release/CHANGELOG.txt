@@ -4,6 +4,18 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.5
+  - Shader stutter (github.com/SashexSRB/SSNE-Native/issues/9): the short freezes when a new area, enemy or effect
+    appeared for the first time were the graphics driver compiling a shader while the game waited. The game now
+    builds the shaders it will need in the background at startup, from a list gathered by playing through the game
+    and from the setups your own game has recorded since 1.2.4; a shader that is still new is compiled in the
+    background and its object appears a frame or two later instead of the game freezing. The list covers all levels
+    of Ancient Rome; China and Atlantis follow in 1.2.5.1 and 1.2.5.2 (the background compiling already works there).
+  - Enemies frozen in place above 60 fps: an enemy knocked back by gunfire (e.g. the frogs in the Temple of Neptune)
+    could stand frozen, not reacting, until a menu was opened or the game hitched. Above 60 fps the enemy's AI checked
+    whether it had landed in the frames between its ground contacts and never saw it; the contact now counts for as
+    long as it would at 60 fps. Any enemy that is knocked back was affected.
+
 SSNE-NATIVE 1.2.4
   - Vehicles above 120 fps: a vehicle nobody was driving didn't move at all at frame rates above 120 (the game
     steps vehicles 60 times a second, and rounded every shorter frame to no step). The jeep in Splashdown in

@@ -756,5 +756,28 @@ glyphs that followed the group so far). A group moves to a side only in
   threads and its draws are skipped until COMPLETION_STATUS (cold cache after a state load: one frame without the
   scene); without it, first use compiles as before and pre-warming waits for non-gameplay frames.
   SSNE_SYNC_SHADERS=1 turns background compiling off; headless `--shader-cache DIR` uses a cache folder.
-* 1.2.4 ships with pre-warming and background compiling off (setups are only recorded) until the shipped list is
-  gathered by a play-through; SSNE_SHADER_PREWARM=1 turns both on.
+* 1.2.4 shipped with pre-warming and background compiling off (setups only recorded). 1.2.5 turns both on with a
+  list of 492 setups from a play-through of Ancient Rome (China and Atlantis to follow); SSNE_NO_SHADER_PREWARM=1
+  turns them off. Headless (Mesa): all 492 build in about a second at startup, and the Temple of Neptune frog fight
+  needs no new program.
+
+## Knocked-back enemies frozen above 60 fps
+
+* Symptom: above ~100 fps some enemies (the frogs in the Temple of Neptune, others too) stood frozen, not reacting,
+  until a menu, a hitch or a screenshot (a long frame) freed them all at once.
+* A memory snapshot of the moment showed them in the cThrow AI directive (8000B0F4, method table 801E3340: the
+  knock-back of a body hit by gunfire), velocity about (0, -9.4, 0) and pressing into the floor; the directive ends
+  when the body has landed (+0x1AC) and the ground is flat enough.
+* The object physics (800914D0 -> 80091A80) sets +0x1AC in frames with ground contact and clears it in the others.
+  Enemy AI thinks on timers (8009C5B0, list at r13-0x79F0: entry +4 countdown, +8 last time, +0xC interval of 0,
+  1/60, 0.1 or 0.15 s; the time since the last think goes into the frame time for the think). At 144 fps a traced
+  stuck body touched the ground in the two physics frames after each think and not in the one before the next, so
+  the think always read 0. A long frame breaks the pattern once.
+* Not the cause: the throw's own frame rate dependence (damping 0.9 per think): stepping cThrow in 1/60 s didn't
+  help. Forcing AI timers to tick 1/60 per frame did, but changes how often AI decides.
+* Fix: above 60 fps the flag stays set for 1/60 s plus a frame after the last contact (the next think then sees it
+  as at 60 fps). The player's physics doesn't use 800914D0 (jumps, leaving water unaffected).
+* Reproduced headless from a save state before the fight (frame time capped at 1/144 s by hooking 8015544C's result,
+  Sam firing): stuck for 10-50 s in half the runs without the fix, never with it; finished knock-backs take ~1.5 s
+  of game time at 60 fps, at 144 fps with the fix, and at 144 fps without it when they end. Measure in game time:
+  the software renderer runs slower than the capped rate.

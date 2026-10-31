@@ -1162,8 +1162,8 @@ bool decode_program_key(const std::string& k, DrawCfg& c, int& ntex, bool& zsnap
 // 2. With KHR / ARB_parallel_shader_compile, a program that isn't ready is compiled by the driver's threads while
 //    the game goes on, and its draws are skipped until it is (usually a frame or a few). Without it, the first use
 //    waits as before (pre-warming then only compiles outside of gameplay).
-// Both are off until the shipped list is filled (1.2.4 only records setups); SSNE_SHADER_PREWARM=1 turns them on.
-const bool g_prewarm_on = getenv("SSNE_SHADER_PREWARM") != nullptr;
+// SSNE_NO_SHADER_PREWARM=1 turns both off (setups are still recorded).
+const bool g_prewarm_on = getenv("SSNE_NO_SHADER_PREWARM") == nullptr;
 constexpr const char* kSetupsHeader = "ssne-shader-setups 1";  // bump with program_key's format
 #include "shader_setups.inc"                                  // kShippedSetups: header line + one key per line
 
