@@ -759,7 +759,7 @@ glyphs that followed the group so far). A group moves to a side only in
 * 1.2.4 shipped with pre-warming and background compiling off (setups only recorded). 1.2.5 turns both on with a
   list of 492 setups from a play-through of Ancient Rome (China and Atlantis to follow); SSNE_NO_SHADER_PREWARM=1
   turns them off. Headless (Mesa): all 492 build in about a second at startup, and the Temple of Neptune frog fight
-  needs no new program. 1.2.5.1 adds China (683 setups).
+  needs no new program. 1.2.5.1 adds China (683 setups), 1.2.5.2 Atlantis (1018).
 
 ## Knocked-back enemies frozen above 60 fps
 
