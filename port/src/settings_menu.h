@@ -21,6 +21,7 @@ struct MenuInfo {
     int aniso_active = 1;           // anisotropic filtering level in use (capped by the GPU)
     int msaa_active = 1;            // MSAA samples in use (the driver may allow fewer than chosen)
     std::string pad_name;           // connected controller, empty if none
+    std::string pads[4];            // controllers by slot (in the order connected), empty where none
     std::vector<std::string> displays;  // monitor names (index = SDL display index)
     std::string settings_path;
     // Save states
@@ -32,7 +33,7 @@ struct MenuInfo {
 
 bool menu_open();
 void menu_set_open(bool open);
-void menu_select_tab(int tab);    // 0 graphics, 1 audio, 2 keyboard & mouse, 3 gamepad, 4 hotkeys, 5 save states
+void menu_select_tab(int tab);    // 0 graphics, 1 audio, 2 keyboard & mouse, 3 gamepad, 4 hotkeys, 5 save states, 6 players
 bool menu_capturing();              // waiting for a key/button to bind
 bool menu_take_exit_request();     // the "Exit game" button was pressed (cleared by this call)
 bool menu_take_rumble_test();       // the "Test rumble" button was pressed (cleared by this call)

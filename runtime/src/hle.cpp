@@ -221,12 +221,20 @@ int64_t now_ms() {
     using namespace std::chrono;
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
-// The scene camera's vertical FOV as the game set it (before the FOV slider), noted at each of its projections:
-// below 63 while zoomed in (the sniper rifle, up to 12x).
+// The scene camera's vertical FOV as the game sets it (before the FOV slider) is below 63 while zoomed in (the sniper
+// rifle, up to 12x). Zoomed in: a scene camera (any player's, in split screen) was zoomed in the last 250 ms.
 constexpr float kGameFov = 63.0f;
-std::atomic<float> g_cam_fovy{kGameFov};
-std::atomic<int64_t> g_cam_fovy_ms{0};
-bool zoomed_in() { return now_ms() - g_cam_fovy_ms.load() < 250 && g_cam_fovy.load() < kGameFov - 0.5f; }
+std::atomic<int64_t> g_cam_zoom_ms{-100000};
+bool zoomed_in() { return now_ms() - g_cam_zoom_ms.load() < 250; }
+// A player's zoomed-in FOV (degrees), 0 if not zoomed in: the sniper rifle (weapon 8; a weapon's object is at
+// player + 0x4BC + 0x18 * id) keeps its zoom at +0x230 (1 to 12), and the camera's FOV is then 80 / zoom.
+float player_zoom_fov(uint32_t player) {
+    if (mem_read32(player + 0x5DC) != 8) return 0;
+    uint32_t rifle = mem_read32(player + 0x4BC + 8 * 0x18);
+    if (rifle < 0x80000000u || rifle >= 0x817FFF00u) return 0;
+    float zoom = u2f(mem_read32(rifle + 0x230));
+    return zoom > 1.01f && zoom < 100.0f ? 80.0f / zoom : 0;
+}
 
 float effective_widescreen(uint32_t caller) {
     if (caller == g_ver->weapon_lr) g_last_gameplay_ms = now_ms();
@@ -279,7 +287,7 @@ void hle_MTXPerspective(PPCContext& ctx) {
             fprintf(stdout, "[proj] persp from %08X aspect %.3f fovy %.2f (x%d)\n", ctx.lr, ctx.ps0[2], ctx.ps0[1], seen[ctx.lr]);
     }
     uint32_t m = ctx.r[3];
-    if (scene_camera_caller(ctx.lr)) { g_cam_fovy = float(ctx.ps0[1]); g_cam_fovy_ms = now_ms(); }
+    if (scene_camera_caller(ctx.lr) && ctx.ps0[1] < kGameFov - 0.5) g_cam_zoom_ms = now_ms();
     float aspect = float(ctx.ps0[2]) * effective_widescreen(ctx.lr), n = float(ctx.ps0[3]), f = float(ctx.ps0[4]);
     float fovy = adjust_fov(ctx.lr, float(ctx.ps0[1]));
     float half = sda2_float(ctx, -0x44B0), d2r = sda2_float(ctx, -0x44AC);  // 0.5, pi/180
@@ -610,8 +618,7 @@ void hle_look_update(PPCContext& ctx) {
     if (dyaw == 0 && dpitch == 0) return;
     // Zoomed in (the sniper rifle narrows the FOV), the same turn moves the image further: the mouse turns by the
     // zoom (ratio of the tangents), so it moves the crosshair over the image at the same speed at any zoom.
-    float cam = g_cam_fovy.load();
-    if (zoomed_in() && cam > 1.0f) {
+    if (float cam = player_zoom_fov(player); cam > 1.0f) {
         constexpr double h = 0.5 * 0.017453292519943295;
         double zoom = std::tan(h * cam) / std::tan(h * kGameFov);
         dyaw *= zoom;

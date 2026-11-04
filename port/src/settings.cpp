@@ -144,6 +144,12 @@ void Settings::reset_gamepad() {
     rumble = true; rumble_strength = 1.0f; prompts = "auto";
 }
 
+void Settings::reset_players() {
+    kbm_player = 1;
+    for (int i = 0; i < kPadSlots; i++) pad_player[i] = i + 1;
+    split_two = 0;
+}
+
 void Settings::pad_preset_xbox() {
     for (auto& b : pad) b = Bind{};
     pad[ACT_L] = Bind::button(SDL_CONTROLLER_BUTTON_A);             // jump (also selects in menus, main.cpp)
@@ -306,6 +312,9 @@ bool load_settings(Settings& s, const std::string& path) {
     get("skip_intros", s.skip_intros);
     get("state_slot", s.state_slot);
     get("pad_prompts", s.prompts);
+    get("kbm_player", s.kbm_player);
+    for (int i = 0; i < Settings::kPadSlots; i++) get(("pad" + std::to_string(i + 1) + "_player").c_str(), s.pad_player[i]);
+    get("split_two", s.split_two);
     for (int a = 0; a < ACT_COUNT; a++) {
         auto it = kv.find(std::string("kb.") + action_id(a));
         if (it != kv.end()) {
@@ -417,6 +426,9 @@ bool load_settings(Settings& s, const std::string& path) {
     s.trigger_threshold = std::clamp(s.trigger_threshold, 0.1f, 1.f);
     s.look_sens = std::clamp(s.look_sens, 0.1f, 4.f);
     s.rumble_strength = std::clamp(s.rumble_strength, 0.1f, 1.f);
+    s.kbm_player = std::clamp(s.kbm_player, 1, 4);
+    for (int& p : s.pad_player) p = std::clamp(p, 0, 4);
+    s.split_two = std::clamp(s.split_two, 0, 2);
     return true;
 }
 
@@ -467,6 +479,12 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "pad_rumble_strength = " << s.rumble_strength << "\n";
     o << "pad_prompts = " << s.prompts << "    # on-screen buttons: auto, keyboard, gamecube, xbox, playstation\n";
     for (int a = kFirstButtonAction; a < ACT_COUNT; a++) o << "pad." << action_id(a) << " = " << bind_to_string(s.pad[a]) << "\n";
+    o << "[players]\n";
+    o << "kbm_player = " << s.kbm_player << "    # the player the keyboard and mouse play (1-4)\n";
+    for (int i = 0; i < Settings::kPadSlots; i++)
+        o << "pad" << i + 1 << "_player = " << s.pad_player[i] << "    # controller " << i + 1
+          << " (in the order connected) plays this player (1-4, 0 = not used)\n";
+    o << "split_two = " << s.split_two << "    # 2 players: 0 automatic (side by side in widescreen), 1 top / bottom, 2 side by side\n";
     o << "[general]\n";
     o << "pause_in_menu = " << (s.pause_in_menu ? 1 : 0) << "\n";
     o << "pause_unfocused = " << (s.pause_unfocused ? 1 : 0) << "    # pause while the window is in the background\n";

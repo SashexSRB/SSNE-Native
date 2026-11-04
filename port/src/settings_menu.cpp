@@ -320,6 +320,40 @@ bool tab_keyboard(Settings& s) {
     return ch;
 }
 
+bool tab_players(Settings& s, const MenuInfo& info) {
+    bool ch = false;
+    ImGui::TextColored(kDim, "Split screen for 2-4 players: in the game choose MultiPlayer, then every player presses A to join.");
+    ImGui::TextColored(kDim, "Co-operative is for 2 players; Deathmatch, Hold the Flag and Pass the Bomb for up to 4.");
+    ImGui::SeparatorText("Who plays which player");
+    static const char* kPlayers[] = {"Player 1", "Player 2", "Player 3", "Player 4"};
+    int kp = s.kbm_player - 1;
+    ImGui::SetNextItemWidth(200);
+    if (ImGui::Combo("Keyboard & mouse", &kp, kPlayers, 4)) { s.kbm_player = kp + 1; ch = true; }
+    help("Mouse aim and the number keys for weapons go to this player.");
+    static const char* kPadChoices[] = {"Not used", "Player 1", "Player 2", "Player 3", "Player 4"};
+    for (int i = 0; i < Settings::kPadSlots; i++) {
+        char label[32];
+        snprintf(label, sizeof(label), "Controller %d", i + 1);
+        ImGui::SetNextItemWidth(200);
+        ch |= ImGui::Combo(label, &s.pad_player[i], kPadChoices, 5);
+        ImGui::SameLine();
+        if (info.pads[i].empty()) ImGui::TextColored(kDim, "(not connected)");
+        else ImGui::TextColored(kDim, "%s", info.pads[i].c_str());
+    }
+    help("Controllers are numbered in the order they were connected. By default the keyboard, the mouse and\n"
+         "controller 1 all play player 1, and every further controller the next player.\n"
+         "Over the internet with Parsec or Steam Remote Play Together, the remote players' controllers show\n"
+         "up here like your own.");
+    if (ImGui::Button("Reset players to defaults")) { s.reset_players(); ch = true; }
+    ImGui::SeparatorText("Split screen");
+    static const char* kSplit[] = {"Automatic (side by side in widescreen)", "Top and bottom", "Side by side"};
+    ImGui::SetNextItemWidth(300);
+    ch |= ImGui::Combo("Two players", &s.split_two, kSplit, 3);
+    help("How the screen is shared by two players; applies from the next match.\n"
+         "Three and four players always share it in quarters.");
+    return ch;
+}
+
 bool tab_gamepad(Settings& s, const MenuInfo& info) {
     bool ch = false;
     if (info.pad_name.empty()) ImGui::TextColored(kWarn, "No controller connected (plug one in at any time).");
@@ -524,6 +558,7 @@ bool draw_menu(Settings& s, const MenuInfo& info) {
         if (ImGui::BeginTabItem("Audio", nullptr, g_select_tab == 1 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##a"); ch |= tab_audio(s); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Keyboard & Mouse", nullptr, g_select_tab == 2 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##k"); ch |= tab_keyboard(s); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Gamepad", nullptr, g_select_tab == 3 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##p"); ch |= tab_gamepad(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem("Players", nullptr, g_select_tab == 6 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##pl"); ch |= tab_players(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Save states", nullptr, g_select_tab == 5 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##s"); ch |= tab_states(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Hotkeys", nullptr, g_select_tab == 4 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##h"); tab_hotkeys(); ImGui::EndChild(); ImGui::EndTabItem(); }
         ImGui::EndTabBar();

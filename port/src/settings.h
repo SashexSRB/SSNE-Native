@@ -81,6 +81,11 @@ struct Settings {
     bool rumble = true;              // pass the game's controller rumble to the gamepad
     float rumble_strength = 1.0f;    // 0.1 .. 1
     std::string prompts = "auto";    // on-screen buttons: auto (keyboard & mouse, or the gamepad in use), keyboard, gamecube, xbox, playstation
+    // Players (multiplayer: split screen for 2-4 players, one controller port each)
+    static constexpr int kPadSlots = 4;  // controllers in use at once, numbered in the order they were connected
+    int kbm_player = 1;              // the player the keyboard and mouse play (1-4)
+    int pad_player[kPadSlots] = {1, 2, 3, 4};  // the player each controller plays (1-4, 0 = not used)
+    int split_two = 0;               // 2-player split screen: 0 automatic (side by side in widescreen), 1 top / bottom, 2 side by side
     // General
     bool pause_in_menu = true;
     bool pause_unfocused = true;     // pause (and silence) the game while the window is in the background
@@ -96,6 +101,7 @@ struct Settings {
     void reset_gamepad();                // Xbox layout + default stick/trigger/rumble settings
     void pad_preset_xbox();              // A jump (L), X use (A), B back, Y Z, LB/RB weapons (Y/X), RT fire (R)
     void pad_preset_gamecube();          // same buttons as the GameCube controller: A = A, LT jump (L), RT fire (R)
+    void reset_players();                // keyboard / mouse and the first controller play player 1, the next ones 2-4
 };
 
 // Load/save settings.ini (missing file or keys keep defaults). Return false on I/O error.

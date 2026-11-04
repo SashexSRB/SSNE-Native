@@ -293,7 +293,62 @@ void update_ui_scale(SDL_Window* win) {
 
 // ---------------------------------------------------------------- input
 // Keyboard/mouse and gamepad bindings come from g_set (defaults in settings.cpp; rebind in the F12 menu).
-SDL_GameController* g_pad = nullptr;
+// Controllers: up to four in use, in slots numbered in the order they were connected (a controller connected later
+// takes the first free slot). Each slot plays the player g_set.pad_player says, the keyboard and mouse
+// g_set.kbm_player (multiplayer: every player has its own controller port).
+constexpr int kPadSlots = port::Settings::kPadSlots;
+SDL_GameController* g_pads[kPadSlots] = {};
+SDL_GameController* g_last_pad = nullptr;  // the controller used last (on-screen buttons, info)
+
+SDL_GameController* first_pad() {
+    for (SDL_GameController* c : g_pads) if (c) return c;
+    return nullptr;
+}
+int pad_slot(SDL_JoystickID id) {
+    for (int i = 0; i < kPadSlots; i++)
+        if (g_pads[i] && SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(g_pads[i])) == id) return i;
+    return -1;
+}
+void open_pad(int device) {
+    SDL_JoystickID id = SDL_JoystickGetDeviceInstanceID(device);
+    if (pad_slot(id) >= 0) return;  // already open (SDL announces the controllers present at startup too)
+    for (int i = 0; i < kPadSlots; i++)
+        if (!g_pads[i]) {
+            g_pads[i] = SDL_GameControllerOpen(device);
+            if (g_pads[i]) {
+                g_last_pad = g_pads[i];
+                const char* n = SDL_GameControllerName(g_pads[i]);
+                log_line("[port] controller " + std::to_string(i + 1) + " connected: " + (n ? n : "?"));
+            }
+            return;
+        }
+}
+void close_pad(SDL_JoystickID id) {
+    int i = pad_slot(id);
+    if (i < 0) return;
+    if (g_last_pad == g_pads[i]) g_last_pad = nullptr;
+    log_line("[port] controller " + std::to_string(i + 1) + " disconnected");
+    SDL_GameControllerClose(g_pads[i]);
+    g_pads[i] = nullptr;
+    if (!g_last_pad) g_last_pad = first_pad();
+}
+// The player (0-3) a controller slot plays, -1 if not used.
+int slot_player(int slot) { return g_set.pad_player[slot] - 1; }
+
+// A port is plugged in when the keyboard or a connected controller plays its player (port 1 always: the game needs
+// it); the game lets the players of plugged-in ports join a match.
+void update_ports() {
+    bool on[4] = {true, false, false, false};
+    on[std::clamp(g_set.kbm_player - 1, 0, 3)] = true;
+    for (int i = 0; i < kPadSlots; i++)
+        if (g_pads[i] && slot_player(i) >= 0) on[slot_player(i)] = true;
+    for (int p = 1; p < 4; p++)
+        if (ssne::pad_connected(p) != on[p]) {
+            ssne::set_pad_connected(p, on[p]);
+            log_line("[port] player " + std::to_string(p + 1) + (on[p] ? ": controller port plugged in" : ": controller port empty"));
+        }
+    ssne::set_kbm_port(std::clamp(g_set.kbm_player - 1, 0, 3));
+}
 float g_mouse_dx = 0, g_mouse_dy = 0;
 bool g_mouse_captured = false;
 Uint32 g_capture_click = 0;  // the mouse button whose click captured the mouse: only captures (update_input)
@@ -312,6 +367,8 @@ void deadzone(float& x, float& y, float dz) {
 
 // Development: scripted controller input for automated runs of the real executable (same syntax as the headless
 // runner's --press): SSNE_AUTOPRESS="SUP@8,A@9,A@12:0.5" holds each input at t seconds for dur (default 0.2 s).
+// SSNE_VIRTUAL_PADS=N attaches N virtual controllers (SDL's own, seen like real ones); "pK:" items press SDL buttons
+// (a, b, x, y, start, leftshoulder, ...) or stick directions (leftx+, lefty-, righttrigger+, ...) on virtual pad K.
 struct AutoPress { std::string name; double at, dur; };
 std::vector<AutoPress> g_autopress;
 std::chrono::steady_clock::time_point g_autopress_t0;
@@ -323,7 +380,7 @@ void load_autopress() {
     for (size_t pos = 0; pos < spec.size();) {
         size_t comma = spec.find(',', pos);
         std::string item = spec.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
-        size_t at = item.find('@'), colon = item.find(':');
+        size_t at = item.find('@'), colon = at == std::string::npos ? at : item.find(':', at);
         if (at != std::string::npos)
             g_autopress.push_back({item.substr(0, at), atof(item.substr(at + 1).c_str()),
                                    colon == std::string::npos ? 0.2 : atof(item.substr(colon + 1).c_str())});
@@ -331,6 +388,60 @@ void load_autopress() {
         pos = comma + 1;
     }
 }
+std::vector<int> g_virtual_pads;  // joystick device instance ids, by number - 1
+void attach_virtual_pads() {  // they log their rumble (SSNE_VIRTUAL_PAD: one)
+    const char* env = getenv("SSNE_VIRTUAL_PADS");
+    int n = env ? std::clamp(atoi(env), 0, 4) : getenv("SSNE_VIRTUAL_PAD") ? 1 : 0;
+    for (int i = 0; i < n; i++) {
+        SDL_VirtualJoystickDesc d{};
+        d.version = SDL_VIRTUAL_JOYSTICK_DESC_VERSION;
+        d.type = SDL_JOYSTICK_TYPE_GAMECONTROLLER;
+        d.naxes = SDL_CONTROLLER_AXIS_MAX;
+        d.nbuttons = SDL_CONTROLLER_BUTTON_MAX;
+        std::string name = "Virtual pad " + std::to_string(i + 1);
+        d.name = name.c_str();
+        d.userdata = reinterpret_cast<void*>(intptr_t(i + 1));
+        d.Rumble = [](void* u, Uint16 lo, Uint16 hi) -> int {
+            static Uint16 last[5][2] = {};
+            int k = int(reinterpret_cast<intptr_t>(u));
+            if (lo != last[k][0] || hi != last[k][1])
+                log_line("[dev] virtual pad " + std::to_string(k) + " rumble " + std::to_string(lo) + " " + std::to_string(hi));
+            last[k][0] = lo; last[k][1] = hi;
+            return 0;
+        };
+        int dev = SDL_JoystickAttachVirtualEx(&d);
+        if (dev < 0) { log_line(std::string("[dev] virtual pad failed: ") + SDL_GetError()); continue; }
+        SDL_JoystickOpen(dev);  // keeps it open for apply_virtual_autopress
+        g_virtual_pads.push_back(SDL_JoystickGetDeviceInstanceID(dev));
+    }
+}
+void apply_virtual_autopress() {
+    if (g_virtual_pads.empty()) return;
+    double t = std::chrono::duration<double>(std::chrono::steady_clock::now() - g_autopress_t0).count();
+    for (size_t v = 0; v < g_virtual_pads.size(); v++) {
+        SDL_Joystick* j = SDL_JoystickFromInstanceID(g_virtual_pads[v]);
+        if (!j) continue;
+        bool button[SDL_CONTROLLER_BUTTON_MAX] = {};
+        int16_t axis[SDL_CONTROLLER_AXIS_MAX] = {};
+        axis[SDL_CONTROLLER_AXIS_TRIGGERLEFT] = axis[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] = -32768;  // released (full range)
+        std::string prefix = "p" + std::to_string(v + 1) + ":";
+        for (const AutoPress& a : g_autopress) {
+            if (a.name.rfind(prefix, 0) != 0 || t < a.at || t >= a.at + a.dur) continue;
+            std::string n = a.name.substr(prefix.size());
+            char sign = n.empty() ? 0 : n.back();
+            if (sign == '+' || sign == '-') {
+                SDL_GameControllerAxis ax = SDL_GameControllerGetAxisFromString(n.substr(0, n.size() - 1).c_str());
+                if (ax != SDL_CONTROLLER_AXIS_INVALID) axis[ax] = sign == '+' ? 32767 : -32768;
+            } else {
+                SDL_GameControllerButton b = SDL_GameControllerGetButtonFromString(n.c_str());
+                if (b != SDL_CONTROLLER_BUTTON_INVALID) button[b] = true;
+            }
+        }
+        for (int b = 0; b < SDL_CONTROLLER_BUTTON_MAX; b++) SDL_JoystickSetVirtualButton(j, b, button[b]);
+        for (int a = 0; a < SDL_CONTROLLER_AXIS_MAX; a++) SDL_JoystickSetVirtualAxis(j, a, axis[a]);
+    }
+}
+
 void apply_autopress(ssne::PadState& p) {
     if (g_autopress.empty()) return;
     double t = std::chrono::duration<double>(std::chrono::steady_clock::now() - g_autopress_t0).count();
@@ -357,25 +468,29 @@ void apply_autopress(ssne::PadState& p) {
 }
 
 // Rumble: the game switches the GameCube controller's motor on and off (bursts of 0.2-0.7 s while taking damage,
-// explosions...). Mirror that on the gamepad; SDL's rumble call takes a duration, so an active motor is refreshed
+// explosions...). Mirror that on the gamepad of the player whose port it is; SDL's rumble call takes a duration, so an active motor is refreshed
 // before it runs out and stopped explicitly when the game stops it, the menu opens or rumble is turned off.
 void update_rumble() {
-    static bool on = false;
-    static uint32_t refreshed = 0, test_until = 0;
+    static bool on[kPadSlots] = {};
+    static uint32_t refreshed[kPadSlots] = {}, test_until = 0;
     uint32_t now = SDL_GetTicks();
     if (port::menu_take_rumble_test()) test_until = now + 400;
-    bool want = (now < test_until) ||
-                (g_set.rumble && !port::menu_open() && !ssne::paused() && ssne::pad_motor(0) == 1);
-    if (!g_pad) { on = false; return; }
-    if (want && (!on || now - refreshed > 500)) {
-        float k = std::clamp(g_set.rumble_strength, 0.1f, 1.f);
-        // Low-frequency (heavy) motor carries most of it, like the GameCube's single eccentric motor.
-        SDL_GameControllerRumble(g_pad, Uint16(0xFFFF * k), Uint16(0x9000 * k), 1000);
-        on = true;
-        refreshed = now;
-    } else if (!want && on) {
-        SDL_GameControllerRumble(g_pad, 0, 0, 0);
-        on = false;
+    const bool allowed = g_set.rumble && !port::menu_open() && !ssne::paused();
+    for (int i = 0; i < kPadSlots; i++) {
+        SDL_GameController* c = g_pads[i];
+        if (!c) { on[i] = false; continue; }
+        int player = slot_player(i);
+        bool want = (now < test_until) || (allowed && player >= 0 && ssne::pad_motor(player) == 1);
+        if (want && (!on[i] || now - refreshed[i] > 500)) {
+            float k = std::clamp(g_set.rumble_strength, 0.1f, 1.f);
+            // Low-frequency (heavy) motor carries most of it, like the GameCube's single eccentric motor.
+            SDL_GameControllerRumble(c, Uint16(0xFFFF * k), Uint16(0x9000 * k), 1000);
+            on[i] = true;
+            refreshed[i] = now;
+        } else if (!want && on[i]) {
+            SDL_GameControllerRumble(c, 0, 0, 0);
+            on[i] = false;
+        }
     }
 }
 
@@ -436,8 +551,8 @@ void update_prompts() {
     std::string style = g_set.prompts;
     if (style == "auto") {
         style = "keyboard";
-        if (g_pad && g_input_pad) {
-            SDL_GameControllerType t = SDL_GameControllerGetType(g_pad);
+        if (g_last_pad && g_input_pad) {
+            SDL_GameControllerType t = SDL_GameControllerGetType(g_last_pad);
             style = (t == SDL_CONTROLLER_TYPE_PS3 || t == SDL_CONTROLLER_TYPE_PS4 || t == SDL_CONTROLLER_TYPE_PS5) ? "playstation" : "xbox";
         }
     }
@@ -479,16 +594,70 @@ struct WheelPulse {
 };
 WheelPulse g_wheel[2];  // [0] down, [1] up
 
-void update_input(float dt) {
+// One player's controls, gathered from the devices that play it (keyboard / mouse and controllers add up).
+struct PlayerInput {
+    float act[port::ACT_COUNT] = {};  // 0..1 per control
+    float lx = 0, ly = 0, cx = 0, cy = 0;
+};
+
+// A controller's part of its player's input.
+void pad_input(SDL_GameController* c, PlayerInput& in, bool control, bool held_jump) {
+    for (int a = port::kFirstButtonAction; a < port::ACT_COUNT; a++) {
+        const port::Bind& b = g_set.pad[a];
+        float v = 0;
+        if (b.type == port::Bind::PAD_BUTTON) v = SDL_GameControllerGetButton(c, SDL_GameControllerButton(b.code)) ? 1.f : 0.f;
+        else if (b.type == port::Bind::PAD_AXIS) v = std::max(0.f, SDL_GameControllerGetAxis(c, SDL_GameControllerAxis(b.code)) / 32767.f);
+        int target = a;
+        if (a == port::ACT_L && b.type == port::Bind::PAD_BUTTON) {
+            if (held_jump) continue;
+            if (!control) target = port::ACT_A;
+        }
+        in.act[target] = std::max(in.act[target], v);
+    }
+    auto ax = [c](SDL_GameControllerAxis a) { return SDL_GameControllerGetAxis(c, a) / 32767.f; };
+    float mx = ax(SDL_CONTROLLER_AXIS_LEFTX), my = -ax(SDL_CONTROLLER_AXIS_LEFTY);
+    float rx = ax(SDL_CONTROLLER_AXIS_RIGHTX), ry = -ax(SDL_CONTROLLER_AXIS_RIGHTY);
+    if (g_set.swap_sticks) { std::swap(mx, rx); std::swap(my, ry); }
+    deadzone(mx, my, g_set.pad_deadzone);
+    deadzone(rx, ry, g_set.pad_deadzone);
+    in.lx += mx; in.ly += my;
+    in.cx += rx * g_set.look_sens;
+    in.cy += (g_set.pad_invert_y ? -ry : ry) * g_set.look_sens;
+}
+
+ssne::PadState to_pad(const PlayerInput& in) {
     ssne::PadState p;
-    if (port::menu_open()) {  // the game gets a neutral controller while the menu is open
+    struct { int a; uint16_t m; } map[] = {
+        {port::ACT_A, ssne::PAD_A}, {port::ACT_B, ssne::PAD_B}, {port::ACT_X, ssne::PAD_X}, {port::ACT_Y, ssne::PAD_Y},
+        {port::ACT_Z, ssne::PAD_Z}, {port::ACT_START, ssne::PAD_START},
+        {port::ACT_DPAD_UP, ssne::PAD_UP}, {port::ACT_DPAD_DOWN, ssne::PAD_DOWN},
+        {port::ACT_DPAD_LEFT, ssne::PAD_LEFT}, {port::ACT_DPAD_RIGHT, ssne::PAD_RIGHT}};
+    for (auto& m : map) if (in.act[m.a] >= 0.5f) p.buttons |= m.m;
+    float lt = in.act[port::ACT_L], rt = in.act[port::ACT_R];
+    p.stick_x = axis_to_u8(std::clamp(in.lx, -1.f, 1.f));
+    p.stick_y = axis_to_u8(std::clamp(in.ly, -1.f, 1.f));
+    p.cstick_x = axis_to_u8(std::clamp(in.cx, -1.f, 1.f));
+    p.cstick_y = axis_to_u8(std::clamp(in.cy, -1.f, 1.f));
+    p.trigger_l = uint8_t(std::clamp(lt, 0.f, 1.f) * 255);
+    p.trigger_r = uint8_t(std::clamp(rt, 0.f, 1.f) * 255);
+    float click = std::min(g_set.trigger_threshold, 0.999f);
+    if (lt >= click) p.buttons |= ssne::PAD_L;   // full press = digital click, as on the real controller
+    if (rt >= click) p.buttons |= ssne::PAD_R;
+    return p;
+}
+
+void update_input(float dt) {
+    apply_virtual_autopress();
+    update_ports();
+    if (port::menu_open()) {  // the game gets neutral controllers while the menu is open
         g_mouse_dx = g_mouse_dy = 0;
         g_wheel[0] = g_wheel[1] = WheelPulse{};
-        ssne::set_pad(0, p);
+        for (int p = 0; p < 4; p++) ssne::set_pad(p, ssne::PadState{});
         return;
     }
-    float lx = 0, ly = 0, cx = 0, cy = 0, lt = 0, rt = 0;
-    float act[port::ACT_COUNT] = {};  // 0..1 per control
+    PlayerInput players[4];
+    PlayerInput& kbm = players[std::clamp(g_set.kbm_player - 1, 0, 3)];
+    float* act = kbm.act;
     const Uint8* k = SDL_GetKeyboardState(nullptr);
     Uint32 mb = g_mouse_captured ? SDL_GetMouseState(nullptr, nullptr) : 0;
     bool kb_ok = !ImGui::GetIO().WantCaptureKeyboard;
@@ -505,22 +674,27 @@ void update_input(float dt) {
     const bool control = ssne::player_control_active();
     static bool was_control = true;
     static Uint32 held_mouse = 0;
-    static bool held_jump = false, held_esc = false, held_pad_jump = false;
+    static bool held_jump = false, held_esc = false, held_pad_jump[kPadSlots] = {};
     bool jump_key = false;
     for (const port::Bind& b : g_set.kb[port::ACT_L])
         if (b.type == port::Bind::KEY && kb_ok && b.code > 0 && b.code < SDL_NUM_SCANCODES && k[b.code]) jump_key = true;
     const bool esc = kb_ok && k[SDL_SCANCODE_ESCAPE];
     const port::Bind& pj = g_set.pad[port::ACT_L];
-    const bool pad_jump = g_pad && pj.type == port::Bind::PAD_BUTTON &&
-                          SDL_GameControllerGetButton(g_pad, SDL_GameControllerButton(pj.code));
-    if (control != was_control) { held_mouse = mb; held_jump = jump_key; held_esc = esc; held_pad_jump = pad_jump; }
+    bool pad_jump[kPadSlots] = {};
+    for (int i = 0; i < kPadSlots; i++)
+        pad_jump[i] = g_pads[i] && pj.type == port::Bind::PAD_BUTTON &&
+                      SDL_GameControllerGetButton(g_pads[i], SDL_GameControllerButton(pj.code));
+    if (control != was_control) {
+        held_mouse = mb; held_jump = jump_key; held_esc = esc;
+        for (int i = 0; i < kPadSlots; i++) held_pad_jump[i] = pad_jump[i];
+    }
     was_control = control;
     held_mouse |= g_capture_click;
     g_capture_click = 0;
     held_mouse &= mb;
     held_jump &= jump_key;
     held_esc &= esc;
-    held_pad_jump &= pad_jump;
+    for (int i = 0; i < kPadSlots; i++) held_pad_jump[i] &= pad_jump[i];
     for (int a = 0; a < port::ACT_COUNT; a++)
         for (const port::Bind& b : g_set.kb[a]) {
             if (b.type == port::Bind::KEY && kb_ok && b.code > 0 && b.code < SDL_NUM_SCANCODES && k[b.code]) {
@@ -535,8 +709,8 @@ void update_input(float dt) {
         Uint32 clicks = mb & ~held_mouse;
         if (clicks & SDL_BUTTON(SDL_BUTTON_LEFT)) act[port::ACT_A] = 1;
         if (clicks & SDL_BUTTON(SDL_BUTTON_RIGHT)) act[port::ACT_B] = 1;
-        if (wheel_on[1]) ly += 1;
-        if (wheel_on[0]) ly -= 1;
+        if (wheel_on[1]) kbm.ly += 1;
+        if (wheel_on[0]) kbm.ly -= 1;
     }
     // Weapon wheel: holding X opens the game's weapon wheel after WeaponWheelDelay (0.25 s, base.cfg), which by
     // default pauses the game, and the wheel picks the weapon in the main stick's direction. A key / mouse hold of X
@@ -565,43 +739,16 @@ void update_input(float dt) {
         wheel_vy -= g_mouse_dy;
         float len = std::hypot(wheel_vx, wheel_vy);
         if (len > kRadius) { wheel_vx *= kRadius / len; wheel_vy *= kRadius / len; len = kRadius; }
-        if (len > kRadius * 0.35f) { lx += wheel_vx / len; ly += wheel_vy / len; }
+        if (len > kRadius * 0.35f) { kbm.lx += wheel_vx / len; kbm.ly += wheel_vy / len; }
         g_mouse_dx = g_mouse_dy = 0;
     }
-    if (g_pad) {
-        for (int a = port::kFirstButtonAction; a < port::ACT_COUNT; a++) {
-            const port::Bind& b = g_set.pad[a];
-            float v = 0;
-            if (b.type == port::Bind::PAD_BUTTON) v = SDL_GameControllerGetButton(g_pad, SDL_GameControllerButton(b.code)) ? 1.f : 0.f;
-            else if (b.type == port::Bind::PAD_AXIS) v = std::max(0.f, SDL_GameControllerGetAxis(g_pad, SDL_GameControllerAxis(b.code)) / 32767.f);
-            int target = a;
-            if (a == port::ACT_L && b.type == port::Bind::PAD_BUTTON) {
-                if (held_pad_jump) continue;
-                if (!control) target = port::ACT_A;
-            }
-            act[target] = std::max(act[target], v);
-        }
-        auto ax = [](SDL_GameControllerAxis a) { return SDL_GameControllerGetAxis(g_pad, a) / 32767.f; };
-        float mx = ax(SDL_CONTROLLER_AXIS_LEFTX), my = -ax(SDL_CONTROLLER_AXIS_LEFTY);
-        float rx = ax(SDL_CONTROLLER_AXIS_RIGHTX), ry = -ax(SDL_CONTROLLER_AXIS_RIGHTY);
-        if (g_set.swap_sticks) { std::swap(mx, rx); std::swap(my, ry); }
-        deadzone(mx, my, g_set.pad_deadzone);
-        deadzone(rx, ry, g_set.pad_deadzone);
-        lx += mx; ly += my;
-        cx += rx * g_set.look_sens;
-        cy += (g_set.pad_invert_y ? -ry : ry) * g_set.look_sens;
-    }
-    ly += act[port::ACT_MOVE_UP] - act[port::ACT_MOVE_DOWN];
+    for (int i = 0; i < kPadSlots; i++)
+        if (g_pads[i] && slot_player(i) >= 0) pad_input(g_pads[i], players[slot_player(i)], control, held_pad_jump[i]);
+    kbm.ly += act[port::ACT_MOVE_UP] - act[port::ACT_MOVE_DOWN];
     // Vehicles steer with the C-stick (the main stick's X does nothing there): the strafe keys steer while driving.
-    (ssne::player_in_vehicle() ? cx : lx) += act[port::ACT_MOVE_RIGHT] - act[port::ACT_MOVE_LEFT];
-    cy += act[port::ACT_LOOK_UP] - act[port::ACT_LOOK_DOWN];
-    cx += act[port::ACT_LOOK_RIGHT] - act[port::ACT_LOOK_LEFT];
-    struct { int a; uint16_t m; } map[] = {
-        {port::ACT_A, ssne::PAD_A}, {port::ACT_B, ssne::PAD_B}, {port::ACT_X, ssne::PAD_X}, {port::ACT_Y, ssne::PAD_Y},
-        {port::ACT_Z, ssne::PAD_Z}, {port::ACT_START, ssne::PAD_START},
-        {port::ACT_DPAD_UP, ssne::PAD_UP}, {port::ACT_DPAD_DOWN, ssne::PAD_DOWN},
-        {port::ACT_DPAD_LEFT, ssne::PAD_LEFT}, {port::ACT_DPAD_RIGHT, ssne::PAD_RIGHT}};
-    for (auto& m : map) if (act[m.a] >= 0.5f) p.buttons |= m.m;
+    (ssne::player_in_vehicle() ? kbm.cx : kbm.lx) += act[port::ACT_MOVE_RIGHT] - act[port::ACT_MOVE_LEFT];
+    kbm.cy += act[port::ACT_LOOK_UP] - act[port::ACT_LOOK_DOWN];
+    kbm.cx += act[port::ACT_LOOK_RIGHT] - act[port::ACT_LOOK_LEFT];
     // Weapon groups 1-9 (number keys by default), on foot only: the runtime picks and switches the weapon.
     static bool weapon_was[9] = {};
     for (int i = 0; i < 9; i++) {
@@ -609,31 +756,23 @@ void update_input(float dt) {
         if (on && !weapon_was[i] && ssne::mouse_aim_active()) ssne::weapon_select_group(i);
         weapon_was[i] = on;
     }
-    lt = act[port::ACT_L];
-    rt = act[port::ACT_R];
     if (g_mouse_captured && g_set.mouse_look && g_set.mouse_aim && ssne::mouse_aim_active()) {
         // Direct aim: mouse counts -> radians, applied to the player's view by the runtime (no C-stick).
-        const double k = 0.0012 * g_set.mouse_sens;
-        ssne::mouse_aim_add(g_mouse_dx * k, (g_set.mouse_invert_y ? g_mouse_dy : -g_mouse_dy) * k);
+        const double kr = 0.0012 * g_set.mouse_sens;
+        ssne::mouse_aim_add(g_mouse_dx * kr, (g_set.mouse_invert_y ? g_mouse_dy : -g_mouse_dy) * kr);
     } else if (g_mouse_captured && g_set.mouse_look) {
         // Mouse motion drives the C-stick (menus, or direct aim off); scaled per frame so speed doesn't depend on frame rate.
         float sens = 0.02f * g_set.mouse_sens;
-        cx += std::clamp(g_mouse_dx * sens / std::max(dt * 60.f, 0.25f), -1.f, 1.f);
+        kbm.cx += std::clamp(g_mouse_dx * sens / std::max(dt * 60.f, 0.25f), -1.f, 1.f);
         float dy = std::clamp(g_mouse_dy * sens / std::max(dt * 60.f, 0.25f), -1.f, 1.f);
-        cy += g_set.mouse_invert_y ? dy : -dy;
+        kbm.cy += g_set.mouse_invert_y ? dy : -dy;
     }
     g_mouse_dx = g_mouse_dy = 0;
-    p.stick_x = axis_to_u8(std::clamp(lx, -1.f, 1.f));
-    p.stick_y = axis_to_u8(std::clamp(ly, -1.f, 1.f));
-    p.cstick_x = axis_to_u8(std::clamp(cx, -1.f, 1.f));
-    p.cstick_y = axis_to_u8(std::clamp(cy, -1.f, 1.f));
-    p.trigger_l = uint8_t(std::clamp(lt, 0.f, 1.f) * 255);
-    p.trigger_r = uint8_t(std::clamp(rt, 0.f, 1.f) * 255);
-    float click = std::min(g_set.trigger_threshold, 0.999f);
-    if (lt >= click) p.buttons |= ssne::PAD_L;   // full press = digital click, as on the real controller
-    if (rt >= click) p.buttons |= ssne::PAD_R;
-    apply_autopress(p);
-    ssne::set_pad(0, p);
+    for (int p = 0; p < 4; p++) {
+        ssne::PadState ps = to_pad(players[p]);
+        if (p == 0) apply_autopress(ps);
+        ssne::set_pad(p, ps);
+    }
 }
 
 // ---------------------------------------------------------------- audio
@@ -951,7 +1090,7 @@ void draw_overlay(const std::string& data_dir, float dt) {
                     (unsigned long long)rs.display_copies, (unsigned long long)rs.triangles, (unsigned long long)rs.textures_decoded,
                     (unsigned long long)hw.disc_reads, (unsigned long long)(hw.disc_bytes / 1024), (unsigned long long)st.interrupts, st.threads);
         ImGui::Text("Data: %s   Recompiled functions: %zu   Controller: %s", data_dir.c_str(), g_ssne_func_count,
-                    g_pad ? SDL_GameControllerName(g_pad) : "keyboard/mouse");
+                    g_last_pad ? SDL_GameControllerName(g_last_pad) : "keyboard/mouse");
         {
             auto au = ssne::audio_stats();
             ImGui::Text("Audio: %s  volume %d%% (F3 mute, F4/F5 -/+)  |  %u voices  |  %u ms queued  |  %llu underruns",
@@ -987,8 +1126,16 @@ void draw_overlay(const std::string& data_dir, float dt) {
 }
 
 // Applies g_set to the running game/renderer/window. `win` may be null before the window exists.
+// 2-player split screen: automatic is left / right in widescreen (two tall halves instead of two flat strips).
+void apply_split(SDL_Window* win) {
+    int mode = g_set.split_two == 0 ? (aspect_factor(win) > 1.2f ? 1 : 0) : g_set.split_two - 1;
+    ssne::set_split_two(mode);
+}
+
 void apply_settings(SDL_Window* win) {
     ssne::set_widescreen(aspect_factor(win));
+    apply_split(win);
+    update_ports();
     ssne::set_hud_edges(g_set.hud_edges);
     ssne::gpu_renderer_set_side_fill(g_set.side_fill);
     {
@@ -1113,21 +1260,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return 1;
     }
-    if (getenv("SSNE_VIRTUAL_PAD")) {  // development: a virtual gamepad that logs rumble (testing without hardware)
-        SDL_VirtualJoystickDesc d{};
-        d.version = SDL_VIRTUAL_JOYSTICK_DESC_VERSION;
-        d.type = SDL_JOYSTICK_TYPE_GAMECONTROLLER;
-        d.naxes = SDL_CONTROLLER_AXIS_MAX;
-        d.nbuttons = SDL_CONTROLLER_BUTTON_MAX;
-        d.name = "Virtual test pad";
-        d.Rumble = [](void*, Uint16 lo, Uint16 hi) -> int {
-            static Uint16 last_lo = 1, last_hi = 1;
-            if (lo != last_lo || hi != last_hi) log_line("[dev] virtual pad rumble " + std::to_string(lo) + " " + std::to_string(hi));
-            last_lo = lo; last_hi = hi;
-            return 0;
-        };
-        if (SDL_JoystickAttachVirtualEx(&d) < 0) log_line(std::string("[dev] virtual pad failed: ") + SDL_GetError());
-    }
+    attach_virtual_pads();  // development (SSNE_VIRTUAL_PADS)
     if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)  // no audio device: play silently
         log_line(std::string("[audio] audio unavailable: ") + SDL_GetError());
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -1212,8 +1345,11 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&e)) {
             if (port::menu_handle_event(e, g_set, changed)) continue;  // rebinding in progress
             if (e.type == SDL_KEYDOWN || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEWHEEL) g_input_pad = false;
-            else if (e.type == SDL_CONTROLLERBUTTONDOWN || (e.type == SDL_CONTROLLERAXISMOTION && std::abs(e.caxis.value) > 16000))
+            else if (e.type == SDL_CONTROLLERBUTTONDOWN || (e.type == SDL_CONTROLLERAXISMOTION && std::abs(e.caxis.value) > 16000)) {
                 g_input_pad = true;
+                int slot = pad_slot(e.type == SDL_CONTROLLERBUTTONDOWN ? e.cbutton.which : e.caxis.which);
+                if (slot >= 0) g_last_pad = g_pads[slot];
+            }
             ImGui_ImplSDL2_ProcessEvent(&e);
             switch (e.type) {
             case SDL_QUIT: quit = true; break;
@@ -1295,18 +1431,22 @@ int main(int argc, char** argv) {
             case SDL_CONTROLLERBUTTONDOWN:
                 if (e.cbutton.button == SDL_CONTROLLER_BUTTON_BACK) toggle_menu();
                 break;
-            case SDL_CONTROLLERDEVICEADDED:
-                if (!g_pad) { g_pad = SDL_GameControllerOpen(e.cdevice.which); g_input_pad = g_pad != nullptr; }
+            case SDL_CONTROLLERDEVICEADDED:  // which: device index
+                open_pad(e.cdevice.which);
+                g_input_pad = g_last_pad != nullptr;
                 break;
-            case SDL_CONTROLLERDEVICEREMOVED:
-                if (g_pad && SDL_GameControllerGetAttached(g_pad) == SDL_FALSE) { SDL_GameControllerClose(g_pad); g_pad = nullptr; }
+            case SDL_CONTROLLERDEVICEREMOVED:  // which: instance id
+                close_pad(e.cdevice.which);
                 break;
             case SDL_WINDOWEVENT:
                 if (e.window.event == SDL_WINDOWEVENT_FOCUS_LOST) { release_mouse(); g_focused = false; }
                 if (e.window.event == SDL_WINDOWEVENT_MOVED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
                     e.window.event == SDL_WINDOWEVENT_MAXIMIZED || e.window.event == SDL_WINDOWEVENT_RESTORED)
                     remember_window(win);
-                if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) ssne::set_widescreen(aspect_factor(win));  // automatic aspect
+                if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {  // automatic aspect
+                    ssne::set_widescreen(aspect_factor(win));
+                    apply_split(win);
+                }
                 if (e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) g_focused = true;
                 if (e.window.event == SDL_WINDOWEVENT_MINIMIZED) g_focused = false;
                 if (e.window.event == SDL_WINDOWEVENT_CLOSE) quit = true;
@@ -1378,7 +1518,9 @@ int main(int argc, char** argv) {
                 mi.gpu_ms = float(g_auto.gpu_ms);
             }
             mi.display_synced = ssne::vi_host_sync();
-            if (g_pad) mi.pad_name = SDL_GameControllerName(g_pad) ? SDL_GameControllerName(g_pad) : "controller";
+            if (SDL_GameController* c = first_pad()) mi.pad_name = SDL_GameControllerName(c) ? SDL_GameControllerName(c) : "controller";
+            for (int i = 0; i < kPadSlots; i++)
+                mi.pads[i] = g_pads[i] ? (SDL_GameControllerName(g_pads[i]) ? SDL_GameControllerName(g_pads[i]) : "controller") : "";
             mi.settings_path = g_settings_path;
             for (int d = 0; d < SDL_GetNumVideoDisplays(); d++) {
                 const char* n = SDL_GetDisplayName(d);
@@ -1458,7 +1600,7 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::_Exit(0);
     }).detach();
-    if (g_pad) SDL_GameControllerRumble(g_pad, 0, 0, 0);  // don't leave the controller vibrating
+    for (SDL_GameController* c : g_pads) if (c) SDL_GameControllerRumble(c, 0, 0, 0);  // don't leave them vibrating
     save_now();
     SDL_SetRelativeMouseMode(SDL_FALSE);
     SDL_SetWindowFullscreen(win, 0);
