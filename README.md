@@ -112,6 +112,12 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 - **Widescreen** (16:9 / 21:9 / automatic, which follows the window's shape; F8) applies in gameplay; menus (also pause, NETRICSA and briefings) and cutscenes
   stay 4:3, because the game places 3D models into 2D menu layouts. A blurred copy of the picture fills the sides
   (F12 › Graphics › Fill the sides of 4:3 screens). The HUD moves out to the screen edges (F12 › Graphics).
+- **Local multiplayer** (split screen for 2-4 players): plug in a controller per player and choose MultiPlayer;
+  every player presses A to join. Co-operative is for 2 players, Deathmatch, Hold the Flag and Pass the Bomb for up
+  to 4. F12 › Players sets who plays which player (keyboard & mouse, controllers 1-4) and how two players share the
+  screen (side by side or top and bottom). Each view keeps its HUD at its own edges in widescreen, and rumble goes to
+  the controller of the player who is hit. Works over the internet with Parsec or Steam Remote Play Together: the
+  remote players' controllers show up like your own.
 - **Sharpest image:** F12 › Graphics › Internal resolution › Native renders at exactly your screen or window
   resolution (e.g. 1920x1080 in widescreen gameplay on a 1080p screen); Automatic picks a multiple of 640x448.
 - **Pause in the background** (on by default): switching to another window pauses and silences the game.

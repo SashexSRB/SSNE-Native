@@ -60,6 +60,10 @@ PERFORMANCE
     heaviest - automatic resolution still lowers it if your GPU can't keep up).
   - Rumble (F12 > Gamepad, on by default): the game's controller vibration on Xbox, PlayStation, Switch Pro and
     most other gamepads, with a strength slider and a Test button.
+  - Local multiplayer (split screen, 2-4 players): one controller per player, then MultiPlayer in the game and every
+    player presses A to join (Co-operative: 2 players; Deathmatch, Hold the Flag, Pass the Bomb: up to 4).
+    F12 > Players: who plays which player (keyboard & mouse, controllers 1-4 in the order connected) and how two
+    players share the screen. Also works with Parsec / Steam Remote Play Together (remote controllers count as local).
   - Sync game to display (on by default): with vertical sync, the 60 fps limit and a 60 Hz screen, the game ticks
     once per screen refresh, so frames are never shown twice (no periodic micro-stutter).
   - "Software renderer (CPU)" at the top of the screen means the GPU renderer could not start (OpenGL 3.3 missing):

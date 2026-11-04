@@ -4,6 +4,23 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.5.4
+  - Local multiplayer (github.com/SashexSRB/SSNE-Native/issues/15): split screen for 2, 3 and 4 players with up to
+    four controllers. Before, only the first controller was read and the game saw no others. Each controller (and the
+    keyboard and mouse) plays its own player: F12 > Players sets who plays which player; by default the keyboard,
+    the mouse and the first controller play player 1 and every further controller the next player. Controllers can be
+    plugged in and out at any time. Co-operative is for 2 players (the game's limit), Deathmatch, Hold the Flag and
+    Pass the Bomb for up to 4. Works over the internet with Parsec or Steam Remote Play Together.
+  - Split screen picture: the views of 3 and 4 players showed garbage (only the 2-player halves were handled); every
+    view now renders correctly, at your internal resolution.
+  - Two players side by side: F12 > Players > Two players. Automatic (the default) shares a widescreen screen left
+    and right instead of in two flat strips, and uses top and bottom at 4:3.
+  - Widescreen split screen: every view keeps its crosshair in its middle and its HUD at its own edges; the sniper
+    scope is round in each view.
+  - Rumble goes to the controller of the player who is hit; mouse aim and the weapon number keys go to the keyboard
+    player, with the sniper zoom slowing the mouse by that player's own zoom.
+  - The shader list for the 10 lost levels follows in 1.2.5.5.
+
 SSNE-NATIVE 1.2.5.3
   - Sniper scope sensitivity (github.com/SashexSRB/SSNE-Native/issues/17): with the mouse, turning got faster the
     further you zoomed in. Mouse aim is now scaled by the zoom, so the crosshair moves over the image at the same
