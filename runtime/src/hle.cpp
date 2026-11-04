@@ -201,8 +201,13 @@ void select_version() {
 // first frame of a menu still is: the game opens it in that frame's update).
 // Without both hooks (another game build), gameplay is detected by the weapon alone.
 std::atomic<bool> g_player_seen{false}, g_player_control{false};
-int64_t g_jump_latched_ms = -1;  // a jump press not yet seen by a physics step (when it was pressed; see latch_jump)
-int g_switch_boost = 0;          // player updates left to run like 60 fps frames after a controller switch
+// Per controller port (multiplayer: a player's port is player+0x178, 0-3):
+int64_t g_jump_latched_ms[4] = {-1, -1, -1, -1};  // a jump press not yet seen by a physics step (when; see latch_jump)
+int g_switch_boost[4] = {};      // player updates left to run like 60 fps frames after a controller switch
+// The port of the player the keyboard and mouse play: mouse aim, weapon number keys and the vehicle check for the
+// keyboard's steering apply to that player only.
+std::atomic<int> g_kbm_port{0};
+int player_port(uint32_t player) { uint32_t p = mem_read32(player + 0x178); return p < 4 ? int(p) : 0; }
 std::atomic<int> g_control_hooks{0};  // player update and flip hooks installed (2: player control is known)
 void end_player_frame() { g_player_control = g_player_seen.exchange(false); }
 
@@ -413,7 +418,8 @@ void install_call_tracer() {
 namespace {
 const uint32_t kPlayerUpdateSig[6] = {0x9421FF18u, 0x7C0802A6u, 0xDB6100C0u, 0xDB8100C8u, 0xDBA100D0u, 0xDBC100D8u};
 PPCFunc g_orig_player_update = nullptr;
-std::atomic<int64_t> g_vehicle_last_ms{-100000};
+std::atomic<int64_t> g_vehicle_last_ms{-100000};  // any player
+std::atomic<int64_t> g_vehicle_port_ms[4] = {{-100000}, {-100000}, {-100000}, {-100000}};
 
 // ---- weapon number keys. The player's weapons by id: 0 chainsaw, 1 Desert Hawk, 2 Uzis, 3 double shotgun,
 // 4 minigun, 5 grenade launcher, 6 rocket launcher, 7 flamethrower (gas gun), 8 sniper rifle, 9 Sirian power gun,
@@ -448,7 +454,7 @@ bool weapon_available(PPCContext& ctx, uint32_t player, int id) {
     return ok;
 }
 
-void weapon_keys(PPCContext& ctx, uint32_t player) {
+void weapon_keys(PPCContext& ctx, uint32_t player, int port) {
     int cur = int(mem_read32(player + 0x5DC)), sel = int(mem_read32(player + 0x5F8));
     if (cur < 0 || cur > 11 || sel < 0 || sel > 11) return;
     int group = g_weapon_req.exchange(-1);
@@ -463,7 +469,7 @@ void weapon_keys(PPCContext& ctx, uint32_t player) {
         }
         if (target >= 0 && target != cur) {
             if (sel != cur) mem_write32(player + 0x5F8, uint32_t(target));  // a switch is under way: retarget it
-            else { inject_buttons(PAD_X, 60); g_weapon_target = target; g_weapon_deadline = now_ms() + 500; }
+            else { inject_buttons(PAD_X, 60, port); g_weapon_target = target; g_weapon_deadline = now_ms() + 500; }
         }
     }
     if (g_weapon_target >= 0) {
@@ -479,14 +485,15 @@ void hle_player_update(PPCContext& ctx) {
     // plus the frame time (fixed-step mode without a whole step; the variable-step mode always steps).
     float acc = valid ? u2f(mem_read32(player + 0x140)) : 0.f, dt = u2f(mem_read32(ctx.r[13] + 0xFFFF85F8u));
     uint32_t controller = valid ? mem_read32(player + 0x344) : 0;
+    const int port = valid ? player_port(player) : 0;
     float step = 0;
     if (valid) {
         uint32_t step_src = mem_read32(player + 0x23C);
         if (step_src >= 0x80000000u && step_src < 0x81800000u) step = u2f(mem_read32(step_src + 0x24));
         if (!(step > 0 && step < 0.1f)) step = 0;
     }
-    if (g_switch_boost > 0 && step > 0) {  // the frames after a controller switch step like 60 fps frames (below)
-        g_switch_boost--;
+    if (g_switch_boost[port] > 0 && step > 0) {  // the frames after a controller switch step like 60 fps frames (below)
+        g_switch_boost[port]--;
         if (acc + dt < 2 * step) { acc = 2 * step - dt; mem_write32(player + 0x140, f2u(acc)); }
     }
     PPCFunc* slot = ssne_hook_slot(g_ver->player_update);
@@ -495,18 +502,18 @@ void hle_player_update(PPCContext& ctx) {
     *slot = &hle_player_update;
     if (!valid) return;
     bool stepped = mem_read32(player + 0x140) != f2u(acc + dt);
-    if (stepped) g_jump_latched_ms = -1;
+    if (stepped) g_jump_latched_ms[port] = -1;
     // Jumping out of water switches from the swim controller to the walking one: in the next frame it sets Sam's
     // upward speed, in the one after his physics steps move him up, and after every frame a water check switches
     // back to swimming while he is still too deep. At 60 fps that second frame runs two steps (1/60 s) and clears the
     // depth; above 120 fps it ran none or one, the check switched back, and every attempt failed. So after a switch
     // at frame times shorter than 3/4 of 1/60 s, the next two frames run two steps each, as at 60 fps (brought
     // forward: the accumulator goes negative and keeps the average rate).
-    if (step > 0 && dt < 0.75f / 60 && mem_read32(player + 0x344) != controller) g_switch_boost = 2;
+    if (step > 0 && dt < 0.75f / 60 && mem_read32(player + 0x344) != controller) g_switch_boost[port] = 2;
     g_player_seen = true;
     uint32_t vehicle = mem_read32(player + 0x6C4);
-    if (vehicle >= 0x80000000u && vehicle < 0x81800000u) g_vehicle_last_ms = now_ms();
-    else if (g_weapon_owned && g_weapon_has_ammo) weapon_keys(ctx, player);
+    if (vehicle >= 0x80000000u && vehicle < 0x81800000u) g_vehicle_last_ms = g_vehicle_port_ms[port] = now_ms();
+    else if (g_weapon_owned && g_weapon_has_ammo && port == g_kbm_port.load()) weapon_keys(ctx, player, port);
 }
 
 void install_vehicle_detector() {
@@ -528,6 +535,7 @@ void install_vehicle_detector() {
 }
 
 bool in_vehicle() { return now_ms() - g_vehicle_last_ms.load() < 200; }
+bool port_in_vehicle(int port) { return now_ms() - g_vehicle_port_ms[port & 3].load() < 200; }
 } // namespace
 
 // ---- frame rate limit. The game measures real frame time (median of the last 5 frames, 8015544C) and
@@ -591,15 +599,15 @@ void hle_look_update(PPCContext& ctx) {
     *slot = nullptr;
     g_orig_look(ctx);
     *slot = &hle_look_update;
+    g_aim_last_ms = now_ms();
+    if (player < 0x80000000u || player >= 0x81800000u || player_port(player) != g_kbm_port.load()) return;
     double dyaw, dpitch;
     {
         std::lock_guard<std::mutex> lk(g_aim_mutex);
         dyaw = g_aim_yaw; dpitch = g_aim_pitch;
         g_aim_yaw = g_aim_pitch = 0;
     }
-    g_aim_last_ms = now_ms();
     if (dyaw == 0 && dpitch == 0) return;
-    if (player < 0x80000000u || player >= 0x81800000u) return;
     // Zoomed in (the sniper rifle narrows the FOV), the same turn moves the image further: the mouse turns by the
     // zoom (ratio of the tangents), so it moves the crosshair over the image at the same speed at any zoom.
     float cam = g_cam_fovy.load();
@@ -655,8 +663,8 @@ bool g_pad_fix_trace = false;
 int g_pad_passes = 0;         // processing passes since the last PADClamp (trace)
 
 // ---- jump at high frame rates. The controller processing turns the pads into actions, records of 28 bytes at
-// controller + 12 + 28 * n: value (float), pressed this pass (+4), held (+8), ..., held time (+0x14); jump is action
-// 0. The player's update (800BEEC8) runs the movement controller (player+0x344) in fixed steps of 1/120 s
+// controller + 0x70C * port + 12 + 28 * n: value (float), pressed this pass (+4), held (+8), ..., held time (+0x14);
+// jump is action 0. Each player (split screen: up to four) is latched on its own port. The player's update (800BEEC8) runs the movement controller (player+0x344) in fixed steps of 1/120 s
 // (player+0x23C -> +0x24): the frame time goes into an accumulator (player+0x140), and the physics method (slot 0x34)
 // runs once per whole step, i.e. twice per game frame at 60 fps but only every second to fourth frame above 120 fps.
 // The jump is taken there, from the "pressed" flag, which lasts one processing pass, i.e. one game frame: a press in
@@ -665,14 +673,18 @@ int g_pad_passes = 0;         // processing passes since the last PADClamp (trac
 // the player controls Sam only (no physics runs in the menus), and never longer than 50 ms. (Leaving the water also
 // needed the first step after a controller switch to come early: hle_player_update.)
 constexpr uint32_t kJumpAction = 0;
+constexpr uint32_t kPortBlock = 0x70C;  // the controller processing's data per controller port (actions at +12)
 
 void latch_jump(uint32_t controller) {
-    if (controller < 0x80000000u || controller >= 0x817FF000u) return;
-    uint32_t pressed = controller + 12 + kJumpAction * 28 + 4;
-    if (mem_read32(pressed)) { g_jump_latched_ms = now_ms(); return; }
-    if (g_jump_latched_ms < 0) return;
-    if (!g_player_control.load() || now_ms() - g_jump_latched_ms > 50) { g_jump_latched_ms = -1; return; }
-    mem_write32(pressed, 1);
+    if (controller < 0x80000000u || controller >= 0x817FF000u - 3 * kPortBlock) return;
+    for (int port = 0; port < 4; port++) {
+        uint32_t pressed = controller + port * kPortBlock + 12 + kJumpAction * 28 + 4;
+        int64_t& latched = g_jump_latched_ms[port];
+        if (mem_read32(pressed)) { latched = now_ms(); continue; }
+        if (latched < 0) continue;
+        if (!g_player_control.load() || now_ms() - latched > 50) { latched = -1; continue; }
+        mem_write32(pressed, 1);
+    }
 }
 
 void hle_pad_clamp(PPCContext& ctx) {
@@ -852,6 +864,38 @@ void install_landing_fix() {
     ssne_install_hook(kObjectPhysics, hle_object_physics);
 }
 
+// ---- 2-player split screen. Each match, 80166D90 picks a screen layout for every player from the number of players,
+// SystemSetup.ScreenMode and the TwoPlayerScreenSplitMode / ThreePlayerScreenSplitMode settings (base.cfg), each
+// read through the config lookup 80113770(config, name) (value at +0x24 of what it returns). Two players get the top
+// and bottom halves (mode 0) or the left and right halves (mode 1); the game's options don't offer it. The lookup for
+// the 2-player mode (called from 80167098) answers with the port's choice instead (set_split_two).
+const uint32_t kConfigLookupSig[6] = {0x9421FFF0u, 0x7C0802A6u, 0xBFC10008u, 0x90010014u, 0x7CBE2B78u, 0x4BFFFDD5u};
+const uint32_t kSplitLayoutSig[6] = {0x9421FFB8u, 0x7C0802A6u, 0xDBE10040u, 0xBEC10018u, 0x9001004Cu, 0x480004F9u};
+constexpr uint32_t kConfigLookup = 0x80113770, kSplitLayout = 0x80166D90, kTwoSplitLookupReturn = 0x8016709C;
+PPCFunc g_orig_config_lookup = nullptr;
+std::atomic<int> g_split_two{-1};  // -1: the game's setting
+
+void hle_config_lookup(PPCContext& ctx) {
+    uint32_t lr = ctx.lr;
+    PPCFunc* slot = ssne_hook_slot(kConfigLookup);
+    *slot = nullptr;
+    g_orig_config_lookup(ctx);
+    *slot = &hle_config_lookup;
+    int mode = g_split_two.load();
+    if (lr == kTwoSplitLookupReturn && mode >= 0 && ctx.r[3] >= 0x80000000u && ctx.r[3] < 0x817FFFD0u)
+        mem_write32(ctx.r[3] + 0x24, uint32_t(mode));
+}
+
+void install_split_choice() {
+    const SSNEFuncEntry* f = ssne_find_func(kConfigLookup);
+    if (!f || !code_matches(kConfigLookup, kConfigLookupSig) || !code_matches(kSplitLayout, kSplitLayoutSig)) {
+        fprintf(stdout, "[ssne] split screen: layout choice not found (different game build?)\n");
+        return;
+    }
+    g_orig_config_lookup = f->func;
+    ssne_install_hook(kConfigLookup, hle_config_lookup);
+}
+
 // ---- save states: the request is carried out at the start of the game's frame flip (savestate.cpp).
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
@@ -900,7 +944,8 @@ void mouse_aim_add(double yaw, double pitch) {
 bool mouse_aim_available() { return g_orig_look != nullptr; }
 bool mouse_aim_active() { return g_orig_look && now_ms() - g_aim_last_ms.load() < 200; }
 bool player_control_active() { return mouse_aim_active() || in_vehicle(); }
-bool player_in_vehicle() { return in_vehicle(); }
+bool player_in_vehicle() { return port_in_vehicle(g_kbm_port.load()); }
+void set_kbm_port(int port) { g_kbm_port = std::clamp(port, 0, 3); }
 void weapon_select_group(int group) { g_weapon_req_ms = now_ms(); g_weapon_req = group; }
 
 void set_frame_limit(int fps) { g_frame_limit = fps < 0 ? 0 : fps; }
@@ -953,6 +998,7 @@ void install_sdk_hooks() {
         install_step_counter_fix();
         install_vehicle_step_fix();
         install_landing_fix();
+        install_split_choice();
         install_savestates();
     }
     install_call_tracer();
@@ -965,5 +1011,6 @@ void set_widescreen(float factor) { g_widescreen = factor < 1.0f ? 1.0f : factor
 float widescreen() { return g_widescreen.load(); }
 float widescreen_frame_factor() { return g_frame_factor.load(); }
 bool widescreen_frame_zoomed() { return g_frame_zoom.load(); }
+void set_split_two(int mode) { g_split_two = mode < 0 ? -1 : std::min(mode, 1); }
 
 } // namespace ssne

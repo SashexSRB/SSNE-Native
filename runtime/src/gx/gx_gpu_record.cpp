@@ -7,6 +7,7 @@
 // and a small marker is written at the destination address, so a later texture lookup at that address can be
 // resolved to the GPU copy (and a CPU overwrite of the memory invalidates it).
 #include <algorithm>
+#include <cmath>
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
@@ -62,9 +63,12 @@ std::vector<std::unique_ptr<GpuFrame>> g_pool;
 // A widescreen HUD draw of the frame being recorded: its vertices (clip position first), NDC extent, and whether it
 // is text (a glyph of a font atlas).
 struct HudPiece { size_t off; uint32_t n, stride; float mn, mx, ymn, ymx, k; bool glyph; };
+// A player's view in a widescreen frame: the viewport of its 3D draws, in the screen's NDC (center, half size).
+struct HudView { float cx, cy, hw, hh; };
 struct RecCtx {
     std::unique_ptr<GpuFrame> cur;  // frame being recorded
     std::vector<HudPiece> hud;      // its widescreen HUD draws, placed when it's submitted (place_hud)
+    std::vector<HudView> views;     // its players' views (split screen: more than one)
     GpuState state;
     uint32_t state_index = ~0u;
     uint64_t state_vx = 0;  // version of state.vcfg / xf (gpu_record_vertices); 0: mode 0, zeroed
@@ -146,9 +150,22 @@ int tex_bpp(uint32_t fmt) {
 // pulled the group to the middle. Only groups in a corner
 // band (health, ammo, the NETRICSA envelope) or at the far side of the 4:3 area (the weapon bar) move out to the
 // sides: the weapon wheel's slots and icons lie apart from each other around the middle and stay centered with it.
+// Split screen draws every player's 3D view first (each in its own viewport), then each view's HUD over the whole
+// screen, laid out for that view (see place_hud).
+void note_view() {
+    const float* vp = R->state.vp;  // half width, half height (negative), ..., center x, center y (+342)
+    HudView v{(vp[3] - 342.f - 320.f) / 320.f, -(vp[4] - 342.f - 224.f) / 224.f, std::fabs(vp[0]) / 320.f,
+              std::fabs(vp[1]) / 224.f};
+    if (v.hw < 0.45f || v.hh < 0.45f) return;  // smaller than a quarter of the screen: not a player's view
+    for (const HudView& o : R->views)
+        if (std::fabs(o.cx - v.cx) < 0.01f && std::fabs(o.cy - v.cy) < 0.01f && std::fabs(o.hw - v.hw) < 0.01f) return;
+    if (R->views.size() < 8) R->views.push_back(v);
+}
+
 void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
     float k = widescreen_frame_factor();
-    if (k <= 1.001f || !(g.xf_reg[0x26] & 1)) return;
+    if (k <= 1.001f) return;
+    if (!(g.xf_reg[0x26] & 1)) { note_view(); return; }
     const DrawCfg& c = R->state.cfg;
     const Texture* t0 = c.stages > 0 && c.st[0].tex_enabled ? c.tex[c.st[0].texmap & 7] : nullptr;
     HudPiece h{off, n, stride, 1e30f, -1e30f, 1e30f, -1e30f, k, t0 && t0->font};
@@ -161,18 +178,26 @@ void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
         h.mn = std::min(h.mn, x); h.mx = std::max(h.mx, x);
         h.ymn = std::min(h.ymn, y); h.ymx = std::max(h.ymx, y);
     }
-    // Zoomed in (sniper rifle), the scope is four quarter-circle images meeting at the middle of the screen and
-    // reaching well past its sides, laid out for 4:3: widened with the frame, they made an ellipse. Stretched as much
-    // vertically, the circle is round again and as wide as the screen (so the view stays widescreen); it's made a bit
-    // smaller than that, so less of it lies outside the screen.
+    // Zoomed in (sniper rifle), the scope is four quarter-circle images meeting at the middle of the screen (of the
+    // player's view in split screen) and reaching well past its sides, laid out for 4:3: widened with the frame, they
+    // made an ellipse. Stretched as much vertically, the circle is round again and as wide as the screen (so the view
+    // stays widescreen); it's made a bit smaller than that, so less of it lies outside the screen.
     if (t0 && t0->efb_copy < 0 && (h.mn < -1.05f || h.mx > 1.05f) && widescreen_frame_zoomed()) {
         constexpr float kScope = 0.85f;
+        float cx = 0, cy = 0, best = 1e30f;  // the middle: the view center nearest to one of the corners
         uint8_t* w = f.vtx.data() + off;
+        for (const HudView& view : R->views)
+            for (uint32_t i = 0; i < n; i++) {
+                float xy[2];
+                memcpy(xy, w + size_t(i) * stride, 8);
+                float d = std::fabs(xy[0] - view.cx) + std::fabs(xy[1] - view.cy);
+                if (d < best) { best = d; cx = view.cx; cy = view.cy; }
+            }
         for (uint32_t i = 0; i < n; i++, w += stride) {
             float xy[2];
             memcpy(xy, w, 8);
-            xy[0] *= kScope;
-            xy[1] *= k * kScope;
+            xy[0] = cx + (xy[0] - cx) * kScope;
+            xy[1] = cy + (xy[1] - cy) * k * kScope;
             memcpy(w, xy, 8);
         }
         return;
@@ -181,8 +206,62 @@ void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
     R->hud.push_back(h);
 }
 
+// Split screen: every view's HUD is placed as the full screen's is (place_hud), in the view's own coordinates: the
+// elements in its corner bands or at its far sides (health, ammo, the score, the radar) move out to the view's edges,
+// the rest (the crosshair) stays centered in the view. An element is a run of draws that touch or nearly touch each
+// other, text included (the score's digits stay with its icon), and belongs to the view it lies in; elements between
+// the views (the match timer) are placed on the whole screen. Elements covering a whole view are left alone.
+void place_split_hud(RecCtx& r) {
+    GpuFrame& f = *r.cur;
+    const bool sides = hud_edges();
+    constexpr float kGapX = 0.08f, kGapY = 0.06f, kEps = 0.03f;
+    constexpr float kBand = 0.55f, kOuter = 0.8f;  // as in place_hud, in the view's NDC
+    for (size_t i = 0; i < r.hud.size();) {
+        float mn = r.hud[i].mn, mx = r.hud[i].mx, ymn = r.hud[i].ymn, ymx = r.hud[i].ymx;
+        // Draws as tall as a view (the scope's sides, drawn see-through when not zoomed in) stand alone: the
+        // crosshair right next to them would otherwise go to the side with them.
+        auto tall = [](const HudPiece& p) { return p.ymx - p.ymn >= 0.9f; };
+        size_t j = i + 1;
+        for (; j < r.hud.size() && !tall(r.hud[i]); j++) {
+            const HudPiece& p = r.hud[j];
+            if (tall(p) || std::max(p.mn - mx, mn - p.mx) > kGapX || std::max(p.ymn - ymx, ymn - p.ymx) > kGapY) break;
+            mn = std::min(mn, p.mn); mx = std::max(mx, p.mx);
+            ymn = std::min(ymn, p.ymn); ymx = std::max(ymx, p.ymx);
+        }
+        HudView view{0, 0, 1, 1};  // the whole screen
+        for (const HudView& v : r.views)
+            if (mn >= v.cx - v.hw - kEps && mx <= v.cx + v.hw + kEps && ymn >= v.cy - v.hh - kEps && ymx <= v.cy + v.hh + kEps) {
+                view = v;
+                break;
+            }
+        const float lmn = (mn - view.cx) / view.hw, lmx = (mx - view.cx) / view.hw;
+        const float lymn = (ymn - view.cy) / view.hh, lymx = (ymx - view.cy) / view.hh;
+        if (lmx - lmn >= 1.9f) { i = j; continue; }
+        const float k = r.hud[i].k;
+        const bool corner = lymx < -kBand || lymn > kBand || lmn < -kOuter || lmx > kOuter;
+        const float nmn = widescreen_hud_left(lmn, lmx, k, sides && corner);
+        for (; i < j; i++) {
+            const HudPiece& p = r.hud[i];
+            uint8_t* v = f.vtx.data() + p.off;
+            for (uint32_t m = 0; m < p.n; m++, v += p.stride) {
+                float c[4];
+                memcpy(c, v, 16);
+                c[0] = (view.cx + view.hw * (nmn + ((c[0] / c[3] - view.cx) / view.hw - lmn) / k)) * c[3];
+                memcpy(v, c, 4);
+            }
+        }
+    }
+}
+
 void place_hud(RecCtx& r) {
-    if (!r.cur) { r.hud.clear(); return; }
+    if (!r.cur) { r.hud.clear(); r.views.clear(); return; }
+    if (r.views.size() > 1) {
+        place_split_hud(r);
+        r.hud.clear();
+        r.views.clear();
+        return;
+    }
+    r.views.clear();
     GpuFrame& f = *r.cur;
     const bool sides = hud_edges();
     constexpr float kGapX = 0.08f, kGapY = 0.06f;  // NDC: about a glyph's width / height at 448 lines

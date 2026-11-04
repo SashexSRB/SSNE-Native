@@ -61,12 +61,13 @@ uint16_t intro_skip_buttons() {
 
 std::atomic<uint16_t> g_inject_mask{0};
 std::atomic<int64_t> g_inject_until{0};
+std::atomic<int> g_inject_port{0};
 
 void report(int chan, uint32_t out[2]) {
     const PadState& p = g_pads[chan];
     uint16_t b = uint16_t(p.buttons | 0x0080);  // "use origin"
     if (chan == 0) b |= intro_skip_buttons();
-    if (chan == 0 && now_ms() < g_inject_until.load()) b |= g_inject_mask.load();
+    if (chan == g_inject_port.load() && now_ms() < g_inject_until.load()) b |= g_inject_mask.load();
     out[0] = uint32_t(b) << 16 | uint32_t(p.stick_x) << 8 | p.stick_y;
     out[1] = uint32_t(p.cstick_x) << 24 | uint32_t(p.cstick_y) << 16 | uint32_t(p.trigger_l) << 8 | p.trigger_r;
 }
@@ -131,7 +132,11 @@ void intro_skip_file_read(const char* name) {
     else if (st != 2 && !strcmp(name, "FrontEnd.ssg")) g_skip_state = 2;
 }
 void set_skip_intros(bool on) { g_skip_intros = on; }
-void inject_buttons(uint16_t mask, int ms) { g_inject_mask = mask; g_inject_until = now_ms() + ms; }
+void inject_buttons(uint16_t mask, int ms, int port) {
+    g_inject_port = port & 3;
+    g_inject_mask = mask;
+    g_inject_until = now_ms() + ms;
+}
 
 void set_pad_connected(int port, bool on) {
     if (port <= 0 || port > 3) return;

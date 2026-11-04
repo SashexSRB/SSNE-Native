@@ -44,6 +44,9 @@ bool mouse_aim_active();
 bool player_control_active();
 // The player is driving a vehicle (jeep, combine harvester).
 bool player_in_vehicle();
+// The controller port (0-3) of the player the keyboard and mouse play (multiplayer): mouse aim, the weapon number keys
+// and player_in_vehicle apply to that player.
+void set_kbm_port(int port);
 // Number-key weapon groups 0-8 (keys 1-9): picks the group's first available weapon (the next one if a weapon of the
 // group is already in hand) and switches to it the game's own way (hle.cpp). Ignored unless on foot.
 void weapon_select_group(int group);
@@ -81,5 +84,6 @@ void set_hud_edges(bool on);  // widescreen: HUD pieces left / right of the midd
 float widescreen();
 float widescreen_frame_factor();  // factor the game's current frame was rendered with (1 outside gameplay)
 bool widescreen_frame_zoomed();   // the current frame's scene camera is zoomed in (sniper scope; widescreen gameplay)
+void set_split_two(int mode);     // 2-player split screen: 0 top / bottom, 1 left / right, -1 the game's setting (next match)
 
 } // namespace ssne

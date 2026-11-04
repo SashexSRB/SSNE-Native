@@ -102,6 +102,8 @@ int main(int argc, char** argv) {
         else if (a == "--audio-original") ssne::audio_set_hq(false);
         else if (a == "--mix" && i + 1 < argc) { int m = 100, x = 100; sscanf(argv[++i], "%d:%d", &m, &x); ssne::audio_set_mix(m, x); }
         else if (a == "--gpu") gpu = true;
+        else if (a == "--kbm-port" && i + 1 < argc) ssne::set_kbm_port(atoi(argv[++i]) - 1);  // 1-4: mouse aim / weapon keys
+        else if (a == "--split2" && i + 1 < argc) ssne::set_split_two(atoi(argv[++i]));  // 0 top / bottom, 1 side by side
         else if (a == "--pads" && i + 1 < argc) {  // controllers plugged in (1-4)
             int n = atoi(argv[++i]);
             for (int k = 1; k < 4; k++) ssne::set_pad_connected(k, k < n);
