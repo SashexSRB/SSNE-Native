@@ -16,6 +16,7 @@ namespace {
 
 std::mutex M;
 PadState g_pads[4];
+std::atomic<uint8_t> g_connected{1};  // controllers plugged in, bit per port (port 1 always: the game needs one)
 int g_motor[4] = {};
 uint16_t R[0x80];  // halfword registers 0x6400..0x64FF
 
@@ -76,7 +77,7 @@ void transfer(uint32_t csr) {
     if (!outlen) outlen = 128;
     if (!inlen) inlen = 128;
     uint8_t cmd = buf_byte(0);
-    bool present = chan == 0;
+    bool present = (g_connected.load() >> chan) & 1;
     uint32_t status = csr & ~(1u | COMERR);
     if (!present) {
         status |= COMERR;
@@ -132,6 +133,12 @@ void intro_skip_file_read(const char* name) {
 void set_skip_intros(bool on) { g_skip_intros = on; }
 void inject_buttons(uint16_t mask, int ms) { g_inject_mask = mask; g_inject_until = now_ms() + ms; }
 
+void set_pad_connected(int port, bool on) {
+    if (port <= 0 || port > 3) return;
+    if (on) g_connected.fetch_or(uint8_t(1u << port));
+    else g_connected.fetch_and(uint8_t(~(1u << port)));
+}
+bool pad_connected(int port) { return (g_connected.load() >> (port & 3)) & 1; }
 void set_pad(int port, const PadState& s) { std::lock_guard<std::mutex> lk(M); g_pads[port & 3] = s; }
 PadState get_pad(int port) { std::lock_guard<std::mutex> lk(M); return g_pads[port & 3]; }
 int pad_motor(int port) { std::lock_guard<std::mutex> lk(M); return g_motor[port & 3]; }
@@ -184,7 +191,7 @@ void si_poll() {
         uint32_t poll = reg32(SIPOLL);
         for (int ch = 0; ch < 4; ch++) {
             if (!((poll >> (7 - ch)) & 1)) continue;
-            if (ch != 0) { set32(SISR, reg32(SISR) | sisr_bit(ch, 0x08)); continue; }
+            if (!((g_connected.load() >> ch) & 1)) { set32(SISR, reg32(SISR) | sisr_bit(ch, 0x08)); continue; }
             uint32_t r[2];
             report(ch, r);
             set32(0x6404 + 12 * ch, r[0]);

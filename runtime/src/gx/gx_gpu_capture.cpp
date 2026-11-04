@@ -17,7 +17,8 @@
 namespace ssne::gx {
 
 namespace {
-constexpr uint32_t kVersion = 3;  // 2: copies into part of an earlier copy (base_copy_id ...); 3: GPU vertex processing
+constexpr uint32_t kVersion = 4;  // 2: copies into part of an earlier copy (base_copy_id ...); 3: GPU vertex processing;
+                                  // 4: dst_col
 
 template <class T> void put(FILE* f, const T& v) { fwrite(&v, sizeof(T), 1, f); }
 template <class T> bool get(FILE* f, T& v) { return fread(&v, sizeof(T), 1, f) == 1; }
@@ -97,7 +98,7 @@ void gpu_capture_frame_to(const GpuFrame& fr, const std::string& path) {
 #else
         put(f, uint8_t(1));
 #endif
-        put(f, c.base_copy_id); put(f, c.base_w); put(f, c.base_h); put(f, c.dst_row);
+        put(f, c.base_copy_id); put(f, c.base_w); put(f, c.base_h); put(f, c.dst_row); put(f, c.dst_col);
     }
     put(f, uint32_t(fr.vtx.size()));
     fwrite(fr.vtx.data(), 1, fr.vtx.size(), f);
@@ -160,6 +161,7 @@ std::unique_ptr<GpuFrame> gpu_load_captured_frame(const std::string& path, std::
         c.zsnap = zsnap != 0;
 #endif
         if (ver >= 2) { get(f, c.base_copy_id); get(f, c.base_w); get(f, c.base_h); get(f, c.dst_row); }
+        if (ver >= 4) get(f, c.dst_col);
     }
     uint32_t nv;
     get(f, nv);

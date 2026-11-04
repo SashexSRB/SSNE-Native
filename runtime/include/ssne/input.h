@@ -18,6 +18,10 @@ struct PadState {
 };
 
 void set_pad(int port, const PadState& state);
+// Whether a controller is plugged into a port (ports 2-4, index 1-3; port 1 is always connected): the game sees the
+// others as empty (multiplayer: one per player).
+void set_pad_connected(int port, bool on);
+bool pad_connected(int port);
 PadState get_pad(int port);
 // Buttons the runtime itself presses on port 1 for `ms` milliseconds (added to the host's input).
 void inject_buttons(uint16_t mask, int ms);

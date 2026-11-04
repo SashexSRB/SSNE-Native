@@ -1778,18 +1778,19 @@ GLint g_copy_u_src = -1;
 
 void run_copy_tex(const GpuCmd& cmd) {
     // A copy into part of an earlier copy (see GpuCmd::base_copy_id): start from the earlier copy's texels and write
-    // this copy's rows (dst_row..) into them.
+    // this copy into them at dst_col, dst_row.
     const bool comp = cmd.base_copy_id != 0;
     int w = std::max(1, SX(std::max(1, comp ? cmd.base_w : cmd.out_w)));
     int h = std::max(1, SY(std::max(1, comp ? cmd.base_h : cmd.out_h)));
-    // (the band's end from the same rounding as its start: equal at whole-number scales, no gap or overlap at native)
-    int yoff = comp ? SY(cmd.dst_row) : 0;
+    // (the part's end from the same rounding as its start: equal at whole-number scales, no gap or overlap at native)
+    int xoff = comp ? SX(cmd.dst_col) : 0, yoff = comp ? SY(cmd.dst_row) : 0;
+    int bw = comp ? std::min(w - xoff, std::max(1, SX(cmd.dst_col + std::max(1, cmd.out_w)) - xoff)) : w;
     int bh = comp ? std::min(h - yoff, std::max(1, SY(cmd.dst_row + std::max(1, cmd.out_h)) - yoff)) : h;
     RT t = rt_acquire(w, h);
     PooledTex entry{t, g_frame_no};
     // Source origin in internal pixels; the shader reads it at gl_FragCoord (x2 for half-size copies), which starts at
-    // yoff when writing into the composite's rows.
-    GLint rect[4] = {SX(cmd.x), SY(cmd.y) - (cmd.half ? 2 * yoff : yoff), cmd.half ? 1 : 0, 0};
+    // xoff, yoff when writing into part of a composite.
+    GLint rect[4] = {SX(cmd.x) - (cmd.half ? 2 * xoff : xoff), SY(cmd.y) - (cmd.half ? 2 * yoff : yoff), cmd.half ? 1 : 0, 0};
     int nat = cmd.copy_fmt_known ? natural_tex_fmt(cmd.copy_fmt) : -1;
     // Full-size copies (texel exact) also get their natural-format conversion in the same pass. Half-size copies are
     // box filtered: their stored value is rounded by the framebuffer, so they keep the separate pass on the result.
@@ -1802,7 +1803,12 @@ void run_copy_tex(const GpuCmd& cmd) {
             const RT& b = base->second.rt;
             BindFramebuffer(READ_FRAMEBUFFER, b.fbo);
             BindFramebuffer(DRAW_FRAMEBUFFER, t.fbo);
-            BlitFramebuffer(0, 0, b.w, b.h, 0, 0, w, h, COLOR_BUFFER_BIT, NEAREST);
+            if (b.w < w || b.h < h) {  // the composite extends the earlier copy (right of or below it): that starts empty
+                ClearColor(0, 0, 0, 0);
+                Clear(COLOR_BUFFER_BIT);
+            }
+            int cw = std::min(w, b.w), ch = std::min(h, b.h);  // the earlier copy's texels keep their place
+            BlitFramebuffer(0, 0, cw, ch, 0, 0, cw, ch, COLOR_BUFFER_BIT, NEAREST);
         } else {
             BindFramebuffer(FRAMEBUFFER, t.fbo);
             ClearColor(0, 0, 0, 0);
@@ -1826,14 +1832,14 @@ void run_copy_tex(const GpuCmd& cmd) {
         entry.conv_fmt = nat;
     } else {
         BindFramebuffer(FRAMEBUFFER, t.fbo);
-        Viewport(0, yoff, w, bh);
+        Viewport(xoff, yoff, bw, bh);
         sc_program(g_copy_prog);
         Uniform4iv(g_copy_u_rect, 1, rect);
     }
     if (g_msaa > 1) {
         GLuint fbo_now = mrt ? g_mrt_fbo : t.fbo;
         int sx = SX(cmd.x), sy = SY(cmd.y);  // source rectangle (rect[1] is shifted for composites)
-        int sw = cmd.half ? 2 * w + 2 : w, sh = cmd.half ? 2 * bh + 2 : bh;
+        int sw = cmd.half ? 2 * bw + 2 : bw, sh = cmd.half ? 2 * bh + 2 : bh;
         efb_color_for_read(sx, sy, std::min(sx + sw, SX(EFB_W)), std::min(sy + sh, SY(EFB_H)));
         BindFramebuffer(FRAMEBUFFER, fbo_now);
     }

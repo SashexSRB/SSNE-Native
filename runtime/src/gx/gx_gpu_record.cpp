@@ -45,6 +45,7 @@ struct CopyEntry {
     uint32_t addr, fmt;    // copy format (0-15, texture-copy numbering)
     bool intensity, half;
     int out_w, out_h;
+    uint32_t stride;       // destination bytes per row of tiles (the texture's width as the game laid it out)
     std::unordered_map<uint32_t, std::shared_ptr<Texture>> views;  // by texture format
 };
 std::unordered_map<uint32_t, CopyEntry> g_copies;
@@ -467,34 +468,42 @@ void gpu_record_efb_copy(uint32_t cmd) {
         e.half = half;
         e.out_w = half ? w / 2 : w;
         e.out_h = half ? h / 2 : h;
-        // A copy into the rows of an earlier copy's texture: cutscenes render the letterboxed band only and copy it
-        // 72 rows into the full-frame scene texture, which the game then samples whole from its start. On the console
-        // the copy overwrites those rows in place; here it becomes a new copy of the enclosing texture that keeps the
-        // earlier copy's other rows (the renderer composites the two). Otherwise the lookup at the texture's start
-        // would keep finding the last full-frame copy, and cutscenes showed that frozen frame.
-        if (int bpp = copy_bpp(fmt)) {
-            int tile_w = bpp == 32 || bpp == 16 ? 4 : 8, tile_h = bpp == 4 ? 8 : 4;
-            uint32_t row_bytes = uint32_t(tile_h * ((e.out_w + tile_w - 1) / tile_w * tile_w) * bpp / 8);
+        e.stride = (g.bp[0x4D] & 0x3FF) * 32;
+        // A copy into part of an earlier copy's texture: cutscenes render the letterboxed band only and copy it 72
+        // rows into the full-frame scene texture, which the game then samples whole from its start. On the console
+        // the copy overwrites those texels in place; here it becomes a new copy of the enclosing texture that keeps
+        // the earlier copy's other texels (the renderer composites the two). Otherwise the lookup at the texture's
+        // start would keep finding the last full-frame copy, and cutscenes showed that frozen frame. A copy right
+        // next to an earlier one (to its right or below it, in a texture as wide as the copies' stride) extends it:
+        // split screen copies each player's view into one 640x448 texture (2 players: 640x224 halves, top then
+        // bottom; 3-4 players: 320x224 quarters, left to right, then the next row) and draws each view from it right
+        // after its copy (the next frame's first view then goes into the 640x448 composite, as on the console).
+        if (int bpp = copy_bpp(fmt); bpp && e.stride) {
+            const int tile_w = bpp == 32 || bpp == 16 ? 4 : 8, tile_h = bpp == 4 ? 8 : 4;  // a tile is 32 bytes
+            const int layout_w = int(e.stride / 32) * tile_w;
             for (auto& [addr, b] : g_copies) {
-                if (addr >= dst || b.fmt != fmt || b.intensity != e.intensity || b.out_w != e.out_w) continue;
-                uint32_t off = dst - addr;
-                if (off % row_bytes) continue;
-                int row = int(off / row_bytes) * tile_h;
-                if (row + e.out_h > b.out_h) continue;
+                if (addr > dst || b.fmt != fmt || b.intensity != e.intensity || b.stride != e.stride) continue;
+                const uint32_t off = dst - addr;
+                if (off % 32) continue;
+                const int x = int(off % e.stride / 32) * tile_w, y = int(off / e.stride) * tile_h;
+                if (x == 0 && y == 0 && b.out_w <= e.out_w && b.out_h <= e.out_h) continue;  // covers it: a new copy
+                if (x > b.out_w || y > b.out_h || x + e.out_w > layout_w) continue;  // not inside or next to it
                 if (mem_read32(addr) != kMarker0 || mem_read32(addr + 4) != kMarker1 ||
                     mem_read32(addr + 8) != uint32_t(b.id >> 32) || mem_read32(addr + 12) != uint32_t(b.id)) continue;
+                const int comp_w = std::max(b.out_w, x + e.out_w), comp_h = std::max(b.out_h, y + e.out_h);
                 c.base_copy_id = b.id;
-                c.base_w = b.out_w;
-                c.base_h = b.out_h;
-                c.dst_row = row;
+                c.base_w = comp_w;
+                c.base_h = comp_h;
+                c.dst_col = x;
+                c.dst_row = y;
                 e.addr = addr;
-                e.out_w = b.out_w;
-                e.out_h = b.out_h;
+                e.out_w = comp_w;
+                e.out_h = comp_h;
                 break;
             }
         }
         if (c.base_copy_id) {
-            c.out_w = half ? w / 2 : w;  // the copied band (the composite's size is base_w x base_h)
+            c.out_w = half ? w / 2 : w;  // the copied part (the composite's size is base_w x base_h)
             c.out_h = half ? h / 2 : h;
             dst = e.addr;
         }

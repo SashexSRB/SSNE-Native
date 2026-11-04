@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     bool gpu = false;
     float wide = 1.0f;
     int gpu_scale = 1;
-    struct Press { uint16_t button; double at; double dur = 0.2; uint8_t sx = 128, sy = 128, cx = 128, cy = 128; };
+    struct Press { uint16_t button; double at; double dur = 0.2; uint8_t sx = 128, sy = 128, cx = 128, cy = 128; int port = 0; };
     std::vector<Press> presses;
     double pause_at = -1, pause_len = 0;
     std::vector<double> ram_dumps;
@@ -102,6 +102,10 @@ int main(int argc, char** argv) {
         else if (a == "--audio-original") ssne::audio_set_hq(false);
         else if (a == "--mix" && i + 1 < argc) { int m = 100, x = 100; sscanf(argv[++i], "%d:%d", &m, &x); ssne::audio_set_mix(m, x); }
         else if (a == "--gpu") gpu = true;
+        else if (a == "--pads" && i + 1 < argc) {  // controllers plugged in (1-4)
+            int n = atoi(argv[++i]);
+            for (int k = 1; k < 4; k++) ssne::set_pad_connected(k, k < n);
+        }
         else if (a == "--shader-cache" && i + 1 < argc) ssne::gpu_renderer_set_shader_cache(argv[++i]);  // dir (exists)
         else if (a == "--skip-intros") ssne::set_skip_intros(true);
         else if ((a == "--save-state" || a == "--load-state") && i + 1 < argc) {  // --save-state T:path
@@ -175,6 +179,11 @@ int main(int argc, char** argv) {
             while (pos < spec.size()) {
                 size_t comma = spec.find(',', pos);
                 std::string item = spec.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+                int press_port = 0;  // p2:A@5 = controller 2
+                if (item.size() > 3 && item[0] == 'p' && item[2] == ':' && item[1] >= '1' && item[1] <= '4') {
+                    press_port = item[1] - '1';
+                    item = item.substr(3);
+                }
                 size_t at = item.find('@');
                 std::string name = item.substr(0, at);
                 double t = atof(item.substr(at + 1).c_str());
@@ -203,7 +212,7 @@ int main(int argc, char** argv) {
                     pr.sx = uint8_t(x); pr.sy = uint8_t(y); pr.cx = uint8_t(cx); pr.cy = uint8_t(cy);
                     presses.push_back(pr);
                 }
-                for (size_t k = first; k < presses.size(); k++) presses[k].dur = dur;
+                for (size_t k = first; k < presses.size(); k++) { presses[k].dur = dur; presses[k].port = press_port; }
                 if (comma == std::string::npos) break;
                 pos = comma + 1;
             }
@@ -274,9 +283,10 @@ int main(int argc, char** argv) {
         drain_audio();
         {   // scripted controller input: each press is held for 200 ms
             double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            ssne::PadState ps;
+            ssne::PadState pss[4];
             for (auto& p : presses) {
                 if (!(el >= p.at && el < p.at + p.dur)) continue;
+                ssne::PadState& ps = pss[p.port];
                 if (p.button == 0x8001) ps.stick_y = 230;
                 else if (p.button == 0x8002) ps.stick_y = 26;
                 else if (p.button == 0x8003) ps.stick_x = 26;
@@ -323,9 +333,12 @@ int main(int argc, char** argv) {
                     printf("[headless] RAM snapshot %s at %.2fs\n", fn, el);
                     t = -1;
                 }
-            if (ps.buttons & ssne::PAD_R) ps.trigger_r = 255;
-            if (ps.buttons & ssne::PAD_L) ps.trigger_l = 255;
-            ssne::set_pad(0, ps);
+            for (int port = 0; port < 4; port++) {
+                ssne::PadState& ps = pss[port];
+                if (ps.buttons & ssne::PAD_R) ps.trigger_r = 255;
+                if (ps.buttons & ssne::PAD_L) ps.trigger_l = 255;
+                ssne::set_pad(port, ps);
+            }
         }
         {   // every 5 s: frames per second (display copies)
             static auto last = t0;
