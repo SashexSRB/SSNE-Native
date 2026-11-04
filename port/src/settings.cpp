@@ -397,7 +397,7 @@ bool load_settings(Settings& s, const std::string& path) {
     // Sanitize.
     if (s.renderer != "software") s.renderer = "gpu";
     s.scale = std::clamp(s.scale, -1, 8);
-    s.aspect = std::clamp(s.aspect, 0, 2);
+    s.aspect = std::clamp(s.aspect, 0, 3);
     {
         static const char* kAa[] = {"off", "fxaa", "msaa2", "msaa4", "msaa8", "ssaa"};
         bool ok = false;
@@ -427,7 +427,7 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "[graphics]\n";
     o << "renderer = " << s.renderer << "\n";
     o << "scale = " << s.scale << "    # internal resolution 1-8, 0 = automatic, -1 = native (your screen / window resolution)\n";
-    o << "aspect = " << s.aspect << "    # 0 = 4:3, 1 = 16:9, 2 = 21:9\n";
+    o << "aspect = " << s.aspect << "    # 0 = 4:3, 1 = 16:9, 2 = 21:9, 3 = automatic (the window's shape)\n";
     o << "hud_edges = " << (s.hud_edges ? 1 : 0) << "    # widescreen: health / ammo / weapons at the screen edges (0 = within the 4:3 area)\n";
     o << "side_fill = " << (s.side_fill ? 1 : 0) << "    # 4:3 screens (menus) on a wider window: blurred picture at the sides (0 = black bars)\n";
     o << "antialiasing = " << s.antialiasing << "    # off, fxaa, msaa2, msaa4, msaa8, ssaa\n";

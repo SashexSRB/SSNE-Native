@@ -87,6 +87,7 @@ int main(int argc, char** argv) {
     std::string count_path;
     struct Aim { double t, yaw, pitch; };
     std::vector<Aim> aims;
+    std::vector<std::pair<double, int>> weapons;  // --weapon T:GROUP  number key GROUP+1 at T seconds
     struct StateOp { double t; bool save; std::string path; };
     std::vector<StateOp> state_ops;  // --dump-ram 95,98,101: raw MEM1 snapshots to /tmp/ram_<t>.bin  // --press A@5.0,START@8,R@90:5 (hold 5 s)
     for (int i = 1; i < argc; i++) {
@@ -125,6 +126,12 @@ int main(int argc, char** argv) {
             ssne::set_button_prompts(menu, ctl);
         }
         else if (a == "--fps" && i + 1 < argc) ssne::set_frame_limit(atoi(argv[++i]));
+        else if (a == "--weapon" && i + 1 < argc) {
+            double t = 0;
+            int g = 0;
+            sscanf(argv[++i], "%lf:%d", &t, &g);
+            weapons.push_back({t, g});
+        }
         else if (a == "--fov" && i + 1 < argc) ssne::set_fov(float(atof(argv[++i])));
         else if (a == "--aim" && i + 1 < argc) {  // --aim T:YAW:PITCH  one mouse-aim rotation (radians) at T seconds
             double t = 0, y = 0, p = 0;
@@ -289,6 +296,8 @@ int main(int argc, char** argv) {
                 }
             { ssne::SavestateResult res; if (ssne::savestate_take_result(res)) printf("[headless] state result: %s (%s)\n", res.message.c_str(), res.ok ? "ok" : "failed"); }
             if (pause_at >= 0) ssne::set_paused(el >= pause_at && el < pause_at + pause_len);
+            for (auto& w : weapons)
+                if (w.first >= 0 && el >= w.first) { printf("[headless] weapon key %d\n", w.second + 1); ssne::weapon_select_group(w.second); w.first = -1; }
             for (Aim& a : aims)
                 if (a.t >= 0 && el >= a.t) {
                     printf("[headless] mouse aim %+.3f %+.3f (active %d)\n", a.yaw, a.pitch, int(ssne::mouse_aim_active()));

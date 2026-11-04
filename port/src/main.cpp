@@ -146,7 +146,20 @@ port::Settings g_set;
 std::string g_settings_path;
 // Widescreen modes (F8 cycles): factor applied to the game's horizontal field of view in gameplay.
 struct AspectMode { const char* name; float factor; };
-const AspectMode kAspects[] = {{"4:3", 1.0f}, {"16:9", 4.0f / 3.0f}, {"21:9", 7.0f / 4.0f}};
+// The last one follows the window (factor 0: its width / height, see aspect_factor).
+const AspectMode kAspects[] = {{"4:3", 1.0f}, {"16:9", 4.0f / 3.0f}, {"21:9", 7.0f / 4.0f}, {"auto", 0.0f}};
+constexpr int kAspectCount = 4;
+// Automatic: as wide as the window (3440x1440 is 2.39:1, wider than 21:9; 16:10 narrower than 16:9), from 4:3 up to
+// 32:9 (wider windows, e.g. three screens, get bars: the HUD layout and a horizontal FOV of over 140 degrees aren't
+// made for more).
+float aspect_factor(SDL_Window* win) {
+    float f = kAspects[std::clamp(g_set.aspect, 0, kAspectCount - 1)].factor;
+    if (f > 0) return f;
+    int w = 0, h = 0;
+    if (win) SDL_GL_GetDrawableSize(win, &w, &h);
+    if (w <= 0 || h <= 0) return 4.0f / 3.0f;
+    return std::clamp(float(w) / float(h) / (4.0f / 3.0f), 1.0f, 8.0f / 3.0f);
+}
 // Frame rate limit (F10 cycles these; the menu also offers 165 and 240): 60 = the game's own pacing.
 const int kFpsModes[] = {60, 120, 144, 0};
 std::string fps_mode_name(int v) { return v == 0 ? std::string("unlimited") : std::to_string(v); }
@@ -975,7 +988,7 @@ void draw_overlay(const std::string& data_dir, float dt) {
 
 // Applies g_set to the running game/renderer/window. `win` may be null before the window exists.
 void apply_settings(SDL_Window* win) {
-    ssne::set_widescreen(kAspects[std::clamp(g_set.aspect, 0, 2)].factor);
+    ssne::set_widescreen(aspect_factor(win));
     ssne::set_hud_edges(g_set.hud_edges);
     ssne::gpu_renderer_set_side_fill(g_set.side_fill);
     {
@@ -1040,7 +1053,7 @@ int main(int argc, char** argv) {
         else if (a == "--renderer" && i + 1 < argc) g_set.renderer = argv[++i];
         else if (a == "--aspect" && i + 1 < argc) {
             std::string v = argv[++i];
-            for (int k = 0; k < 3; k++) if (v == kAspects[k].name) g_set.aspect = k;
+            for (int k = 0; k < kAspectCount; k++) if (v == kAspects[k].name) g_set.aspect = k;
         }
         else if (a == "--scale" && i + 1 < argc) {  // 0 = automatic, "native" (or -1) = native resolution
             std::string v = argv[++i];
@@ -1226,7 +1239,7 @@ int main(int argc, char** argv) {
                     log_line("[port] frame rate limit: " + fps_mode_name(g_set.fps_limit));
                 }
                 if (sc == SDL_SCANCODE_F8) {
-                    g_set.aspect = (g_set.aspect + 1) % 3;
+                    g_set.aspect = (g_set.aspect + 1) % kAspectCount;
                     changed = true;
                     log_line(std::string("[port] aspect ratio: ") + kAspects[g_set.aspect].name);
                 }
@@ -1293,6 +1306,7 @@ int main(int argc, char** argv) {
                 if (e.window.event == SDL_WINDOWEVENT_MOVED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
                     e.window.event == SDL_WINDOWEVENT_MAXIMIZED || e.window.event == SDL_WINDOWEVENT_RESTORED)
                     remember_window(win);
+                if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) ssne::set_widescreen(aspect_factor(win));  // automatic aspect
                 if (e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) g_focused = true;
                 if (e.window.event == SDL_WINDOWEVENT_MINIMIZED) g_focused = false;
                 if (e.window.event == SDL_WINDOWEVENT_CLOSE) quit = true;

@@ -42,7 +42,7 @@ struct Settings {
     std::string renderer = "gpu";  // "gpu" or "software" (applies on restart)
     int scale = 0;                 // GPU internal resolution 1..8, 0 = automatic (fits the window, lowered if the GPU is too
                                    // slow), -1 = native (exactly the size the image is shown at)
-    int aspect = 1;                // 0 4:3, 1 16:9, 2 21:9
+    int aspect = 1;                // 0 4:3, 1 16:9, 2 21:9, 3 automatic (the window's)
     int anisotropy = 1;            // anisotropic filtering 1 (off), 2, 4, 8, 16
     std::string antialiasing = "off";  // off, fxaa, msaa2, msaa4, msaa8, ssaa (2x automatic resolution, filtered down)
     int fps_limit = 60;            // 60 original, 120, 144, 0 unlimited
