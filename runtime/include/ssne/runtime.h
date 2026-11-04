@@ -80,5 +80,6 @@ void set_widescreen(float factor);
 void set_hud_edges(bool on);  // widescreen: HUD pieces left / right of the middle at the screen's edges (default on)
 float widescreen();
 float widescreen_frame_factor();  // factor the game's current frame was rendered with (1 outside gameplay)
+bool widescreen_frame_zoomed();   // the current frame's scene camera is zoomed in (sniper scope; widescreen gameplay)
 
 } // namespace ssne

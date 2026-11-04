@@ -161,6 +161,22 @@ void note_hud(GpuFrame& f, size_t off, uint32_t n, uint32_t stride) {
         h.mn = std::min(h.mn, x); h.mx = std::max(h.mx, x);
         h.ymn = std::min(h.ymn, y); h.ymx = std::max(h.ymx, y);
     }
+    // Zoomed in (sniper rifle), the scope is four quarter-circle images meeting at the middle of the screen and
+    // reaching well past its sides, laid out for 4:3: widened with the frame, they made an ellipse. Stretched as much
+    // vertically, the circle is round again and as wide as the screen (so the view stays widescreen); it's made a bit
+    // smaller than that, so less of it lies outside the screen.
+    if (t0 && t0->efb_copy < 0 && (h.mn < -1.05f || h.mx > 1.05f) && widescreen_frame_zoomed()) {
+        constexpr float kScope = 0.85f;
+        uint8_t* w = f.vtx.data() + off;
+        for (uint32_t i = 0; i < n; i++, w += stride) {
+            float xy[2];
+            memcpy(xy, w, 8);
+            xy[0] *= kScope;
+            xy[1] *= k * kScope;
+            memcpy(w, xy, 8);
+        }
+        return;
+    }
     if (h.mx - h.mn >= 1.9f) return;  // spans the screen (scene redraws, fades): left alone
     R->hud.push_back(h);
 }

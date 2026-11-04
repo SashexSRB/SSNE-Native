@@ -211,6 +211,7 @@ void end_player_frame() { g_player_control = g_player_seen.exchange(false); }
 // weapon's projection (called from 8014CDF0), which only exists while playing, in player-control frames.
 std::atomic<int64_t> g_last_gameplay_ms{-1000000};
 std::atomic<float> g_frame_factor{1.0f};  // factor used by the most recent camera projection
+std::atomic<bool> g_frame_zoom{false};    // that projection's scene camera was zoomed in (the sniper scope)
 int64_t now_ms() {
     using namespace std::chrono;
     return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
@@ -225,13 +226,14 @@ bool zoomed_in() { return now_ms() - g_cam_fovy_ms.load() < 250 && g_cam_fovy.lo
 float effective_widescreen(uint32_t caller) {
     if (caller == g_ver->weapon_lr) g_last_gameplay_ms = now_ms();
     bool gameplay = now_ms() - g_last_gameplay_ms.load() < 400 && (g_control_hooks.load() < 2 || g_player_control.load());
-    // Zoomed in, the scope overlay is a full-screen image laid out for 4:3: it would be stretched into an ellipse,
-    // so the zoomed view stays 4:3 (round scope, sides filled as for the menus).
-    float f = gameplay && !zoomed_in() ? g_widescreen.load() : 1.0f;
+    float f = gameplay ? g_widescreen.load() : 1.0f;
+    // Zoomed in, the scope overlay is laid out for 4:3: the GPU recorder keeps it round (see note_hud).
+    bool zoom = gameplay && zoomed_in();
     // The GX thread reads the factor when it records the frame's display copy: let it finish the frames rendered
-    // with the old factor first (the factor changes only between gameplay and the menus).
-    if (f != g_frame_factor.load()) gx_sync();
+    // with the old factor first (the factor changes only between gameplay and the menus, the zoom with the scope).
+    if (f != g_frame_factor.load() || zoom != g_frame_zoom.load()) gx_sync();
     g_frame_factor = f;
+    g_frame_zoom = zoom;
     return f;
 }
 
@@ -962,5 +964,6 @@ float fov() { return g_fov.load(); }
 void set_widescreen(float factor) { g_widescreen = factor < 1.0f ? 1.0f : factor; }
 float widescreen() { return g_widescreen.load(); }
 float widescreen_frame_factor() { return g_frame_factor.load(); }
+bool widescreen_frame_zoomed() { return g_frame_zoom.load(); }
 
 } // namespace ssne
