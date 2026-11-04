@@ -238,7 +238,7 @@ void tab_hotkeys() {
         {"Shift+F5", "Next save state slot (1-5)"},
         {"F4  /  Shift+F4", "Volume down / up (10% steps)"},
         {"F6  /  F7", "Internal resolution down / up (GPU renderer; turns off automatic resolution)"},
-        {"F8", "Aspect ratio: 16:9 / 21:9 / 4:3"},
+        {"F8", "Aspect ratio: 16:9 / 21:9 / automatic / 4:3"},
         {"Shift+F9", "Capture the next frame to the debug folder (GPU renderer, for bug reports)"},
         {"Print Screen  /  Shift+F12", "Screenshot (PNG in the Screenshots folder)"},
         {"F10", "Frame rate limit: 60 / 120 / 144 / unlimited"},

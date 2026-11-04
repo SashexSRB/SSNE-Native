@@ -4,6 +4,17 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.5.3
+  - Sniper scope sensitivity (github.com/SashexSRB/SSNE-Native/issues/17): with the mouse, turning got faster the
+    further you zoomed in. Mouse aim is now scaled by the zoom, so the crosshair moves over the image at the same
+    speed at any zoom level. (Controllers were fine: the game already slows the stick down when zoomed.)
+  - Sniper scope in widescreen: the scope was stretched into a wide ellipse. It is now round, and the zoomed view
+    stays widescreen with the HUD at the screen edges.
+  - Automatic aspect ratio (github.com/SashexSRB/SSNE-Native/issues/14): F12 > Graphics > Aspect ratio > Automatic
+    (window shape), also reached with F8. Gameplay is as wide as your screen or window, from 4:3 up to 32:9: no bars
+    at 3440x1440, 16:10 or on triple screens, and it follows the window when you resize it.
+  - The shader list for the 10 lost levels follows in 1.2.5.4.
+
 SSNE-NATIVE 1.2.5.2
   - Shader stutter (github.com/SashexSRB/SSNE-Native/issues/9): the list of shaders built ahead of time at startup
     now also covers all levels of Atlantis (1018 setups: Ancient Rome, China and Atlantis). The 10 lost levels

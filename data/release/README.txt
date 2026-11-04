@@ -115,7 +115,7 @@ HOTKEYS (work any time in the game window; also listed in F12 > Hotkeys)
   Shift+F5 ........... next save state slot
   F4 / Shift+F4 ...... volume down / up (10% steps)
   F6 / F7 ............ internal resolution down / up (GPU renderer; turns off automatic resolution)
-  F8 ................. aspect ratio: 16:9 / 21:9 / 4:3
+  F8 ................. aspect ratio: 16:9 / 21:9 / automatic / 4:3
   Shift+F9 ........... capture the next frame to the debug folder (GPU renderer, for bug reports)
   F10 ................ frame rate limit: 60 (original) / 120 / 144 / unlimited
   F11 or Alt+Enter ... fullscreen (F12 > Graphics > Monitor picks the screen when you have several)

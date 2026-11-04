@@ -90,7 +90,7 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 | F5 / F9 | save state / load state (Shift+F5: next slot) |
 | F11 or Alt+Enter | fullscreen |
 | F10 | frame rate limit: 60 / 120 / 144 / unlimited |
-| F8 | aspect ratio: 16:9 / 21:9 / 4:3 |
+| F8 | aspect ratio: 16:9 / 21:9 / automatic / 4:3 |
 | F6 / F7 | internal resolution down / up |
 | F1 | log and statistics window (Shift+F1: info bar at the top) |
 | F2 | release the mouse |
@@ -109,7 +109,7 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
   to install it, then restarts and rebuilds the game if the engine changed. `check_updates=0` in `launcher.ini`
   turns the check off.
 - **Launcher lettering**: uses Boink LET (the font of the game's menus) if it's installed on your PC.
-- **Widescreen** (16:9 / 21:9, F8) applies in gameplay; menus (also pause, NETRICSA and briefings) and cutscenes
+- **Widescreen** (16:9 / 21:9 / automatic, which follows the window's shape; F8) applies in gameplay; menus (also pause, NETRICSA and briefings) and cutscenes
   stay 4:3, because the game places 3D models into 2D menu layouts. A blurred copy of the picture fills the sides
   (F12 › Graphics › Fill the sides of 4:3 screens). The HUD moves out to the screen edges (F12 › Graphics).
 - **Sharpest image:** F12 › Graphics › Internal resolution › Native renders at exactly your screen or window
