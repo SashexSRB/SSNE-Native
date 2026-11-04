@@ -368,7 +368,8 @@ void deadzone(float& x, float& y, float dz) {
 // Development: scripted controller input for automated runs of the real executable (same syntax as the headless
 // runner's --press): SSNE_AUTOPRESS="SUP@8,A@9,A@12:0.5" holds each input at t seconds for dur (default 0.2 s).
 // SSNE_VIRTUAL_PADS=N attaches N virtual controllers (SDL's own, seen like real ones); "pK:" items press SDL buttons
-// (a, b, x, y, start, leftshoulder, ...) or stick directions (leftx+, lefty-, righttrigger+, ...) on virtual pad K.
+// (a, b, x, y, start, leftshoulder, ...) or stick directions (leftx+, lefty-, righttrigger+, ...) on virtual pad K,
+// "pK:detach" unplugs it.
 struct AutoPress { std::string name; double at, dur; };
 std::vector<AutoPress> g_autopress;
 std::chrono::steady_clock::time_point g_autopress_t0;
@@ -425,9 +426,11 @@ void apply_virtual_autopress() {
         int16_t axis[SDL_CONTROLLER_AXIS_MAX] = {};
         axis[SDL_CONTROLLER_AXIS_TRIGGERLEFT] = axis[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] = -32768;  // released (full range)
         std::string prefix = "p" + std::to_string(v + 1) + ":";
+        bool detach = false;
         for (const AutoPress& a : g_autopress) {
             if (a.name.rfind(prefix, 0) != 0 || t < a.at || t >= a.at + a.dur) continue;
             std::string n = a.name.substr(prefix.size());
+            if (n == "detach") { detach = true; continue; }  // unplugged
             char sign = n.empty() ? 0 : n.back();
             if (sign == '+' || sign == '-') {
                 SDL_GameControllerAxis ax = SDL_GameControllerGetAxisFromString(n.substr(0, n.size() - 1).c_str());
@@ -436,6 +439,12 @@ void apply_virtual_autopress() {
                 SDL_GameControllerButton b = SDL_GameControllerGetButtonFromString(n.c_str());
                 if (b != SDL_CONTROLLER_BUTTON_INVALID) button[b] = true;
             }
+        }
+        if (detach) {
+            for (int d = 0; d < SDL_NumJoysticks(); d++)
+                if (SDL_JoystickGetDeviceInstanceID(d) == g_virtual_pads[v]) { SDL_JoystickClose(j); SDL_JoystickDetachVirtual(d); break; }
+            g_virtual_pads[v] = -1;
+            continue;
         }
         for (int b = 0; b < SDL_CONTROLLER_BUTTON_MAX; b++) SDL_JoystickSetVirtualButton(j, b, button[b]);
         for (int a = 0; a < SDL_CONTROLLER_AXIS_MAX; a++) SDL_JoystickSetVirtualAxis(j, a, axis[a]);
