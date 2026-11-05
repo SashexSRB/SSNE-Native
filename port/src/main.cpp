@@ -1467,6 +1467,21 @@ int main(int argc, char** argv) {
         float dt = float(now - last) / 1000.0f;
         last = now;
         update_input(dt);
+        {   // development, for automated runs: SSNE_LOAD_STATE_AT=T loads the save state slot (state_slot) at T seconds,
+            // SSNE_AUTOSHOT=T1,T2,... saves screenshots (Screenshots/) at those times
+            static const auto t_start = std::chrono::steady_clock::now();
+            static double load_at = getenv("SSNE_LOAD_STATE_AT") ? atof(getenv("SSNE_LOAD_STATE_AT")) : -1;
+            static std::vector<double> shots = [] {
+                std::vector<double> v;
+                if (const char* e = getenv("SSNE_AUTOSHOT"))
+                    for (const char* p = e; *p; p = strchr(p, ',') ? strchr(p, ',') + 1 : p + strlen(p)) v.push_back(atof(p));
+                return v;
+            }();
+            double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_start).count();
+            if (load_at >= 0 && el >= load_at) { request_state(false, g_set.state_slot); load_at = -1; }
+            for (double& t : shots)
+                if (t >= 0 && el >= t) { take_screenshot(base_dir); t = -1; }
+        }
         update_rumble();
         bool background = !g_focused && g_set.pause_unfocused;
         // A save / load requested from the menu needs the game to reach its next frame: don't hold it meanwhile.
