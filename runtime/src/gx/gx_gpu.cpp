@@ -830,8 +830,12 @@ std::string gen_fs(const DrawCfg& c, int ntex, bool zsnap) {
         std::string v = "v_tex" + std::to_string(coord), n = std::to_string(coord);
         return "ivec2(" + v + ".xy / (" + v + ".z != 0.0 ? " + v + ".z : 1.0) * u_su[" + n + "] * 128.0)";
     };
+    // Indirect texturing: a stage can use an indirect command without any indirect lookups (nind 0, its offsets are
+    // then 0; the water's edge in the lost level Forum of Trajan): the variables exist whenever a stage needs them.
+    bool ind_used = c.nind > 0;
+    for (int si = 0; si < c.stages; si++) ind_used |= c.st[si].ind != 0 || c.st[si].ras_chan >= 2;  // (alpha bump)
+    if (ind_used) s += "  ivec3 iind[4]; ivec2 tevc = ivec2(0); int abump = 0;\n";
     if (c.nind) {
-        s += "  ivec3 iind[4]; ivec2 tevc = ivec2(0); int abump = 0;\n";
         for (int i = 0; i < c.nind; i++) {
             std::string m = std::to_string(c.ind_map[i]);
             s += "  { ivec2 u = " + fixuv(c.ind_coord[i]) + "; u = ivec2(u.x >> " + std::to_string(c.ind_ss[i]) + ", u.y >> " +
@@ -879,7 +883,7 @@ std::string gen_fs(const DrawCfg& c, int ntex, bool zsnap) {
             };
             s += "    ivec2 w = ivec2(" + wrap("uv.x", sw) + ", " + wrap("uv.y", tw) + ") + tr;\n";
             s += fb ? "    tevc += w; }\n" : "    tevc = w; }\n";
-        } else if (c.nind) {
+        } else if (ind_used) {
             s += "  tevc = " + fixuv(st.texcoord) + ";\n";
         }
         if (st.tex_enabled && st.ind) {
