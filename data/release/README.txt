@@ -49,7 +49,8 @@ IN-GAME
   Settings are saved to settings.ini and memory card saves to saves\MemoryCardA.USA.raw (Europe/PAL:
   MemoryCardA.EUR.raw), next to the game program. The PAL version runs at 60 Hz like the USA one.
   Compiled graphics shaders are kept in the shadercache folder so they don't have to be rebuilt (a short hitch)
-  the next time; deleting it is harmless.
+  the next time; deleting it is harmless. On the first start a "Preparing shaders" box in the bottom-right corner
+  shows them being compiled (the frame rate can dip until it's done; F12 > Graphics can hide it).
 
 PERFORMANCE
   - Automatic resolution (F12 > Graphics, on by default): the game picks the internal resolution that fits your

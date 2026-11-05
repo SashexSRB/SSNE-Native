@@ -101,7 +101,10 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 
 - **Where things are kept** (next to the game): `settings.ini`, memory card saves in `saves/`, save states in
   `states/`, screenshots in `Screenshots/`, and compiled shaders in `shadercache/` (safe to delete).
-- **Frame rate:** gameplay on foot follows your frame rate limit (F10). Menus, cutscenes and vehicles always run
+- **First start:** the game's shaders are compiled in the background, shown by a "Preparing shaders" box in the
+  bottom-right corner (F12 › Graphics can hide it). The frame rate can dip until it's done; later starts load them
+  from `shadercache/`.
+- **Frame rate:** gameplay on foot follows your frame rate limit (F10, lowest 40). Menus, cutscenes and vehicles always run
   at the original 60 fps, because their animations and the jeep's physics depend on it.
 - **Slow on your PC?** F12 › Graphics › Presets › Low. Automatic resolution (on by default) already lowers the
   internal resolution when the GPU can't keep up.

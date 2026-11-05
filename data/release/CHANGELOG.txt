@@ -4,6 +4,19 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.5.5
+  - Shader preparation shown on screen (github.com/SashexSRB/SSNE-Native/issues/18): when shaders have to be
+    compiled (the first start, or after a graphics driver update), a small "Preparing shaders" box in the
+    bottom-right corner shows the progress and that the frame rate can dip until it's done. It doesn't appear when
+    they come from the shader cache. F12 > Graphics > Show shader preparation turns it off.
+  - Missing textures (github.com/SashexSRB/SSNE-Native/issues/12): some surfaces, like the stairs out of the pool
+    in the Forum of Trajan, disappeared and came back as the camera moved. Their shader didn't compile, and the
+    surface was skipped whenever the game drew it that way.
+  - Extra damage at low frame rates: below about 40 fps the game's ground check could report a hurting surface
+    under Sam, who then lost health while standing on normal ground (the original game's collision at that frame
+    time). The lowest frame rate limit is now 40 (settings.ini values below it are raised to 40).
+  - The shader list for the 10 lost levels follows in 1.2.5.6.
+
 SSNE-NATIVE 1.2.5.4
   - Local multiplayer (github.com/SashexSRB/SSNE-Native/issues/15): split screen for 2, 3 and 4 players with up to
     four controllers. Before, only the first controller was read and the game saw no others. Each controller (and the
