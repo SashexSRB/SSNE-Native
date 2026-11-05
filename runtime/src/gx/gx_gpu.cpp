@@ -1174,6 +1174,8 @@ constexpr const char* kSetupsHeader = "ssne-shader-setups 1";  // bump with prog
 struct PendingProgram { std::string key; uint64_t hash; };
 std::vector<PendingProgram> g_pending;      // programs the driver is compiling
 std::vector<std::string> g_prewarm;         // setups still to build (back = next)
+size_t g_prewarm_total = 0;                 // setups queued at startup
+bool g_prewarm_compiling = false;           // one wasn't in the binary cache: compiled (a slower start, shown on screen)
 std::unordered_map<std::string, bool> g_known_setups;  // recorded in setups.txt
 FILE* g_setups_file = nullptr;
 bool g_parallel = false;
@@ -1249,6 +1251,8 @@ void init_setups() {
         for (const auto& k : *list) if (queued.emplace(k, true).second) g_prewarm.push_back(k);
     for (auto& k : read_setups(kShippedSetups)) if (queued.emplace(k, true).second) g_prewarm.push_back(std::move(k));
     std::reverse(g_prewarm.begin(), g_prewarm.end());  // the player's own setups first
+    g_prewarm_total = g_prewarm.size();
+    g_prewarm_compiling = false;
     // Parallel compiles: the extension in the list, and its threads unlimited (the driver's choice).
     g_parallel = false;
     if (GetStringi && !getenv("SSNE_SYNC_SHADERS")) {
@@ -1394,7 +1398,9 @@ void prewarm(double budget_ms) {
         int ntex = 0;
         bool zsnap = false;
         if (g_programs.count(key) || !decode_program_key(key, c, ntex, zsnap, vc)) continue;
+        uint64_t cached = g_stats.cached_programs;
         make_program(key, c, ntex, zsnap, vc, true);
+        g_prewarm_compiling |= g_stats.cached_programs == cached;
     }
     if (g_prewarm.empty()) {
         char line[96];
@@ -2300,5 +2306,14 @@ bool gpu_renderer_take_gpu_time(double& total_ms, int& frames) {
     return g_tq_ok;
 }
 GpuStats gpu_renderer_stats() { return g_stats; }
+
+bool gpu_renderer_shader_progress(int& done, int& total) {
+    if (!g_ready || !g_prewarm_compiling || g_prewarm_total == 0) return false;
+    size_t left = g_prewarm.size() + g_pending.size();
+    if (left == 0 || (!g_parallel && player_control_active())) return false;  // finished, or waiting for a menu
+    total = int(g_prewarm_total);
+    done = int(g_prewarm_total - std::min(left, g_prewarm_total));
+    return true;
+}
 
 } // namespace ssne

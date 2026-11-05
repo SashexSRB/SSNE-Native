@@ -92,7 +92,7 @@ Settings::Settings() {
 }
 
 void Settings::reset_graphics() {
-    renderer = "gpu"; scale = 0; aspect = 1; antialiasing = "off"; anisotropy = 1; fps_limit = 60; fov = 63; vsync = true; sync_display = true; gx_thread = true; gpu_vertex = true; hud_edges = true; side_fill = true; fullscreen = false; top_bar = 2;
+    renderer = "gpu"; scale = 0; aspect = 1; antialiasing = "off"; anisotropy = 1; fps_limit = 60; fov = 63; vsync = true; sync_display = true; gx_thread = true; gpu_vertex = true; hud_edges = true; side_fill = true; fullscreen = false; top_bar = 2; shader_notice = true;
 }
 
 void Settings::reset_audio() { volume = 100; music_volume = 100; sfx_volume = 100; muted = false; audio_hq = true; }
@@ -287,6 +287,7 @@ bool load_settings(Settings& s, const std::string& path) {
         if (it != kv.end()) { get("show_top_bar", old); s.top_bar = old ? 2 : 0; }
     }
     get("top_bar", s.top_bar);
+    get("shader_notice", s.shader_notice);
     get("display", s.display);
     get("window_x", s.win_x); get("window_y", s.win_y); get("window_w", s.win_w); get("window_h", s.win_h);
     get("window_maximized", s.win_max);
@@ -419,7 +420,7 @@ bool load_settings(Settings& s, const std::string& path) {
         s.anisotropy = a;
     }
     s.fov = std::clamp(s.fov, 45, 110);
-    if (s.fps_limit != 0) s.fps_limit = std::clamp(s.fps_limit, 30, 1000);
+    if (s.fps_limit != 0) s.fps_limit = std::clamp(s.fps_limit, kMinFpsLimit, 1000);
     s.volume = std::clamp(s.volume, 0, 200);
     s.mouse_sens = std::clamp(s.mouse_sens, 0.1f, 10.f);
     s.pad_deadzone = std::clamp(s.pad_deadzone, 0.f, 0.6f);
@@ -444,13 +445,14 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "side_fill = " << (s.side_fill ? 1 : 0) << "    # 4:3 screens (menus) on a wider window: blurred picture at the sides (0 = black bars)\n";
     o << "antialiasing = " << s.antialiasing << "    # off, fxaa, msaa2, msaa4, msaa8, ssaa\n";
     o << "anisotropy = " << s.anisotropy << "    # anisotropic filtering: 1 (off), 2, 4, 8, 16\n";
-    o << "fps_limit = " << s.fps_limit << "    # 60 = original, 0 = unlimited (vsync)\n";
+    o << "fps_limit = " << s.fps_limit << "    # 60 = original, 40-1000, 0 = unlimited (vsync)\n";
     o << "fov = " << s.fov << "    # gameplay vertical field of view in degrees, 63 = original\n";
     o << "vsync = " << (s.vsync ? 1 : 0) << "\n";
     o << "sync_to_display = " << (s.sync_display ? 1 : 0) << "    # 60 fps on a 60 Hz display: game ticks with the display\n";
     o << "gx_thread = " << (s.gx_thread ? 1 : 0) << "    # graphics commands on their own CPU thread (faster); 0 = on the game's thread (takes effect at start)\n";
     o << "gpu_vertex = " << (s.gpu_vertex ? 1 : 0) << "    # texture coordinates and lighting on the GPU (faster); 0 = on the CPU (takes effect at start)\n";
     o << "top_bar = " << s.top_bar << "    # info bar at the top: 0 hidden, 1 frame rate only, 2 full (Shift+F1)\n";
+    o << "shader_notice = " << (s.shader_notice ? 1 : 0) << "    # progress in the corner while shaders are compiled (first start, new drivers)\n";
     o << "display = " << s.display << "    # monitor for fullscreen (0 = first, -1 = where the window is)\n";
     o << "window_x = " << s.win_x << "\nwindow_y = " << s.win_y << "\nwindow_w = " << s.win_w << "\nwindow_h = " << s.win_h << "\n";
     o << "window_maximized = " << (s.win_max ? 1 : 0) << "\n";

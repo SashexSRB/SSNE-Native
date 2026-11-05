@@ -37,6 +37,10 @@ constexpr int kFirstButtonAction = ACT_A;  // gamepad bindings exist for ACT_A..
 const char* action_name(int a);   // "Move forward", "A (jump / select)", ...
 const char* action_id(int a);     // ini key suffix: "move_up", "a", ...
 
+// Lowest frame rate limit: below 40 fps the game's ground checks can report a hurting surface under the player,
+// who then takes extra damage (the original game's collision at that frame time).
+constexpr int kMinFpsLimit = 40;
+
 struct Settings {
     // Graphics
     std::string renderer = "gpu";  // "gpu" or "software" (applies on restart)
@@ -45,7 +49,7 @@ struct Settings {
     int aspect = 1;                // 0 4:3, 1 16:9, 2 21:9, 3 automatic (the window's)
     int anisotropy = 1;            // anisotropic filtering 1 (off), 2, 4, 8, 16
     std::string antialiasing = "off";  // off, fxaa, msaa2, msaa4, msaa8, ssaa (2x automatic resolution, filtered down)
-    int fps_limit = 60;            // 60 original, 120, 144, 0 unlimited
+    int fps_limit = 60;            // 60 original, 120, 144, 0 unlimited (lowest kMinFpsLimit)
     int fov = 63;                  // gameplay vertical field of view in degrees (63 = original)
     bool vsync = true;
     bool sync_display = true;      // 60 Hz display + vsync + 60 fps: tick the game with the display (no repeated frames)
@@ -55,6 +59,7 @@ struct Settings {
     bool side_fill = true;         // 4:3 frames on a wider window: blurred image at the sides instead of black bars
     bool fullscreen = false;
     int top_bar = 2;               // info bar at the top: 0 hidden, 1 frame rate only, 2 full (Shift+F1 cycles)
+    bool shader_notice = true;     // "Preparing shaders" with progress while the first start compiles them
     int display = -1;              // monitor for fullscreen / the window (-1 = wherever the window is)
     int win_x = -1, win_y = -1, win_w = 1280, win_h = 720;  // window position and size (remembered)
     bool win_max = false;          // window maximized

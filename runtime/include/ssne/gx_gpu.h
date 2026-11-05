@@ -49,5 +49,8 @@ struct GpuStats {
     double shader_ms, frame_ms;
 };
 GpuStats gpu_renderer_stats();
+// Startup shader preparation that has to compile (not only load from the shader cache), while it goes on:
+// setups done of total. Frame rate can dip meanwhile.
+bool gpu_renderer_shader_progress(int& done, int& total);
 
 } // namespace ssne

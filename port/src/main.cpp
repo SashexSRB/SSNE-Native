@@ -1076,6 +1076,18 @@ void draw_overlay(const std::string& data_dir, float dt) {
                                g_set.renderer == "software" ? "selected in F12 > Graphics" : "the GPU renderer could not start, see F1");
         ImGui::End();
     }
+    int sh_done = 0, sh_total = 0;  // issue #18: the first start's lower frame rate explained while shaders compile
+    if (g_gpu && g_set.shader_notice && have_game_image() && ssne::gpu_renderer_shader_progress(sh_done, sh_total)) {
+        const ImGuiViewport* vp = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(ImVec2(vp->Pos.x + vp->Size.x - 12, vp->Pos.y + vp->Size.y - 12), ImGuiCond_Always, ImVec2(1, 1));
+        ImGui::SetNextWindowBgAlpha(0.6f);
+        ImGui::Begin("##shaders", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoInputs |
+                                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav);
+        ImGui::Text("Preparing shaders  %d / %d", sh_done, sh_total);
+        ImGui::TextDisabled("The frame rate can dip until this is done");
+        ImGui::ProgressBar(float(sh_done) / float(std::max(1, sh_total)), ImVec2(-FLT_MIN, 6), "");
+        ImGui::End();
+    }
     if (SDL_GetTicks() < g_toast_until) {
         const ImGuiViewport* vp = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(ImVec2(vp->Pos.x + vp->Size.x * 0.5f, vp->Pos.y + 56), ImGuiCond_Always, ImVec2(0.5f, 0));
@@ -1219,6 +1231,7 @@ int main(int argc, char** argv) {
         else if (a == "--fps" && i + 1 < argc) {
             std::string v = argv[++i];
             g_set.fps_limit = v == "unlimited" ? 0 : std::max(0, atoi(v.c_str()));
+            if (g_set.fps_limit != 0) g_set.fps_limit = std::max(g_set.fps_limit, port::kMinFpsLimit);
         }
     }
     ssne::set_fatal_handler(throw_fatal);

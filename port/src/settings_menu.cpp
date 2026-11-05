@@ -105,6 +105,9 @@ bool tab_graphics(Settings& s, const MenuInfo& info) {
         ch |= ImGui::Combo("Info bar at the top  (Shift+F1)", &s.top_bar, "Hidden\0Frame rate only\0Full (frame rate, key hints)\0");
         help("The small bar in the top-left corner. Shift+F1 cycles through the three.");
     }
+    ch |= ImGui::Checkbox("Show shader preparation", &s.shader_notice);
+    help("When shaders have to be compiled (the first start, or after a graphics driver update), a small box in the\n"
+         "bottom-right corner shows the progress. The frame rate can dip until it's done.");
 
     ImGui::SeparatorText("Frame rate");
     static const int kFps[] = {60, 120, 144, 165, 240, 0};
