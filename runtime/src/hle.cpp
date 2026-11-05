@@ -903,6 +903,33 @@ void install_split_choice() {
     ssne_install_hook(kConfigLookup, hle_config_lookup);
 }
 
+// ---- development: fixed frame time. 8015544C measures the frame time the game advances by (seconds, in f1).
+// SSNE_FIXED_FPS=N makes every gameplay frame exactly 1/N s, however fast the host runs (repeatable frame-rate tests
+// on a busy machine; menus keep their own timing); game_time() adds up the frame times the game was given. The
+// controllers are still read per host retrace, so a short press (the weapon keys' X tap) can be missed at low N.
+const uint32_t kFrameTimeSig[6] = {0x9421FFD8u, 0x7C0802A6u, 0x9001002Cu, 0x480641FDu, 0x812D9538u, 0x7C601B78u};
+constexpr uint32_t kFrameTime = 0x8015544C;
+PPCFunc g_orig_frame_time = nullptr;
+double g_fixed_dt = 0;
+std::atomic<double> g_game_time{0};
+
+void hle_frame_time(PPCContext& ctx) {
+    PPCFunc* slot = ssne_hook_slot(kFrameTime);
+    *slot = nullptr;
+    g_orig_frame_time(ctx);
+    *slot = &hle_frame_time;
+    if (g_fixed_dt > 0 && player_control_active()) ctx.ps0[1] = ctx.ps1[1] = g_fixed_dt;  // gameplay only
+    g_game_time = g_game_time.load() + ctx.ps0[1];
+}
+
+void install_frame_time() {
+    const SSNEFuncEntry* f = ssne_find_func(kFrameTime);
+    if (!f || !code_matches(kFrameTime, kFrameTimeSig)) return;
+    if (const char* e = getenv("SSNE_FIXED_FPS")) g_fixed_dt = atof(e) > 0 ? 1.0 / atof(e) : 0;
+    g_orig_frame_time = f->func;
+    ssne_install_hook(kFrameTime, hle_frame_time);
+}
+
 // ---- save states: the request is carried out at the start of the game's frame flip (savestate.cpp).
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
@@ -1006,6 +1033,7 @@ void install_sdk_hooks() {
         install_vehicle_step_fix();
         install_landing_fix();
         install_split_choice();
+        install_frame_time();
         install_savestates();
     }
     install_call_tracer();
@@ -1018,6 +1046,7 @@ void set_widescreen(float factor) { g_widescreen = factor < 1.0f ? 1.0f : factor
 float widescreen() { return g_widescreen.load(); }
 float widescreen_frame_factor() { return g_frame_factor.load(); }
 bool widescreen_frame_zoomed() { return g_frame_zoom.load(); }
+double game_time() { return g_game_time.load(); }
 void set_split_two(int mode) { g_split_two = mode < 0 ? -1 : std::min(mode, 1); }
 
 } // namespace ssne

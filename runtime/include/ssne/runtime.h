@@ -85,5 +85,6 @@ float widescreen();
 float widescreen_frame_factor();  // factor the game's current frame was rendered with (1 outside gameplay)
 bool widescreen_frame_zoomed();   // the current frame's scene camera is zoomed in (sniper scope; widescreen gameplay)
 void set_split_two(int mode);     // 2-player split screen: 0 top / bottom, 1 left / right, -1 the game's setting (next match)
+double game_time();               // seconds of frame time the game has advanced by (SSNE_FIXED_FPS: fixed per frame)
 
 } // namespace ssne

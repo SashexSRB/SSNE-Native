@@ -70,6 +70,8 @@ static bool egl_init(std::string& err) {
 uint32_t g_ssne_call_counts[1u << 19];
 #endif
 
+double g_control_start = -1;  // game time when the player first got control (presses at "@g" times count from it)
+
 int main(int argc, char** argv) {
     std::string data = "game_data";
     int seconds = 10;
@@ -79,10 +81,15 @@ int main(int argc, char** argv) {
     bool gpu = false;
     float wide = 1.0f;
     int gpu_scale = 1;
-    struct Press { uint16_t button; double at; double dur = 0.2; uint8_t sx = 128, sy = 128, cx = 128, cy = 128; int port = 0; };
+    struct Press { uint16_t button; double at; double dur = 0.2; uint8_t sx = 128, sy = 128, cx = 128, cy = 128; int port = 0; bool game = false; };
     std::vector<Press> presses;
     double pause_at = -1, pause_len = 0;
     std::vector<double> ram_dumps;
+    struct Poke { double t; uint32_t addr, value; };  // --poke16 T:ADDR:VALUE  write a halfword at T seconds
+    std::vector<Poke> pokes;
+    std::vector<std::pair<double, int>> fps_changes;  // --fps-at T:N  frame rate limit N from T seconds
+    std::vector<uint32_t> watches;
+    std::vector<uint32_t> watches_f;  // --watchf ADDR  log every change of a float  // --watch16 ADDR  log every change of a halfword (with the time)
     double count_from = -1, count_to = -1;
     std::string count_path;
     struct Aim { double t, yaw, pitch; };
@@ -151,6 +158,18 @@ int main(int argc, char** argv) {
             count_path = path;
         }
 #endif
+        else if (a == "--fps-at" && i + 1 < argc) {
+            double t = 0; int n = 60;
+            sscanf(argv[++i], "%lf:%d", &t, &n);
+            fps_changes.push_back({t, n});
+        }
+        else if (a == "--watchf" && i + 1 < argc) watches_f.push_back(uint32_t(strtoul(argv[++i], nullptr, 16)));
+        else if (a == "--watch16" && i + 1 < argc) watches.push_back(uint32_t(strtoul(argv[++i], nullptr, 16)));
+        else if (a == "--poke16" && i + 1 < argc) {
+            Poke k{};
+            sscanf(argv[++i], "%lf:%x:%u", &k.t, &k.addr, &k.value);
+            pokes.push_back(k);
+        }
         else if (a == "--dump-ram" && i + 1 < argc) {
             std::string v = argv[++i];
             for (size_t pos = 0; pos < v.size();) {
@@ -188,7 +207,9 @@ int main(int argc, char** argv) {
                 }
                 size_t at = item.find('@');
                 std::string name = item.substr(0, at);
-                double t = atof(item.substr(at + 1).c_str());
+                // A@g45: 45 s of game time after the player first got control (in a level)
+                const bool game_clock = item.size() > at + 1 && item[at + 1] == 'g';
+                double t = atof(item.substr(at + (game_clock ? 2 : 1)).c_str());
                 size_t colon = item.find(':');
                 double dur = colon == std::string::npos ? 0.2 : atof(item.substr(colon + 1).c_str());
                 size_t first = presses.size();
@@ -214,7 +235,9 @@ int main(int argc, char** argv) {
                     pr.sx = uint8_t(x); pr.sy = uint8_t(y); pr.cx = uint8_t(cx); pr.cy = uint8_t(cy);
                     presses.push_back(pr);
                 }
-                for (size_t k = first; k < presses.size(); k++) { presses[k].dur = dur; presses[k].port = press_port; }
+                for (size_t k = first; k < presses.size(); k++) {
+                    presses[k].dur = dur; presses[k].port = press_port; presses[k].game = game_clock;
+                }
                 if (comma == std::string::npos) break;
                 pos = comma + 1;
             }
@@ -283,11 +306,16 @@ int main(int argc, char** argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
         drain_audio();
+        if (g_control_start < 0 && ssne::player_control_active()) {
+            g_control_start = ssne::game_time();
+            printf("[headless] player control at game %.3fs\n", g_control_start);
+        }
         {   // scripted controller input: each press is held for 200 ms
             double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
             ssne::PadState pss[4];
             for (auto& p : presses) {
-                if (!(el >= p.at && el < p.at + p.dur)) continue;
+                const double now = p.game ? (g_control_start < 0 ? -1e9 : ssne::game_time() - g_control_start) : el;
+                if (!(now >= p.at && now < p.at + p.dur)) continue;
                 ssne::PadState& ps = pss[p.port];
                 if (p.button == 0x8001) ps.stick_y = 230;
                 else if (p.button == 0x8002) ps.stick_y = 26;
@@ -327,6 +355,41 @@ int main(int argc, char** argv) {
                 count_to = -1;
             }
 #endif
+            {
+                static std::vector<int> last(watches.size(), -1);
+                for (size_t q = 0; q < watches.size(); q++) {
+                    if (watches[q] < 0x80000000u || watches[q] >= 0x81800000u) continue;
+                    const uint8_t* m = ssne::g_ram + (watches[q] - 0x80000000u);
+                    int v = m[0] << 8 | m[1];
+                    if (v != last[q]) {
+                        printf("[watch] %08X = %d at %.3fs (game %.3fs)\n", watches[q], v, el, ssne::game_time());
+                        last[q] = v;
+                    }
+                }
+            }
+            {
+                static std::vector<float> lastf(watches_f.size(), -12345.f);
+                for (size_t q = 0; q < watches_f.size(); q++) {
+                    if (watches_f[q] < 0x80000000u || watches_f[q] >= 0x81800000u) continue;
+                    const uint8_t* m = ssne::g_ram + (watches_f[q] - 0x80000000u);
+                    uint32_t u = uint32_t(m[0]) << 24 | uint32_t(m[1]) << 16 | uint32_t(m[2]) << 8 | m[3];
+                    float v;
+                    memcpy(&v, &u, 4);
+                    if (v != lastf[q]) {
+                        printf("[watchf] %08X = %.3f (%+.3f) at %.3fs\n", watches_f[q], v, lastf[q] == -12345.f ? 0.f : v - lastf[q], el);
+                        lastf[q] = v;
+                    }
+                }
+            }
+            for (auto& fc : fps_changes)
+                if (fc.first >= 0 && el >= fc.first) { ssne::set_frame_limit(fc.second); printf("[headless] frame limit %d\n", fc.second); fc.first = -1; }
+            for (Poke& k : pokes)
+                if (k.t >= 0 && el >= k.t && k.addr >= 0x80000000u && k.addr < 0x81800000u) {
+                    uint8_t* m = ssne::g_ram + (k.addr - 0x80000000u);
+                    m[0] = uint8_t(k.value >> 8); m[1] = uint8_t(k.value);
+                    printf("[headless] poke %08X = %u at %.2fs\n", k.addr, k.value, el);
+                    k.t = -1;
+                }
             for (double& t : ram_dumps)
                 if (t >= 0 && el >= t) {
                     char fn[64];
