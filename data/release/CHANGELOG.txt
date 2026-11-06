@@ -4,6 +4,22 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.6
+  - Cheats (github.com/SashexSRB/SSNE-Native/issues/19): F12 > Cheats, for single player. They use the game's own
+    cheat switches where it has them and work at once, also in a running level:
+    - Invulnerable: nothing hurts Sam, health and armor stay (enemies, falls, lava, drowning).
+    - Infinite ammo: every weapon fires without using ammo.
+    - All weapons: every weapon, with full ammo for all of them.
+    - Movement speed: 100% to 300% (running, in the air and on skates).
+    - Unlock everything: the 10 lost levels, the gallery and the game's own treasure cheats, as if all the treasure
+      had been collected. Nothing is written to the memory card; turned off, they are locked again.
+    Cheats are off in co-op and the other multiplayer modes, and save states keep the game's own values.
+    "[cheats]" shows in the info bar at the top while one is on.
+  - Delete Player without a key: in the player select screen the game's Y button (Delete Player) and X (Add Player)
+    need a key, because the mouse selects and scrolls there. When none was bound to them (their keys moved to other
+    controls), the prompt showed the GameCube Y and the button couldn't be pressed. Delete and Insert now press them
+    in the menus in that case, and the prompts show those keys.
+
 SSNE-NATIVE 1.2.5.6
   - Shader stutter (github.com/SashexSRB/SSNE-Native/issues/9): the list of shaders built ahead of time at startup
     now also covers the 10 lost levels (1123 setups: the whole game). After updating, the first start prepares the
