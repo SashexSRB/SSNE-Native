@@ -4,6 +4,11 @@ SSNE-Native (Serious Sam: Next Encounter Native) - changes since the first publi
 After updating, open the launcher and choose "Update Game" once: the game is rebuilt on your PC with the new
 engine (a few minutes, nothing is downloaded except, once, the new compiler - see "Compatibility").
 
+SSNE-NATIVE 1.2.5.6
+  - Shader stutter (github.com/SashexSRB/SSNE-Native/issues/9): the list of shaders built ahead of time at startup
+    now also covers the 10 lost levels (1123 setups: the whole game). After updating, the first start prepares the
+    new ones in the background ("Preparing shaders" in the bottom-right corner).
+
 SSNE-NATIVE 1.2.5.5
   - Shader preparation shown on screen (github.com/SashexSRB/SSNE-Native/issues/18): when shaders have to be
     compiled (the first start, or after a graphics driver update), a small "Preparing shaders" box in the
