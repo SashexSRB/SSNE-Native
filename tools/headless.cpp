@@ -88,6 +88,7 @@ int main(int argc, char** argv) {
     struct Poke { double t; uint32_t addr, value; };  // --poke16 T:ADDR:VALUE  write a halfword at T seconds
     std::vector<Poke> pokes;
     std::vector<std::pair<double, int>> fps_changes;  // --fps-at T:N  frame rate limit N from T seconds
+    std::vector<std::pair<double, ssne::Cheats>> cheat_changes;  // --cheats T:god,ammo,weapons,unlock,speed=N (T:off)
     std::vector<uint32_t> watches;
     std::vector<uint32_t> watches_f;  // --watchf ADDR  log every change of a float  // --watch16 ADDR  log every change of a halfword (with the time)
     double count_from = -1, count_to = -1;
@@ -162,6 +163,22 @@ int main(int argc, char** argv) {
             double t = 0; int n = 60;
             sscanf(argv[++i], "%lf:%d", &t, &n);
             fps_changes.push_back({t, n});
+        }
+        else if (a == "--cheats" && i + 1 < argc) {
+            std::string v = argv[++i];
+            size_t c = v.find(':');
+            ssne::Cheats ch;
+            for (size_t at = c + 1; at < v.size();) {
+                size_t e = v.find(',', at);
+                std::string w = v.substr(at, e == std::string::npos ? std::string::npos : e - at);
+                if (w == "god") ch.invulnerable = true;
+                else if (w == "ammo") ch.infinite_ammo = true;
+                else if (w == "weapons") ch.all_weapons = true;
+                else if (w == "unlock") ch.unlock_all = true;
+                else if (w.rfind("speed=", 0) == 0) ch.speed = float(atof(w.c_str() + 6));
+                at = e == std::string::npos ? v.size() : e + 1;
+            }
+            cheat_changes.push_back({atof(v.substr(0, c).c_str()), ch});
         }
         else if (a == "--watchf" && i + 1 < argc) watches_f.push_back(uint32_t(strtoul(argv[++i], nullptr, 16)));
         else if (a == "--watch16" && i + 1 < argc) watches.push_back(uint32_t(strtoul(argv[++i], nullptr, 16)));
@@ -381,6 +398,8 @@ int main(int argc, char** argv) {
                     }
                 }
             }
+            for (auto& cc : cheat_changes)
+                if (cc.first >= 0 && el >= cc.first) { ssne::set_cheats(cc.second); printf("[headless] cheats at %.2fs\n", el); cc.first = -1; }
             for (auto& fc : fps_changes)
                 if (fc.first >= 0 && el >= fc.first) { ssne::set_frame_limit(fc.second); printf("[headless] frame limit %d\n", fc.second); fc.first = -1; }
             for (Poke& k : pokes)

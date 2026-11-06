@@ -28,12 +28,13 @@ struct MenuInfo {
     struct Slot { bool exists = false; std::string when; unsigned tex = 0; int w = 0, h = 0; };
     Slot slots[5];
     bool states_available = false;  // the game is running (states can be saved / loaded)
+    bool cheats_available = false;  // the game's cheat code was found (USA version)
     std::string states_dir;
 };
 
 bool menu_open();
 void menu_set_open(bool open);
-void menu_select_tab(int tab);    // 0 graphics, 1 audio, 2 keyboard & mouse, 3 gamepad, 4 hotkeys, 5 save states, 6 players
+void menu_select_tab(int tab);    // 0 graphics, 1 audio, 2 keyboard & mouse, 3 gamepad, 4 hotkeys, 5 save states, 6 players, 7 cheats
 bool menu_capturing();              // waiting for a key/button to bind
 bool menu_take_exit_request();     // the "Exit game" button was pressed (cleared by this call)
 bool menu_take_rumble_test();       // the "Test rumble" button was pressed (cleared by this call)

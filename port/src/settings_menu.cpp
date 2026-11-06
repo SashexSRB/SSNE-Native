@@ -357,6 +357,33 @@ bool tab_players(Settings& s, const MenuInfo& info) {
     return ch;
 }
 
+bool tab_cheats(Settings& s, const MenuInfo& info) {
+    bool ch = false;
+    ImGui::TextColored(kDim, "For single player only: they are off in co-op and the other multiplayer modes.");
+    ImGui::TextColored(kDim, "They work at once, also in a running level, and \"cheats\" shows in the info bar while one is on.");
+    if (!info.cheats_available)
+        ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1), "Cheats need the USA version of the game (G3BE9G).");
+    ImGui::BeginDisabled(!info.cheats_available);
+    ImGui::SeparatorText("Player");
+    ch |= ImGui::Checkbox("Invulnerable", &s.cheat_invulnerable);
+    help("Nothing hurts Sam: health and armor stay where they are (enemies, falls, lava, drowning).");
+    ch |= ImGui::Checkbox("Infinite ammo", &s.cheat_infinite_ammo);
+    help("Every weapon fires without using ammo (fills the ammo once when turned on).");
+    ch |= ImGui::Checkbox("All weapons", &s.cheat_all_weapons);
+    help("Every weapon, with full ammo for all of them (filled when turned on and at each level start).");
+    ImGui::SetNextItemWidth(300);
+    ch |= ImGui::SliderInt("Movement speed", &s.cheat_speed, 100, 300, "%d%%");
+    help("How fast Sam runs, in the air and on skates too. 100% is the game's own speed.");
+    ImGui::SeparatorText("Game");
+    ch |= ImGui::Checkbox("Unlock everything", &s.cheat_unlock_all);
+    help("The 10 lost levels, the gallery and the game's own treasure cheats, as if all the treasure had\n"
+         "been collected. Nothing is written to the memory card: turned off, they are locked again.");
+    ImGui::EndDisabled();
+    ImGui::Spacing();
+    if (ImGui::Button("Turn all cheats off")) { s.reset_cheats(); ch = true; }
+    return ch;
+}
+
 bool tab_gamepad(Settings& s, const MenuInfo& info) {
     bool ch = false;
     if (info.pad_name.empty()) ImGui::TextColored(kWarn, "No controller connected (plug one in at any time).");
@@ -562,6 +589,7 @@ bool draw_menu(Settings& s, const MenuInfo& info) {
         if (ImGui::BeginTabItem("Keyboard & Mouse", nullptr, g_select_tab == 2 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##k"); ch |= tab_keyboard(s); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Gamepad", nullptr, g_select_tab == 3 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##p"); ch |= tab_gamepad(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Players", nullptr, g_select_tab == 6 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##pl"); ch |= tab_players(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem("Cheats", nullptr, g_select_tab == 7 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##c"); ch |= tab_cheats(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Save states", nullptr, g_select_tab == 5 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##s"); ch |= tab_states(s, info); ImGui::EndChild(); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem("Hotkeys", nullptr, g_select_tab == 4 ? ImGuiTabItemFlags_SetSelected : 0)) { ImGui::BeginChild("##h"); tab_hotkeys(); ImGui::EndChild(); ImGui::EndTabItem(); }
         ImGui::EndTabBar();

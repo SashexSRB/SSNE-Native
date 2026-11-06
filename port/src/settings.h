@@ -91,6 +91,12 @@ struct Settings {
     int kbm_player = 1;              // the player the keyboard and mouse play (1-4)
     int pad_player[kPadSlots] = {1, 2, 3, 4};  // the player each controller plays (1-4, 0 = not used)
     int split_two = 0;               // 2-player split screen: 0 automatic (side by side in widescreen), 1 top / bottom, 2 side by side
+    // Cheats (single player only)
+    bool cheat_invulnerable = false; // no damage: health and armor stay
+    bool cheat_infinite_ammo = false;
+    bool cheat_all_weapons = false;  // every weapon, with full ammo
+    bool cheat_unlock_all = false;   // the lost levels, the gallery and the treasure cheats, without collecting treasure
+    int cheat_speed = 100;           // movement speed in percent (100 = normal, up to 300)
     // General
     bool pause_in_menu = true;
     bool pause_unfocused = true;     // pause (and silence) the game while the window is in the background
@@ -107,6 +113,7 @@ struct Settings {
     void pad_preset_xbox();              // A jump (L), X use (A), B back, Y Z, LB/RB weapons (Y/X), RT fire (R)
     void pad_preset_gamecube();          // same buttons as the GameCube controller: A = A, LT jump (L), RT fire (R)
     void reset_players();                // keyboard / mouse and the first controller play player 1, the next ones 2-4
+    void reset_cheats();                 // all off
 };
 
 // Load/save settings.ini (missing file or keys keep defaults). Return false on I/O error.

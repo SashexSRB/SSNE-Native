@@ -144,6 +144,11 @@ void Settings::reset_gamepad() {
     rumble = true; rumble_strength = 1.0f; prompts = "auto";
 }
 
+void Settings::reset_cheats() {
+    cheat_invulnerable = cheat_infinite_ammo = cheat_all_weapons = cheat_unlock_all = false;
+    cheat_speed = 100;
+}
+
 void Settings::reset_players() {
     kbm_player = 1;
     for (int i = 0; i < kPadSlots; i++) pad_player[i] = i + 1;
@@ -316,6 +321,11 @@ bool load_settings(Settings& s, const std::string& path) {
     get("kbm_player", s.kbm_player);
     for (int i = 0; i < Settings::kPadSlots; i++) get(("pad" + std::to_string(i + 1) + "_player").c_str(), s.pad_player[i]);
     get("split_two", s.split_two);
+    get("cheat_invulnerable", s.cheat_invulnerable);
+    get("cheat_infinite_ammo", s.cheat_infinite_ammo);
+    get("cheat_all_weapons", s.cheat_all_weapons);
+    get("cheat_unlock_all", s.cheat_unlock_all);
+    get("cheat_speed", s.cheat_speed);
     for (int a = 0; a < ACT_COUNT; a++) {
         auto it = kv.find(std::string("kb.") + action_id(a));
         if (it != kv.end()) {
@@ -430,6 +440,7 @@ bool load_settings(Settings& s, const std::string& path) {
     s.kbm_player = std::clamp(s.kbm_player, 1, 4);
     for (int& p : s.pad_player) p = std::clamp(p, 0, 4);
     s.split_two = std::clamp(s.split_two, 0, 2);
+    s.cheat_speed = std::clamp(s.cheat_speed, 100, 300);
     return true;
 }
 
@@ -487,6 +498,12 @@ bool save_settings(const Settings& s, const std::string& path) {
         o << "pad" << i + 1 << "_player = " << s.pad_player[i] << "    # controller " << i + 1
           << " (in the order connected) plays this player (1-4, 0 = not used)\n";
     o << "split_two = " << s.split_two << "    # 2 players: 0 automatic (side by side in widescreen), 1 top / bottom, 2 side by side\n";
+    o << "[cheats]\n";
+    o << "cheat_invulnerable = " << (s.cheat_invulnerable ? 1 : 0) << "    # cheats work in single player only\n";
+    o << "cheat_infinite_ammo = " << (s.cheat_infinite_ammo ? 1 : 0) << "\n";
+    o << "cheat_all_weapons = " << (s.cheat_all_weapons ? 1 : 0) << "    # every weapon, with full ammo\n";
+    o << "cheat_unlock_all = " << (s.cheat_unlock_all ? 1 : 0) << "    # lost levels, gallery and treasure cheats\n";
+    o << "cheat_speed = " << s.cheat_speed << "    # movement speed in percent, 100-300\n";
     o << "[general]\n";
     o << "pause_in_menu = " << (s.pause_in_menu ? 1 : 0) << "\n";
     o << "pause_unfocused = " << (s.pause_unfocused ? 1 : 0) << "    # pause while the window is in the background\n";

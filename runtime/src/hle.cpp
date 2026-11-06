@@ -486,9 +486,13 @@ void weapon_keys(PPCContext& ctx, uint32_t player, int port) {
     }
 }
 
+uint32_t g_port_player[4] = {};  // the player each controller port played in its last update (cheats)
+int64_t g_port_player_ms[4] = {};
+
 void hle_player_update(PPCContext& ctx) {
     uint32_t player = ctx.r[3];
     bool valid = player >= 0x80000000u && player < 0x81800000u;
+    if (valid) { g_port_player[player_port(player)] = player; g_port_player_ms[player_port(player)] = now_ms(); }
     // A physics step runs in this update (see latch_jump) unless its accumulator ends up at exactly its old value
     // plus the frame time (fixed-step mode without a whole step; the variable-step mode always steps).
     float acc = valid ? u2f(mem_read32(player + 0x140)) : 0.f, dt = u2f(mem_read32(ctx.r[13] + 0xFFFF85F8u));
@@ -930,12 +934,159 @@ void install_frame_time() {
     ssne_install_hook(kFrameTime, hle_frame_time);
 }
 
+// ---- cheats (issue #19, F12 > Cheats). The game has its own debug cheats (base.cfg Cheats.GiveInvulnerability,
+// GiveInfiniteAmmo, GiveAllWeapons; also unlocked by collecting treasure): copied into three globals when a player
+// is created, and gameplay checks those globals (800B366C damage, 800B7630 ammo, 800C6170 "has weapon"). The
+// cheats set them every frame, in single player only (game mode 0; co-op is 1, Deathmatch, Hold the Flag and Pass the
+// Bomb 2-4, where the game's own setters 800B6660... refuse them). Save states get the game's own values: the cheats
+// are lifted around the save / load at the frame flip and set again after it.
+// Speed scales the movement settings (ground, air, skates), read live through their config entries (value at +0x24),
+// which the player keeps (player+0x1E0, 0x1F0, 0x1E8, set up in 800B12BC). Unlock all answers the unlock check
+// 800C32F8(name) (treasures collected >= UnlockTable.<name>: the 10 lost levels, the gallery and the treasure
+// cheats) with yes, so nothing is written to the memory card.
+// All weapons and infinite ammo also fill every ammo type once per player (as the game's infinite ammo setter
+// 800B6698 does; again when the game sets up the player's cheats, 800B2418: a new level or a respawn), so the new
+// weapons can be picked: the ammo inventory (player+0x5E8) holds 17 counts, a second copy at +0x24, maxima at +0xB4.
+// Infinite ammo needs the inventory's own flag too (+0xD8, also set by 800B6698), lifted like the globals.
+// The game's invulnerability only keeps enemy attacks off health (armor still takes them, and falls, lava and
+// drowning still hurt), so invulnerable also skips the player's damage method 800B366C(player, damage) as its own
+// early exit does: nothing changes and it returns the health (player+0xCC, f1).
+const uint32_t kCheatSetterSig[6] = {0x812D961Cu, 0x3929FFFEu, 0x28090002u, 0x41810008u, 0x38600000u, 0x906D86E0u};
+const uint32_t kUnlockedSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBF810008u, 0x9001001Cu, 0x3D20802Bu, 0x7C7C1B78u};
+const uint32_t kPlayerCheatsSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7D1B78u, 0x3D40802Bu};
+const uint32_t kDamageSig[6] = {0x9421FF80u, 0x7C0802A6u, 0xDBC10070u, 0xDBE10078u, 0xBF210054u, 0x90010084u};
+constexpr uint32_t kCheatSetter = 0x800B6660, kUnlocked = 0x800C32F8, kPlayerCheats = 0x800B2418;
+constexpr uint32_t kDamage = 0x800B366C;
+constexpr uint32_t kCheatGlobals[3] = {0x802DA284, 0x802DA288, 0x802DA280};  // invulnerable, infinite ammo, all weapons
+constexpr uint32_t kGameMode = 0x802DB1BC;
+struct SpeedSetting { uint32_t offset; float stock, written; };  // GroundMovementSpeed, AirMovementSpeed, SkatesMovementSpeed
+SpeedSetting g_speed_settings[3] = {{0x1E0, 275, 275}, {0x1F0, 20, 20}, {0x1E8, 70, 70}};
+std::atomic<uint32_t> g_cheat_bits{0};  // 1 invulnerable, 2 infinite ammo, 4 all weapons, 8 unlock all
+std::atomic<float> g_cheat_speed{1};
+std::atomic<bool> g_cheats_ok{false}, g_cheats_on{false};
+PPCFunc g_orig_unlocked = nullptr, g_orig_player_cheats = nullptr, g_orig_damage = nullptr;
+uint32_t g_ammo_filled[4] = {};  // per port: the player whose ammo the cheats filled
+uint32_t g_inf_inv[4] = {}, g_inf_saved[4] = {};  // per port: ammo inventory whose infinite flag (+0xD8) is set
+bool g_cheat_forced[3] = {};
+uint32_t g_cheat_saved[3] = {};
+bool g_speed_forced = false;
+
+bool cheat_mode_allowed() { return mem_read32(kGameMode) == 0; }  // single player
+
+// Sets the cheats in effect (lift = false) or gives the game back its own values (lift = true). Game thread.
+void cheats_frame(bool lift) {
+    if (!g_cheats_ok.load()) return;
+    uint32_t bits = g_cheat_bits.load();
+    bool allowed = !lift && cheat_mode_allowed();
+    for (int i = 0; i < 3; i++) {
+        bool want = allowed && (bits >> i & 1);
+        uint32_t cur = mem_read32(kCheatGlobals[i]);
+        if (want) {
+            if (!g_cheat_forced[i]) g_cheat_saved[i] = cur;
+            else if (cur != 1) g_cheat_saved[i] = cur;  // the game set it since (a player was created)
+            g_cheat_forced[i] = true;
+            mem_write32(kCheatGlobals[i], 1);
+        } else if (g_cheat_forced[i]) {
+            if (cur == 1) mem_write32(kCheatGlobals[i], g_cheat_saved[i]);
+            g_cheat_forced[i] = false;
+        }
+    }
+    for (int p = 0; p < 4; p++) {
+        uint32_t player = g_port_player[p];
+        bool recent = player && now_ms() - g_port_player_ms[p] <= 1000;
+        uint32_t inv = player ? mem_read32(player + 0x5E8) : 0;
+        if (inv < 0x80000000u || inv >= 0x817FFF00u) inv = 0;
+        if (g_inf_inv[p] && (g_inf_inv[p] != inv || !allowed || !(bits & 2))) {  // give the game back its flag
+            if (g_inf_inv[p] == inv && mem_read32(inv + 0xD8) == 1) mem_write32(inv + 0xD8, g_inf_saved[p]);
+            g_inf_inv[p] = 0;
+        }
+        if (allowed && (bits & 2) && recent && inv) {
+            uint32_t cur = mem_read32(inv + 0xD8);
+            if (g_inf_inv[p] != inv || cur != 1) g_inf_saved[p] = cur;
+            g_inf_inv[p] = inv;
+            mem_write32(inv + 0xD8, 1);
+        }
+        if (!allowed || !(bits & 6)) { if (!lift) g_ammo_filled[p] = 0; continue; }
+        if (!recent || !inv || g_ammo_filled[p] == player) continue;
+        for (uint32_t t = 0; t < 17; t++) {
+            uint16_t max = mem_read16(inv + 0xB4 + 2 * t);
+            mem_write16(inv + 2 * t, max);
+            mem_write16(inv + 0x24 + 2 * t, max);
+        }
+        g_ammo_filled[p] = player;
+    }
+    float speed = allowed ? g_cheat_speed.load() : 1.0f;
+    uint32_t player = 0;
+    for (int p = 0; p < 4 && !player; p++)
+        if (g_port_player[p] && now_ms() - g_port_player_ms[p] <= 1000) player = g_port_player[p];
+    if ((speed != 1.0f || g_speed_forced) && player) {
+        for (auto& st : g_speed_settings) {
+            uint32_t n = mem_read32(player + st.offset);
+            if (n < 0x80000000u || n >= 0x817FFFD0u) continue;
+            float cur = u2f(mem_read32(n + 0x24));
+            if (cur != st.stock && cur != st.written) continue;  // not that setting
+            st.written = st.stock * speed;
+            put_f(n + 0x24, st.written);
+        }
+        g_speed_forced = speed != 1.0f;
+    }
+    g_cheats_on = allowed && ((bits & 15) || speed != 1.0f);
+}
+
+void hle_unlocked(PPCContext& ctx) {
+    PPCFunc* slot = ssne_hook_slot(kUnlocked);
+    *slot = nullptr;
+    g_orig_unlocked(ctx);
+    *slot = &hle_unlocked;
+    if ((g_cheat_bits.load() & 8) && cheat_mode_allowed()) ctx.r[3] = 1;
+}
+
+void hle_player_cheats(PPCContext& ctx) {
+    uint32_t player = ctx.r[3];
+    PPCFunc* slot = ssne_hook_slot(kPlayerCheats);
+    *slot = nullptr;
+    g_orig_player_cheats(ctx);
+    *slot = &hle_player_cheats;
+    for (uint32_t& f : g_ammo_filled) if (f == player) f = 0;
+}
+
+void hle_damage(PPCContext& ctx) {
+    if ((g_cheat_bits.load() & 1) && cheat_mode_allowed()) {
+        ctx.ps0[1] = ctx.ps1[1] = u2f(mem_read32(ctx.r[3] + 0xCC));
+        return;
+    }
+    PPCFunc* slot = ssne_hook_slot(kDamage);
+    *slot = nullptr;
+    g_orig_damage(ctx);
+    *slot = &hle_damage;
+}
+
+void install_cheats() {
+    const SSNEFuncEntry* ul = ssne_find_func(kUnlocked);
+    const SSNEFuncEntry* pc = ssne_find_func(kPlayerCheats);
+    const SSNEFuncEntry* dm = ssne_find_func(kDamage);
+    if (!ul || !pc || !dm || !code_matches(kCheatSetter, kCheatSetterSig) || !code_matches(kUnlocked, kUnlockedSig) ||
+        !code_matches(kPlayerCheats, kPlayerCheatsSig) || !code_matches(kDamage, kDamageSig)) {
+        fprintf(stdout, "[ssne] cheats: the game's cheat switches not found (different game build?)\n");
+        return;
+    }
+    g_orig_unlocked = ul->func;
+    ssne_install_hook(kUnlocked, hle_unlocked);
+    g_orig_player_cheats = pc->func;
+    ssne_install_hook(kPlayerCheats, hle_player_cheats);
+    g_orig_damage = dm->func;
+    ssne_install_hook(kDamage, hle_damage);
+    g_cheats_ok = true;
+}
+
 // ---- save states: the request is carried out at the start of the game's frame flip (savestate.cpp).
 const uint32_t kFlipSig[6] = {0x9421FFE8u, 0x7C0802A6u, 0xBFA1000Cu, 0x9001001Cu, 0x7C7F1B78u, 0x7C9D2378u};
 PPCFunc g_orig_flip = nullptr;
 void hle_flip(PPCContext& ctx) {
     end_player_frame();
+    cheats_frame(true);
     savestate_safe_point(ctx);
+    cheats_frame(false);
     PPCFunc* slot = ssne_hook_slot(g_ver->flip);
     *slot = nullptr;
     g_orig_flip(ctx);
@@ -1034,10 +1185,18 @@ void install_sdk_hooks() {
         install_landing_fix();
         install_split_choice();
         install_frame_time();
+        install_cheats();
         install_savestates();
     }
     install_call_tracer();
 }
+
+void set_cheats(const Cheats& c) {
+    g_cheat_bits = uint32_t(c.invulnerable) | uint32_t(c.infinite_ammo) << 1 | uint32_t(c.all_weapons) << 2 | uint32_t(c.unlock_all) << 3;
+    g_cheat_speed = std::clamp(c.speed, 0.5f, 3.0f);
+}
+bool cheats_available() { return g_cheats_ok.load(); }
+bool cheats_active() { return g_cheats_on.load(); }
 
 void set_fov(float degrees) { g_fov = degrees <= 0 ? 0.0f : std::clamp(degrees, 30.0f, 120.0f); }
 float fov() { return g_fov.load(); }

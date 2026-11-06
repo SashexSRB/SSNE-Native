@@ -554,6 +554,18 @@ uint8_t kbm_glyph(const port::Bind& b) {
 
 bool g_input_pad = false;  // the last input came from the gamepad ("automatic" on-screen buttons follow it)
 
+// Menus need keys for X and Y (Add / Delete Player in the profile screens): the mouse selects, goes back and scrolls
+// there instead of its bindings. When neither has a key (their keys rebound to other controls), Insert and Delete
+// press them in the menus, unless those keys are bound to something else; the menu prompts show them.
+SDL_Scancode menu_fallback_key(int act) {
+    SDL_Scancode key = act == port::ACT_X ? SDL_SCANCODE_INSERT : act == port::ACT_Y ? SDL_SCANCODE_DELETE : SDL_SCANCODE_UNKNOWN;
+    if (key == SDL_SCANCODE_UNKNOWN) return key;
+    for (const port::Bind& b : g_set.kb[act]) if (b.type == port::Bind::KEY) return SDL_SCANCODE_UNKNOWN;
+    for (const auto& slots : g_set.kb)
+        for (const port::Bind& b : slots) if (b == port::Bind::key(key)) return SDL_SCANCODE_UNKNOWN;
+    return key;
+}
+
 void update_prompts() {
     uint8_t menu[7] = {}, control[7] = {};
     static const int kSlots[7] = {port::ACT_A, port::ACT_B, port::ACT_X, port::ACT_Y, port::ACT_Z, port::ACT_L, port::ACT_R};
@@ -577,6 +589,7 @@ void update_prompts() {
         for (int s = 0; s < 7; s++) {
             control[s] = first(g_set.kb[kSlots[s]], false);
             menu[s] = first(g_set.kb[kSlots[s]], true);
+            if (SDL_Scancode f = menu_fallback_key(kSlots[s])) menu[s] = kbm_glyph(port::Bind::key(f));
         }
         if (uint8_t g = first(g_set.kb[port::ACT_L], true)) menu[0] = g;
         for (const port::Bind& b : g_set.kb[port::ACT_START])
@@ -715,6 +728,8 @@ void update_input(float dt) {
             if (b.type == port::Bind::WHEEL && control && wheel_on[b.code > 0 ? 1 : 0]) act[a] = 1;
         }
     if (!control) {
+        for (int a : {port::ACT_X, port::ACT_Y})
+            if (SDL_Scancode f = menu_fallback_key(a); f && kb_ok && k[f]) act[a] = 1;
         Uint32 clicks = mb & ~held_mouse;
         if (clicks & SDL_BUTTON(SDL_BUTTON_LEFT)) act[port::ACT_A] = 1;
         if (clicks & SDL_BUTTON(SDL_BUTTON_RIGHT)) act[port::ACT_B] = 1;
@@ -993,6 +1008,7 @@ void fill_state_slots(port::MenuInfo& mi) {
     static GLuint tex[5] = {};
     static std::filesystem::file_time_type stamp[5];
     mi.states_available = g_ssne_has_game_code && have_game_image();
+    mi.cheats_available = ssne::cheats_available();
     mi.states_dir = g_states_dir;
     static uint32_t last = 0;
     static port::MenuInfo::Slot cache[5];
@@ -1061,7 +1077,7 @@ void draw_overlay(const std::string& data_dir, float dt) {
         ImGui::SetNextWindowBgAlpha(0.45f);
         ImGui::Begin("##fpsonly", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoInputs |
                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
-        ImGui::Text("%.0f fps%s", fps, ssne::paused() ? "  [paused]" : "");
+        ImGui::Text("%.0f fps%s%s", fps, ssne::cheats_active() ? "  [cheats]" : "", ssne::paused() ? "  [paused]" : "");
         ImGui::End();
     }
     if (g_set.top_bar == 2) {
@@ -1069,8 +1085,9 @@ void draw_overlay(const std::string& data_dir, float dt) {
         ImGui::SetNextWindowBgAlpha(0.45f);
         ImGui::Begin("##fps", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoInputs |
                                        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
-        ImGui::Text("%.0f fps (limit %s, slowest frame %u ms)   F12: settings & hotkeys   F1: log/stats   Shift+F1: smaller bar%s",
-                    fps, fps_mode_name(ssne::frame_limit()).c_str(), slowest, ssne::paused() ? "   [paused]" : "");
+        ImGui::Text("%.0f fps (limit %s, slowest frame %u ms)   F12: settings & hotkeys   F1: log/stats   Shift+F1: smaller bar%s%s",
+                    fps, fps_mode_name(ssne::frame_limit()).c_str(), slowest, ssne::cheats_active() ? "   [cheats]" : "",
+                    ssne::paused() ? "   [paused]" : "");
         if (!g_gpu)  // make the (much slower) CPU renderer obvious: it explains low frame rates in bug reports
             ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1), "Software renderer (CPU): %s",
                                g_set.renderer == "software" ? "selected in F12 > Graphics" : "the GPU renderer could not start, see F1");
@@ -1154,6 +1171,15 @@ void apply_split(SDL_Window* win) {
 }
 
 void apply_settings(SDL_Window* win) {
+    {
+        ssne::Cheats c;
+        c.invulnerable = g_set.cheat_invulnerable;
+        c.infinite_ammo = g_set.cheat_infinite_ammo;
+        c.all_weapons = g_set.cheat_all_weapons;
+        c.unlock_all = g_set.cheat_unlock_all;
+        c.speed = g_set.cheat_speed / 100.0f;
+        ssne::set_cheats(c);
+    }
     ssne::set_widescreen(aspect_factor(win));
     apply_split(win);
     update_ports();
