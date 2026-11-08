@@ -115,8 +115,9 @@ F12 › Gamepad has a "GameCube layout" button, rumble settings and the on-scree
 - **Widescreen** (16:9 / 21:9 / automatic, which follows the window's shape; F8) applies in gameplay; menus (also pause, NETRICSA and briefings) and cutscenes
   stay 4:3, because the game places 3D models into 2D menu layouts. A blurred copy of the picture fills the sides
   (F12 › Graphics › Fill the sides of 4:3 screens). The HUD moves out to the screen edges (F12 › Graphics).
-- **Cheats** (single player, F12 › Cheats): invulnerable, infinite ammo, all weapons with full ammo, faster movement
-  (up to 300%) and unlock everything (the 10 lost levels, the gallery and the game's treasure cheats, without
+- **Cheats** (single player, F12 › Cheats; experimental, they can break the game): invulnerable, infinite ammo, all
+  weapons with full ammo, faster movement (up to 300%), higher jumps (up to 500%), flying, more weapon damage (up to
+  1000%) and unlock everything (the 10 lost levels, the gallery and the game's treasure cheats, without
   collecting the treasure; nothing is written to the memory card). They work at once, also in a running level.
 - **Local multiplayer** (split screen for 2-4 players): plug in a controller per player and choose MultiPlayer;
   every player presses A to join. Co-operative is for 2 players, Deathmatch, Hold the Flag and Pass the Bomb for up

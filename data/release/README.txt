@@ -61,8 +61,9 @@ PERFORMANCE
     heaviest - automatic resolution still lowers it if your GPU can't keep up).
   - Rumble (F12 > Gamepad, on by default): the game's controller vibration on Xbox, PlayStation, Switch Pro and
     most other gamepads, with a strength slider and a Test button.
-  - Cheats (single player, F12 > Cheats): invulnerable, infinite ammo, all weapons with full ammo, movement speed
-    up to 300%, and unlock everything (lost levels, gallery and the game's treasure cheats; nothing is saved to the
+  - Cheats (single player, F12 > Cheats; experimental and not fully tested, they can break the game): invulnerable,
+    infinite ammo, all weapons with full ammo, movement speed up to 300%, jump height up to 500%, flying, weapon
+    damage up to 1000%, and unlock everything (lost levels, gallery and the game's treasure cheats; nothing is saved to the
     memory card). "[cheats]" shows in the info bar at the top while one is on.
   - Local multiplayer (split screen, 2-4 players): one controller per player, then MultiPlayer in the game and every
     player presses A to join (Co-operative: 2 players; Deathmatch, Hold the Flag, Pass the Bomb: up to 4).
