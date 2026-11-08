@@ -359,6 +359,8 @@ bool tab_players(Settings& s, const MenuInfo& info) {
 
 bool tab_cheats(Settings& s, const MenuInfo& info) {
     bool ch = false;
+    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1), "Cheats are highly experimental and not fully tested: they can break the game (levels, scripts,");
+    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1), "progress). They will stay that way: the game is meant to be played without them. Use at your own risk.");
     ImGui::TextColored(kDim, "For single player only: they are off in co-op and the other multiplayer modes.");
     ImGui::TextColored(kDim, "They work at once, also in a running level, and \"cheats\" shows in the info bar while one is on.");
     if (!info.cheats_available)
@@ -374,6 +376,17 @@ bool tab_cheats(Settings& s, const MenuInfo& info) {
     ImGui::SetNextItemWidth(300);
     ch |= ImGui::SliderInt("Movement speed", &s.cheat_speed, 100, 300, "%d%%");
     help("How fast Sam runs, in the air and on skates too. 100% is the game's own speed.");
+    ImGui::SetNextItemWidth(300);
+    ch |= ImGui::SliderInt("Jump height", &s.cheat_jump, 100, 500, "%d%%");
+    help("How high Sam jumps. 100% is the game's own height.");
+    ch |= ImGui::Checkbox("Flying", &s.cheat_fly);
+    help("The game's own debug flight: no gravity, and Sam passes through walls and floors (it's easy to\n"
+         "leave the level: turn it off above solid ground). Move and look as usual; hold jump to fly up and\n"
+         "fire to fly down.");
+    ImGui::SeparatorText("Weapons");
+    ImGui::SetNextItemWidth(300);
+    ch |= ImGui::SliderInt("Damage", &s.cheat_damage, 100, 1000, "%d%%");
+    help("How much damage Sam's weapons do. 100% is the game's own damage.");
     ImGui::SeparatorText("Game");
     ch |= ImGui::Checkbox("Unlock everything", &s.cheat_unlock_all);
     help("The 10 lost levels, the gallery and the game's own treasure cheats, as if all the treasure had\n"

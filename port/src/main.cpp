@@ -795,6 +795,15 @@ void update_input(float dt) {
     for (int p = 0; p < 4; p++) {
         ssne::PadState ps = to_pad(players[p]);
         if (p == 0) apply_autopress(ps);
+        // Flying (cheat): the game's debug flight goes down with L (jump) and up with R (fire); swapped, so jump
+        // flies up and fire down (cheats are single player only: port 0).
+        if (p == 0 && ssne::cheat_flying()) {
+            std::swap(ps.trigger_l, ps.trigger_r);
+            uint16_t lr = ps.buttons & (ssne::PAD_L | ssne::PAD_R);
+            ps.buttons &= uint16_t(~(ssne::PAD_L | ssne::PAD_R));
+            if (lr & ssne::PAD_L) ps.buttons |= ssne::PAD_R;
+            if (lr & ssne::PAD_R) ps.buttons |= ssne::PAD_L;
+        }
         ssne::set_pad(p, ps);
     }
 }
@@ -1178,6 +1187,9 @@ void apply_settings(SDL_Window* win) {
         c.all_weapons = g_set.cheat_all_weapons;
         c.unlock_all = g_set.cheat_unlock_all;
         c.speed = g_set.cheat_speed / 100.0f;
+        c.fly = g_set.cheat_fly;
+        c.jump = g_set.cheat_jump / 100.0f;
+        c.damage = g_set.cheat_damage / 100.0f;
         ssne::set_cheats(c);
     }
     ssne::set_widescreen(aspect_factor(win));

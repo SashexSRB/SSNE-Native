@@ -86,12 +86,16 @@ float widescreen_frame_factor();  // factor the game's current frame was rendere
 bool widescreen_frame_zoomed();   // the current frame's scene camera is zoomed in (sniper scope; widescreen gameplay)
 void set_split_two(int mode);     // 2-player split screen: 0 top / bottom, 1 left / right, -1 the game's setting (next match)
 double game_time();               // seconds of frame time the game has advanced by (SSNE_FIXED_FPS: fixed per frame)
-// Cheats (issue #19): the game's own invulnerability, infinite ammo and all-weapons switches, every unlock (lost
-// levels, gallery, treasure cheats) and a movement speed factor (1 = normal). In effect in single player only (not in
-// co-op or the versus modes). Save states keep the game's values.
-struct Cheats { bool invulnerable = false, infinite_ammo = false, all_weapons = false, unlock_all = false; float speed = 1; };
+// Cheats (issues #19, #21): the game's own invulnerability, infinite ammo, all-weapons and fly switches, every
+// unlock (lost levels, gallery, treasure cheats) and movement speed, jump height and weapon damage factors. In effect
+// in single player only (not in co-op or the versus modes). Save states keep the game's values.
+struct Cheats {
+    bool invulnerable = false, infinite_ammo = false, all_weapons = false, unlock_all = false, fly = false;
+    float speed = 1, jump = 1, damage = 1;  // movement speed, jump height and weapon damage factors
+};
 void set_cheats(const Cheats& c);
 bool cheats_available();  // the game's cheat code was found (USA Rev 1)
 bool cheats_active();     // a cheat is in effect right now
+bool cheat_flying();      // flying: the game flies down with L (jump) and up with R (fire)
 
 } // namespace ssne

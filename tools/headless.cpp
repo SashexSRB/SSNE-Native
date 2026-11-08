@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     struct Poke { double t; uint32_t addr, value; };  // --poke16 T:ADDR:VALUE  write a halfword at T seconds
     std::vector<Poke> pokes;
     std::vector<std::pair<double, int>> fps_changes;  // --fps-at T:N  frame rate limit N from T seconds
-    std::vector<std::pair<double, ssne::Cheats>> cheat_changes;  // --cheats T:god,ammo,weapons,unlock,speed=N (T:off)
+    std::vector<std::pair<double, ssne::Cheats>> cheat_changes;  // --cheats T:god,ammo,weapons,unlock,fly,speed=N,jump=N,damage=N (T:off)
     std::vector<uint32_t> watches;
     std::vector<uint32_t> watches_f;  // --watchf ADDR  log every change of a float  // --watch16 ADDR  log every change of a halfword (with the time)
     double count_from = -1, count_to = -1;
@@ -176,6 +176,9 @@ int main(int argc, char** argv) {
                 else if (w == "weapons") ch.all_weapons = true;
                 else if (w == "unlock") ch.unlock_all = true;
                 else if (w.rfind("speed=", 0) == 0) ch.speed = float(atof(w.c_str() + 6));
+                else if (w.rfind("jump=", 0) == 0) ch.jump = float(atof(w.c_str() + 5));
+                else if (w.rfind("damage=", 0) == 0) ch.damage = float(atof(w.c_str() + 7));
+                else if (w == "fly") ch.fly = true;
                 at = e == std::string::npos ? v.size() : e + 1;
             }
             cheat_changes.push_back({atof(v.substr(0, c).c_str()), ch});

@@ -959,17 +959,29 @@ constexpr uint32_t kCheatSetter = 0x800B6660, kUnlocked = 0x800C32F8, kPlayerChe
 constexpr uint32_t kDamage = 0x800B366C;
 constexpr uint32_t kCheatGlobals[3] = {0x802DA284, 0x802DA288, 0x802DA280};  // invulnerable, infinite ammo, all weapons
 constexpr uint32_t kGameMode = 0x802DB1BC;
-struct SpeedSetting { uint32_t offset; float stock, written; };  // GroundMovementSpeed, AirMovementSpeed, SkatesMovementSpeed
-SpeedSetting g_speed_settings[3] = {{0x1E0, 275, 275}, {0x1F0, 20, 20}, {0x1E8, 70, 70}};
-std::atomic<uint32_t> g_cheat_bits{0};  // 1 invulnerable, 2 infinite ammo, 4 all weapons, 8 unlock all
-std::atomic<float> g_cheat_speed{1};
+// GroundMovementSpeed, AirMovementSpeed, SkatesMovementSpeed (speed); MinJumpHeight, MaxJumpHeight (jump)
+struct ScaledSetting { uint32_t offset; float stock, written; bool jump; };
+ScaledSetting g_scaled_settings[5] = {{0x1E0, 275, 275, false}, {0x1F0, 20, 20, false}, {0x1E8, 70, 70, false},
+                                      {0x208, 1.2f, 1.2f, true}, {0x20C, 3.2f, 3.2f, true}};
+// Weapon damage: every fire mode of the player's weapons (player+0x4BC + 0x18 * id: the weapon; its modes, 60 bytes
+// each, at [weapon+0x1D0], their number at +0x1BC) holds MinDamage, MaxDamage and DamagePerSec (+0x10, +0x14, +0x28)
+// copied from base.cfg when the weapon is made (8009F54C). Scaled there; the game's values are kept per mode.
+struct DamageMode { float stock[3], written[3]; };
+std::unordered_map<uint32_t, DamageMode> g_damage_modes;
+constexpr uint32_t kDamageFields[3] = {0x10, 0x14, 0x28};
+// Flying: the game's own debug flight (800BEEC8): with PuzzleConfig.AllowFlyCheat (entry at player+0x358, value at
+// +0x1C) on, player+0x35C set and flags 0xC000 at player+0x1C (no gravity, no collision), the sticks fly Sam.
+uint32_t g_fly_player = 0, g_fly_saved_allow = 0;
+std::atomic<bool> g_flying{false};
+std::atomic<uint32_t> g_cheat_bits{0};  // 1 invulnerable, 2 infinite ammo, 4 all weapons, 8 unlock all, 16 fly
+std::atomic<float> g_cheat_speed{1}, g_cheat_jump{1}, g_cheat_damage{1};
 std::atomic<bool> g_cheats_ok{false}, g_cheats_on{false};
 PPCFunc g_orig_unlocked = nullptr, g_orig_player_cheats = nullptr, g_orig_damage = nullptr;
 uint32_t g_ammo_filled[4] = {};  // per port: the player whose ammo the cheats filled
 uint32_t g_inf_inv[4] = {}, g_inf_saved[4] = {};  // per port: ammo inventory whose infinite flag (+0xD8) is set
 bool g_cheat_forced[3] = {};
 uint32_t g_cheat_saved[3] = {};
-bool g_speed_forced = false;
+bool g_scaled_forced = false;
 
 bool cheat_mode_allowed() { return mem_read32(kGameMode) == 0; }  // single player
 
@@ -1015,22 +1027,70 @@ void cheats_frame(bool lift) {
         }
         g_ammo_filled[p] = player;
     }
-    float speed = allowed ? g_cheat_speed.load() : 1.0f;
+    float speed = allowed ? g_cheat_speed.load() : 1.0f, jump = allowed ? g_cheat_jump.load() : 1.0f;
+    float damage = allowed ? g_cheat_damage.load() : 1.0f;
     uint32_t player = 0;
     for (int p = 0; p < 4 && !player; p++)
         if (g_port_player[p] && now_ms() - g_port_player_ms[p] <= 1000) player = g_port_player[p];
-    if ((speed != 1.0f || g_speed_forced) && player) {
-        for (auto& st : g_speed_settings) {
+    if ((speed != 1.0f || jump != 1.0f || g_scaled_forced) && player) {
+        for (auto& st : g_scaled_settings) {
             uint32_t n = mem_read32(player + st.offset);
             if (n < 0x80000000u || n >= 0x817FFFD0u) continue;
             float cur = u2f(mem_read32(n + 0x24));
             if (cur != st.stock && cur != st.written) continue;  // not that setting
-            st.written = st.stock * speed;
+            st.written = st.stock * (st.jump ? jump : speed);
             put_f(n + 0x24, st.written);
         }
-        g_speed_forced = speed != 1.0f;
+        g_scaled_forced = speed != 1.0f || jump != 1.0f;
     }
-    g_cheats_on = allowed && ((bits & 15) || speed != 1.0f);
+    // weapon damage: the game's values back first (lifted, or the factor changed), then scaled again
+    for (auto it = g_damage_modes.begin(); it != g_damage_modes.end();) {
+        bool ours = true;
+        for (int f = 0; f < 3; f++) ours &= u2f(mem_read32(it->first + kDamageFields[f])) == it->second.written[f];
+        if (ours) for (int f = 0; f < 3; f++) put_f(it->first + kDamageFields[f], it->second.stock[f]);
+        it = ours && damage != 1.0f ? std::next(it) : g_damage_modes.erase(it);
+    }
+    if (damage != 1.0f && player) {
+        for (uint32_t id = 0; id < 12; id++) {
+            uint32_t w = mem_read32(player + 0x4BC + 0x18 * id);
+            if (w < 0x80000000u || w >= 0x817FFE00u) continue;
+            uint32_t modes = mem_read32(w + 0x1D0), count = mem_read32(w + 0x1BC);
+            if (modes < 0x80000000u || modes >= 0x817FFE00u || count < 1 || count > 3) continue;
+            for (uint32_t m = 0; m < count; m++) {
+                uint32_t a = modes + 60 * m;
+                DamageMode& dm = g_damage_modes[a];  // new (the game's values) or put back above
+                for (int f = 0; f < 3; f++) {
+                    dm.stock[f] = u2f(mem_read32(a + kDamageFields[f]));
+                    dm.written[f] = dm.stock[f] * damage;
+                    put_f(a + kDamageFields[f], dm.written[f]);
+                }
+            }
+        }
+    }
+    // flying
+    bool fly = allowed && (bits & 16) && player;
+    if (g_fly_player && (!fly || g_fly_player != player)) {
+        uint32_t fp = g_fly_player;
+        uint32_t allow = mem_read32(fp + 0x358);
+        if (mem_read32(fp + 0x35C) == 1) {
+            mem_write32(fp + 0x35C, 0);
+            mem_write32(fp + 0x1C, mem_read32(fp + 0x1C) & ~0xC000u);
+        }
+        if (allow >= 0x80000000u && allow < 0x817FFFD0u) mem_write32(allow + 0x1C, g_fly_saved_allow);
+        g_fly_player = 0;
+    }
+    if (fly && !g_fly_player) {
+        uint32_t allow = mem_read32(player + 0x358);
+        if (allow >= 0x80000000u && allow < 0x817FFFD0u) {
+            g_fly_saved_allow = mem_read32(allow + 0x1C);
+            mem_write32(allow + 0x1C, 1);
+            mem_write32(player + 0x35C, 1);
+            mem_write32(player + 0x1C, mem_read32(player + 0x1C) | 0xC000u);
+            g_fly_player = player;
+        }
+    }
+    g_flying = g_fly_player != 0;
+    g_cheats_on = allowed && ((bits & 31) || speed != 1.0f || jump != 1.0f || damage != 1.0f);
 }
 
 void hle_unlocked(PPCContext& ctx) {
@@ -1192,11 +1252,15 @@ void install_sdk_hooks() {
 }
 
 void set_cheats(const Cheats& c) {
-    g_cheat_bits = uint32_t(c.invulnerable) | uint32_t(c.infinite_ammo) << 1 | uint32_t(c.all_weapons) << 2 | uint32_t(c.unlock_all) << 3;
+    g_cheat_bits = uint32_t(c.invulnerable) | uint32_t(c.infinite_ammo) << 1 | uint32_t(c.all_weapons) << 2 |
+                   uint32_t(c.unlock_all) << 3 | uint32_t(c.fly) << 4;
     g_cheat_speed = std::clamp(c.speed, 0.5f, 3.0f);
+    g_cheat_jump = std::clamp(c.jump, 0.5f, 5.0f);
+    g_cheat_damage = std::clamp(c.damage, 1.0f, 100.0f);
 }
 bool cheats_available() { return g_cheats_ok.load(); }
 bool cheats_active() { return g_cheats_on.load(); }
+bool cheat_flying() { return g_flying.load(); }
 
 void set_fov(float degrees) { g_fov = degrees <= 0 ? 0.0f : std::clamp(degrees, 30.0f, 120.0f); }
 float fov() { return g_fov.load(); }

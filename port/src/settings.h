@@ -97,6 +97,9 @@ struct Settings {
     bool cheat_all_weapons = false;  // every weapon, with full ammo
     bool cheat_unlock_all = false;   // the lost levels, the gallery and the treasure cheats, without collecting treasure
     int cheat_speed = 100;           // movement speed in percent (100 = normal, up to 300)
+    bool cheat_fly = false;          // the game's debug flight: no gravity, through walls
+    int cheat_jump = 100;            // jump height in percent (100 = normal, up to 500)
+    int cheat_damage = 100;          // weapon damage in percent (100 = normal, up to 1000)
     // General
     bool pause_in_menu = true;
     bool pause_unfocused = true;     // pause (and silence) the game while the window is in the background

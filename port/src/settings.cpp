@@ -146,7 +146,8 @@ void Settings::reset_gamepad() {
 
 void Settings::reset_cheats() {
     cheat_invulnerable = cheat_infinite_ammo = cheat_all_weapons = cheat_unlock_all = false;
-    cheat_speed = 100;
+    cheat_speed = cheat_jump = cheat_damage = 100;
+    cheat_fly = false;
 }
 
 void Settings::reset_players() {
@@ -326,6 +327,9 @@ bool load_settings(Settings& s, const std::string& path) {
     get("cheat_all_weapons", s.cheat_all_weapons);
     get("cheat_unlock_all", s.cheat_unlock_all);
     get("cheat_speed", s.cheat_speed);
+    get("cheat_fly", s.cheat_fly);
+    get("cheat_jump", s.cheat_jump);
+    get("cheat_damage", s.cheat_damage);
     for (int a = 0; a < ACT_COUNT; a++) {
         auto it = kv.find(std::string("kb.") + action_id(a));
         if (it != kv.end()) {
@@ -441,6 +445,8 @@ bool load_settings(Settings& s, const std::string& path) {
     for (int& p : s.pad_player) p = std::clamp(p, 0, 4);
     s.split_two = std::clamp(s.split_two, 0, 2);
     s.cheat_speed = std::clamp(s.cheat_speed, 100, 300);
+    s.cheat_jump = std::clamp(s.cheat_jump, 100, 500);
+    s.cheat_damage = std::clamp(s.cheat_damage, 100, 1000);
     return true;
 }
 
@@ -504,6 +510,9 @@ bool save_settings(const Settings& s, const std::string& path) {
     o << "cheat_all_weapons = " << (s.cheat_all_weapons ? 1 : 0) << "    # every weapon, with full ammo\n";
     o << "cheat_unlock_all = " << (s.cheat_unlock_all ? 1 : 0) << "    # lost levels, gallery and treasure cheats\n";
     o << "cheat_speed = " << s.cheat_speed << "    # movement speed in percent, 100-300\n";
+    o << "cheat_fly = " << (s.cheat_fly ? 1 : 0) << "    # fly through the level (no gravity, through walls)\n";
+    o << "cheat_jump = " << s.cheat_jump << "    # jump height in percent, 100-500\n";
+    o << "cheat_damage = " << s.cheat_damage << "    # weapon damage in percent, 100-1000\n";
     o << "[general]\n";
     o << "pause_in_menu = " << (s.pause_in_menu ? 1 : 0) << "\n";
     o << "pause_unfocused = " << (s.pause_unfocused ? 1 : 0) << "    # pause while the window is in the background\n";
